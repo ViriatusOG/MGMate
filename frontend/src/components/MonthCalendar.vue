@@ -6,7 +6,7 @@ import { formatDate } from '@/utils/format'
 import { dayKey, monthCells } from '@/utils/dayGroups'
 
 export interface CalendarDay {
-  /** A short figure for the day, such as "60 mi". */
+  /** A short figure for the day, such as "60 mi", for the tooltip; the cell itself shows the count. */
   value: string
   count: number
   /** 0 to 1: how busy the day was against the busiest of the month, for its shade. */
@@ -108,7 +108,6 @@ const cells = computed(() =>
           @click="emit('select', cell.key)"
         >
           <span class="month-cal__num">{{ cell.day }}</span>
-          <span v-if="cell.info" class="month-cal__value">{{ cell.info.value }}</span>
           <span v-if="cell.info" class="month-cal__count" aria-hidden="true">
             <font-awesome-icon :icon="countIcon" />{{ cell.info.count }}
           </span>
