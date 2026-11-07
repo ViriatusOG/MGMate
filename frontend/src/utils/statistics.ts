@@ -126,6 +126,28 @@ export function bucketAverages(
   return buckets.map((bucket) => average(bucket.days.map(read)))
 }
 
+/** Each point's lowest daily value, null for a point without any. */
+export function bucketMins(
+  buckets: readonly StatsBucket[],
+  read: (day: DailyStat) => number | null | undefined,
+): (number | null)[] {
+  return buckets.map((bucket) => {
+    const values = bucket.days.map(read).filter((v): v is number => typeof v === 'number')
+    return values.length ? Math.min(...values) : null
+  })
+}
+
+/** Each point's highest daily value, null for a point without any. */
+export function bucketMaxes(
+  buckets: readonly StatsBucket[],
+  read: (day: DailyStat) => number | null | undefined,
+): (number | null)[] {
+  return buckets.map((bucket) => {
+    const values = bucket.days.map(read).filter((v): v is number => typeof v === 'number')
+    return values.length ? Math.max(...values) : null
+  })
+}
+
 /** Each point's sum of a daily total, null for a point without any. */
 export function bucketTotals(
   buckets: readonly StatsBucket[],

@@ -9,6 +9,8 @@ import { energyUnit, litres } from '@/utils/energy'
 import { formatDate, numberLocale } from '@/utils/format'
 import {
   bucketAverages,
+  bucketMaxes,
+  bucketMins,
   bucketTickFormat,
   bucketTotals,
   roundedRange,
@@ -36,9 +38,35 @@ export interface ChartDef {
 
 const CHART_ICONS: Record<StatsChartId, string> = {
   evChart: 'bolt',
+  voltage12vChart: 'car-battery',
   tyreChart: 'gauge',
   hybridSocChart: 'wave-square',
   dailyKwhChart: 'bolt-lightning',
+  distanceChart: 'route',
+  rangeChart: 'road',
+  temperatureChart: 'temperature-half',
+}
+
+// A day's lowest and highest reading, drawn thin and dashed around its average.
+function extremeDataset(label: string, data: (number | null)[], color: string) {
+  return {
+    ...lineDataset(label, data, color),
+    borderWidth: 1.5,
+    borderDash: [5, 4],
+    pointRadius: 0,
+  }
+}
+
+const hasAny = (values: readonly (number | null)[]) => values.some((v) => v !== null)
+
+/** An axis that fits the values with a little room, in round steps; Chart.js picks one when there are none. */
+function fittedRange(values: readonly (number | null)[], minSpan: number) {
+  const valid = values.filter((v): v is number => v !== null)
+  if (!valid.length) return {}
+  const low = Math.min(...valid)
+  const high = Math.max(...valid)
+  const pad = Math.max(minSpan - (high - low), 0) / 2
+  return roundedRange(low - pad, high + pad)
 }
 
 // Named in the legend by their short translated position (FL in English, LV in Dutch).
@@ -126,7 +154,7 @@ function useChartFrame(buckets: Ref<StatsBucket[]>, grouping: Ref<StatsGrouping>
   // All charts share the same responsive/axis setup; they differ only in aspect ratio, legend
   // and y-axis range. The locale makes axis and tooltip numbers read like the rest of the page,
   // and the theme's colours make the axes, grid and legend fit it.
-  function chartOptions(aspectRatio: number, legend: boolean, y: { min: number; max?: number }) {
+  function chartOptions(aspectRatio: number, legend: boolean, y: { min?: number; max?: number }) {
     const { text, grid } = chartTheme.value
     const axis = { grid: { color: grid }, border: { color: grid } }
     return {
@@ -236,6 +264,87 @@ export function useStatisticsCharts(
     ],
   }))
 
+  // The 12V battery: the day's average, with how low it sagged and how high the car charged it.
+  const voltage = computed(() => ({
+    low: bucketMins(buckets.value, (d) => d.batteryVoltageMin ?? d.batteryVoltage),
+    avg: bucketAverages(buckets.value, (d) => d.batteryVoltage).map((v) =>
+      v === null ? null : roundTo2(v),
+    ),
+    high: bucketMaxes(buckets.value, (d) => d.batteryVoltageMax ?? d.batteryVoltage),
+  }))
+  const voltageChartData = computed(() => ({
+    labels: labels.value,
+    datasets: [
+      extremeDataset(t('statistics.series.low'), voltage.value.low, '#ef4444'),
+      lineDataset(
+        t('statistics.series.average'),
+        voltage.value.avg,
+        '#f59e0b',
+        'rgba(245,158,11,0.1)',
+      ),
+      extremeDataset(t('statistics.series.high'), voltage.value.high, '#10b981'),
+    ],
+  }))
+  const voltageOptions = computed(() =>
+    chartOptions(2.6, true, fittedRange([...voltage.value.low, ...voltage.value.high], 2)),
+  )
+
+  // Outside, its low and high around the average, and inside the car.
+  const temperature = computed(() => {
+    const u = units.value
+    const inUnit = (values: (number | null)[]) =>
+      values.map((v) => (v === null ? null : roundTo2(u.convert('temperature', v))))
+    return {
+      low: inUnit(bucketMins(buckets.value, (d) => d.exteriorTemperatureMin)),
+      outside: inUnit(bucketAverages(buckets.value, (d) => d.exteriorTemperature ?? null)),
+      high: inUnit(bucketMaxes(buckets.value, (d) => d.exteriorTemperatureMax)),
+      inside: inUnit(bucketAverages(buckets.value, (d) => d.interiorTemperature ?? null)),
+    }
+  })
+  const temperatureChartData = computed(() => {
+    const unit = units.value.symbol('temperature')
+    const { low, outside, high, inside } = temperature.value
+    return {
+      labels: labels.value,
+      datasets: [
+        extremeDataset(`${t('statistics.series.outsideLow')} (${unit})`, low, '#3b82f6'),
+        lineDataset(`${t('statistics.series.outside')} (${unit})`, outside, '#0ea5e9'),
+        extremeDataset(`${t('statistics.series.outsideHigh')} (${unit})`, high, '#ef4444'),
+        lineDataset(`${t('statistics.series.inside')} (${unit})`, inside, '#8b5cf6'),
+      ],
+    }
+  })
+  const temperatureOptions = computed(() => chartOptions(2.6, true, {}))
+
+  const range = computed(() =>
+    bucketAverages(buckets.value, (d) => d.electricRangeKm ?? null).map((v) =>
+      v === null ? null : Math.round(units.value.convert('distance', v)),
+    ),
+  )
+  const rangeChartData = computed(() => ({
+    labels: labels.value,
+    datasets: [
+      lineDataset(units.value.symbol('distance'), range.value, '#10b981', 'rgba(16,185,129,0.1)'),
+    ],
+  }))
+
+  const distance = computed(() =>
+    bucketTotals(buckets.value, (d) => d.distanceKm ?? null).map((v) =>
+      v === null ? null : roundTo2(units.value.convert('distance', v)),
+    ),
+  )
+  const distanceChartData = computed(() => ({
+    labels: labels.value,
+    datasets: [
+      {
+        label: units.value.symbol('distance'),
+        data: distance.value,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.7)',
+      },
+    ],
+  }))
+
   const percentOptions = computed(() => chartOptions(2.6, false, PERCENT_AXIS))
   const pressureOptions = computed(() => {
     const u = units.value
@@ -259,6 +368,17 @@ export function useStatisticsCharts(
       type: 'line',
       data: evChartData.value,
       options: percentOptions.value,
+    },
+    {
+      id: 'voltage12vChart',
+      icon: CHART_ICONS.voltage12vChart,
+      title: t('statistics.voltage12vChart'),
+      description: t('statistics.chartDesc.voltage12vChart'),
+      vehicleApplicable: true,
+      applicable: hasAny(voltage.value.avg) || hasAny(voltage.value.low),
+      type: 'line',
+      data: voltageChartData.value,
+      options: voltageOptions.value,
     },
     {
       id: 'tyreChart',
@@ -300,6 +420,41 @@ export function useStatisticsCharts(
       type: 'bar',
       data: dailyEnergyChartData.value,
       options: kwhOptions.value,
+    },
+    {
+      id: 'distanceChart',
+      icon: CHART_ICONS.distanceChart,
+      title: t(`statistics.distanceChart.${grouping.value}`, {
+        unit: units.value.symbol('distance'),
+      }),
+      description: t('statistics.chartDesc.distanceChart'),
+      vehicleApplicable: true,
+      applicable: hasAny(distance.value),
+      type: 'bar',
+      data: distanceChartData.value,
+      options: kwhOptions.value,
+    },
+    {
+      id: 'rangeChart',
+      icon: CHART_ICONS.rangeChart,
+      title: t('statistics.rangeChart', { unit: units.value.symbol('distance') }),
+      description: t('statistics.chartDesc.rangeChart'),
+      vehicleApplicable: hasLargeEv.value,
+      applicable: hasLargeEv.value && hasAny(range.value),
+      type: 'line',
+      data: rangeChartData.value,
+      options: kwhOptions.value,
+    },
+    {
+      id: 'temperatureChart',
+      icon: CHART_ICONS.temperatureChart,
+      title: t('statistics.temperatureChart'),
+      description: t('statistics.chartDesc.temperatureChart'),
+      vehicleApplicable: true,
+      applicable: hasAny(temperature.value.outside) || hasAny(temperature.value.inside),
+      type: 'line',
+      data: temperatureChartData.value,
+      options: temperatureOptions.value,
     },
   ])
 }

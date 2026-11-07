@@ -81,7 +81,11 @@
       "tyreChart": "Dagelijkse gemiddelde bandenspanning per wiel in de geselecteerde periode. Normaal bereik voor personenwagens is circa {low} – {high} {unit}.",
       "hybridSocChart": "Dagelijks gemiddeld EV-accuniveau en brandstofniveau in de geselecteerde periode. Geeft inzicht in hoe beide energiebronnen zich samen ontwikkelen.",
       "dailyKwhChart": "Geschat kWh-verbruik uit de EV-accu per dag, week of maand, afhankelijk van de periode. Een voltooide dag telt de piek van zijn teller; vandaag telt alleen de toename sinds middernacht, of sinds de laatste tellerreset.",
-      "dailyFuelChart": "Verbruikte brandstof per dag, week of maand, afhankelijk van de periode, volgens de teller van de boordcomputer. Een voltooide dag telt de piek van zijn teller; vandaag telt alleen de toename sinds middernacht, of sinds de laatste tellerreset."
+      "dailyFuelChart": "Verbruikte brandstof per dag, week of maand, afhankelijk van de periode, volgens de teller van de boordcomputer. Een voltooide dag telt de piek van zijn teller; vandaag telt alleen de toename sinds middernacht, of sinds de laatste tellerreset.",
+      "voltage12vChart": "De gemiddelde spanning van de 12V-accu per dag, met de laagste en hoogste meting. Geparkeerd staat een gezonde accu rond 12,4 – 12,8 V; tijdens het rijden of laden houdt de auto hem op ongeveer 13,5 – 14,5 V. Een lage lijn die steeds verder zakt, of in rust onder 12,2 V komt, wijst op een 12V-accu die aan het eind van zijn leven is.",
+      "distanceChart": "Hoe ver de kilometerteller per dag, week of maand opliep, uit de metingen van de auto zelf.",
+      "rangeChart": "De elektrische actieradius die de auto schatte, gemiddeld per dag. Die volgt de laadtoestand en daalt bij koud weer.",
+      "temperatureChart": "De buitentemperatuur die de auto mat, gemiddeld per dag met de laagste en hoogste meting, en de temperatuur in de auto."
     },
     "hybridSocChart": "EV & Brandstofniveaus",
     "weekOf": "Week van {date}",
@@ -119,6 +123,23 @@
       "energy": "Elektrisch verbruik (kWh)",
       "fuel": "Brandstof ({unit})",
       "total": "Totaal"
+    },
+    "voltage12vChart": "12V-accu (V)",
+    "temperatureChart": "Temperatuur",
+    "rangeChart": "Elektrische actieradius ({unit})",
+    "distanceChart": {
+      "day": "Afstand per dag ({unit})",
+      "week": "Afstand per week ({unit})",
+      "month": "Afstand per maand ({unit})"
+    },
+    "series": {
+      "low": "Laagste",
+      "average": "Gemiddeld",
+      "high": "Hoogste",
+      "outside": "Buiten",
+      "outsideLow": "Buiten laagste",
+      "outsideHigh": "Buiten hoogste",
+      "inside": "Binnen"
     }
   },
   "vehicle": {
@@ -321,6 +342,8 @@
     "scheduleCarTime": "Tijden gelden in de tijdzone van de auto.",
     "saveSchedule": "Schema opslaan",
     "refresh": "Vernieuwen",
+    "refreshConfirm": "Dit maakt de auto wakker om verse gegevens op te vragen, wat een beetje van de 12V-accu kost. GarageStack kijkt al elke 30 minuten bij de servers van MG zonder de auto te wekken. Auto nu wekken?",
+    "refreshHint": "Auto wekken voor verse gegevens",
     "pending": "Verstuurd - wachten op auto...",
     "error": "Commando mislukt",
     "rejected": "De auto heeft het commando niet uitgevoerd"

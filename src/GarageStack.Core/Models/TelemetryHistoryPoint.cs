@@ -26,7 +26,11 @@ public sealed record TelemetryHistoryPoint(
     double? MileageSinceLastCharge,
     double? HvSocKwh,
     double? HvTotalCapacityKwh,
-    double? PowerUsageSinceLastCharge)
+    double? PowerUsageSinceLastCharge,
+    double? OdometerKm,
+    double? InteriorTemperature,
+    double? ExteriorTemperature,
+    double? ElectricRangeKm)
 {
     /// <summary>
     /// One projection shared by the EF query (as an expression tree) and the in-memory demo
@@ -49,7 +53,11 @@ public sealed record TelemetryHistoryPoint(
             s.MileageSinceLastCharge,
             s.HvSocKwh,
             s.HvTotalCapacityKwh,
-            s.PowerUsageSinceLastCharge);
+            s.PowerUsageSinceLastCharge,
+            s.OdometerKm,
+            s.InteriorTemperature,
+            s.ExteriorTemperature,
+            s.ElectricRangeKm);
 
     private static readonly Func<TelemetrySnapshot, TelemetryHistoryPoint> Compiled = Projection.Compile();
 

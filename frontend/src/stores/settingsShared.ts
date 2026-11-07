@@ -42,7 +42,15 @@ export type StatsInsightId =
   | 'electricShare'
   | 'avgSpeed'
 
-export type StatsChartId = 'evChart' | 'tyreChart' | 'hybridSocChart' | 'dailyKwhChart'
+export type StatsChartId =
+  | 'evChart'
+  | 'voltage12vChart'
+  | 'tyreChart'
+  | 'hybridSocChart'
+  | 'dailyKwhChart'
+  | 'distanceChart'
+  | 'rangeChart'
+  | 'temperatureChart'
 
 export interface StatsItemConfig<T extends string> {
   id: T
@@ -62,9 +70,13 @@ export const ALL_STATS_INSIGHT_IDS: StatsInsightId[] = [
 
 export const ALL_STATS_CHART_IDS: StatsChartId[] = [
   'evChart',
+  'voltage12vChart',
   'tyreChart',
   'hybridSocChart',
   'dailyKwhChart',
+  'distanceChart',
+  'rangeChart',
+  'temperatureChart',
 ]
 
 export function defaultStatsInsights(): StatsItemConfig<StatsInsightId>[] {

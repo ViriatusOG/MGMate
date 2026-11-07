@@ -110,9 +110,85 @@ describe('useStatisticsCharts', () => {
         .filter((c) => c.vehicleApplicable)
         .map((c) => c.id)
 
-    expect(offered('bev')).toEqual(['evChart', 'tyreChart', 'dailyKwhChart'])
-    expect(offered('phev')).toEqual(['evChart', 'tyreChart', 'hybridSocChart', 'dailyKwhChart'])
-    expect(offered('hev')).toEqual(['tyreChart', 'hybridSocChart', 'dailyKwhChart'])
+    const everyCar = ['distanceChart', 'temperatureChart']
+    expect(offered('bev')).toEqual([
+      'evChart',
+      'voltage12vChart',
+      'tyreChart',
+      'dailyKwhChart',
+      'distanceChart',
+      'rangeChart',
+      'temperatureChart',
+    ])
+    expect(offered('phev')).toEqual([
+      'evChart',
+      'voltage12vChart',
+      'tyreChart',
+      'hybridSocChart',
+      'dailyKwhChart',
+      'distanceChart',
+      'rangeChart',
+      'temperatureChart',
+    ])
+    expect(offered('hev')).toEqual([
+      'voltage12vChart',
+      'tyreChart',
+      'hybridSocChart',
+      'dailyKwhChart',
+      ...everyCar,
+    ])
+  })
+
+  // A tired 12V battery shows in how low it sags, so the chart keeps the low and high around the average.
+  it("draws the 12V battery's lowest, average and highest reading per point", () => {
+    const days = [
+      bucket('2026-10-14', [
+        day('2026-10-14', {
+          batteryVoltage: 12.6,
+          batteryVoltageMin: 12.3,
+          batteryVoltageMax: 14.4,
+        }),
+      ]),
+      bucket('2026-10-15', [day('2026-10-15', { batteryVoltage: 12.5 })]),
+    ]
+    const c = chart('bev', 'voltage12vChart', days)
+
+    expect(c.applicable).toBe(true)
+    expect(c.data.datasets.map((d) => d.data)).toEqual([
+      [12.3, 12.5],
+      [12.6, 12.5],
+      [14.4, 12.5],
+    ])
+    expect(chart('bev', 'voltage12vChart', TWO_DAYS).applicable).toBe(false)
+  })
+
+  it('adds up the distance driven and shows it in the chosen unit', () => {
+    useUiSettingsStore().units = { ...useUiSettingsStore().units, distance: 'mi' }
+    const days = [
+      bucket('2026-10-12', [
+        day('2026-10-12', { distanceKm: 16.09344 }),
+        day('2026-10-13', { distanceKm: 32.18688 }),
+      ]),
+    ]
+
+    expect(chart('bev', 'distanceChart', days).data.datasets[0]!.data).toEqual([30])
+  })
+
+  it('charts the temperatures only once the car has reported one', () => {
+    expect(chart('bev', 'temperatureChart', TWO_DAYS).applicable).toBe(false)
+    const days = [
+      bucket('2026-10-14', [
+        day('2026-10-14', {
+          exteriorTemperature: 8,
+          exteriorTemperatureMin: 3,
+          exteriorTemperatureMax: 12,
+          interiorTemperature: 19,
+        }),
+      ]),
+    ]
+    const c = chart('bev', 'temperatureChart', days)
+    expect(c.applicable).toBe(true)
+    expect(c.data.datasets.map((d) => d.data)).toEqual([[3], [8], [12], [19]])
   })
 
   // A canvas draws in whatever colours it is given; left alone, Chart.js greys suit neither theme.

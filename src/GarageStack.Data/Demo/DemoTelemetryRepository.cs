@@ -416,7 +416,9 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
                 fuel = Math.Clamp(fuel, 5, 100);
 
                 var isCharging = hour == 22;
-                var extTemp = 13.0 + (rng.NextDouble() - 0.5) * 10.0;
+                // Warm summers and cold winters, so the temperature and range charts have a season.
+                var season = Math.Cos(2 * Math.PI * (ts.DayOfYear - 200) / 365.0);
+                var extTemp = 11.0 + season * 9.0 + (hour is 12 or 17 ? 4 : 0) + (rng.NextDouble() - 0.5) * 6.0;
                 var frontPressure = 2.4 + (rng.NextDouble() - 0.5) * 0.06;
                 var rearPressure = 2.5 + (rng.NextDouble() - 0.5) * 0.06;
                 // The rear right has a slow puncture: over the last twelve days it loses air the
@@ -446,7 +448,12 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
                     TyrePressureRearLeft = Math.Round(rearPressure, 2),
                     TyrePressureRearRight = Math.Round(rearPressure - leak + (rng.NextDouble() - 0.5) * 0.04, 2),
                     MileageOfTheDay = hour >= 12 ? Math.Round((odometer - 24300 - day * 90) % 200, 1) : 0,
-                    BatteryVoltage = 12.6 + rng.NextDouble() * 0.3,
+                    ElectricRangeKm = Math.Round(soc / 100.0 * FullBatteryRangeKm * (0.85 + 0.15 * (season + 1) / 2)),
+                    // Just back from a drive the car has topped the 12V battery up; parked it rests
+                    // lower, and slowly a little lower as the battery ages over the year.
+                    BatteryVoltage = Math.Round(hour == 17
+                        ? 14.1 + rng.NextDouble() * 0.3
+                        : 12.75 - 0.25 * day / HistoryDays + rng.NextDouble() * 0.15 - (hour == 7 ? 0.1 : 0), 2),
                     Latitude = 52.3676 + (rng.NextDouble() - 0.5) * 0.02,
                     Longitude = 4.9041 + (rng.NextDouble() - 0.5) * 0.02,
                     Speed = 0,

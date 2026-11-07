@@ -130,6 +130,16 @@ export interface DailyStat {
   tyrePressureRearRight: number | null
   batteryVoltage: number | null
   counterTotal: number | null
+  /** The day's lowest and highest 12V reading: a tired battery shows in how low it sags. */
+  batteryVoltageMin?: number | null
+  batteryVoltageMax?: number | null
+  interiorTemperature?: number | null
+  exteriorTemperature?: number | null
+  exteriorTemperatureMin?: number | null
+  exteriorTemperatureMax?: number | null
+  electricRangeKm?: number | null
+  /** How far the odometer moved over the day's readings. */
+  distanceKm?: number | null
 }
 
 export interface VehicleAggregateStats {

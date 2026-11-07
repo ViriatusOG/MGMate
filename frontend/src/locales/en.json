@@ -81,7 +81,11 @@
       "tyreChart": "Daily average tyre pressure per wheel over the selected period. Typical passenger-car range is {low} – {high} {unit}.",
       "hybridSocChart": "Daily average EV battery and fuel level over the selected period. Lets you compare how both energy sources change together.",
       "dailyKwhChart": "Estimated kWh consumed from the EV battery per day, week or month, depending on the period. A finished day counts the peak of its counter; today counts only the increase since midnight, or since the last counter reset.",
-      "dailyFuelChart": "Fuel burned per day, week or month, depending on the period, from the trip computer's own counter. A finished day counts the peak of its counter; today counts only the increase since midnight, or since the last counter reset."
+      "dailyFuelChart": "Fuel burned per day, week or month, depending on the period, from the trip computer's own counter. A finished day counts the peak of its counter; today counts only the increase since midnight, or since the last counter reset.",
+      "voltage12vChart": "The 12V battery's average voltage per day, with the lowest and highest reading. Parked, a healthy battery rests around 12.4 – 12.8 V; while driving or charging the car tops it up to about 13.5 – 14.5 V. A low line that keeps drifting down, or rests below 12.2 V, points at a 12V battery on its way out.",
+      "distanceChart": "How far the odometer moved per day, week or month, from the car's own readings.",
+      "rangeChart": "The electric range the car estimated, averaged per day. It follows the state of charge, and drops in cold weather.",
+      "temperatureChart": "The outside temperature the car measured, averaged per day with its lowest and highest reading, and the temperature inside the car."
     },
     "hybridSocChart": "EV & Fuel Levels",
     "weekOf": "Week of {date}",
@@ -119,6 +123,23 @@
       "energy": "Electric usage (kWh)",
       "fuel": "Fuel ({unit})",
       "total": "Total"
+    },
+    "voltage12vChart": "12V Battery (V)",
+    "temperatureChart": "Temperature",
+    "rangeChart": "Electric Range ({unit})",
+    "distanceChart": {
+      "day": "Distance per Day ({unit})",
+      "week": "Distance per Week ({unit})",
+      "month": "Distance per Month ({unit})"
+    },
+    "series": {
+      "low": "Lowest",
+      "average": "Average",
+      "high": "Highest",
+      "outside": "Outside",
+      "outsideLow": "Outside low",
+      "outsideHigh": "Outside high",
+      "inside": "Inside"
     }
   },
   "vehicle": {
@@ -321,6 +342,8 @@
     "scheduleCarTime": "Times are in the car's own time zone.",
     "saveSchedule": "Save schedule",
     "refresh": "Refresh",
+    "refreshConfirm": "This wakes the car to ask for fresh data, which uses a little of its 12V battery. GarageStack already checks MG's servers every 30 minutes without waking it. Wake the car now?",
+    "refreshHint": "Wake the car for fresh data",
     "pending": "Sent - waiting for car...",
     "error": "Command failed",
     "rejected": "The car did not carry out the command"
