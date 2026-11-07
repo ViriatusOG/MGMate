@@ -78,6 +78,9 @@ public interface ITelemetryRepository
     /// </summary>
     Task<TimedReading?> GetSocAtAsync(int vehicleId, DateTime at, CancellationToken ct = default);
 
+    /// <summary>The mean outside temperature reported from <paramref name="from"/> to <paramref name="to"/>, in °C; null when none was.</summary>
+    Task<double?> GetMeanOutsideTemperatureAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
     /// <summary>
     /// The day counters (energy or fuel used today, distance driven today) as last reported at or
     /// before <paramref name="at"/>, or null when the vehicle had not reported them by then.

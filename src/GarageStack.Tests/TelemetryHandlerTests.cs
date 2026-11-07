@@ -48,6 +48,7 @@ file sealed class SlowFakeTelemetryRepository : ITelemetryRepository
     public Task<IReadOnlyList<DateTime>> GetReportTimesAsync(int vehicleId, DateTime after, DateTime before, int limit, CancellationToken ct = default) => throw new NotImplementedException();
     public Task<double?> GetOdometerAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) => throw new NotImplementedException();
     public Task<TimedReading?> GetSocAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) => throw new NotImplementedException();
+    public Task<double?> GetMeanOutsideTemperatureAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) => throw new NotImplementedException();
     public Task<DayCounterReading?> GetDayCountersAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) => throw new NotImplementedException();
     public Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) => throw new NotImplementedException();
     public Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default) => throw new NotImplementedException();

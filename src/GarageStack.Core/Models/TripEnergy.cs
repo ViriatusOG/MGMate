@@ -10,8 +10,10 @@ namespace GarageStack.Core.Models;
 /// <see cref="DailyStat.CounterTotal"/>. The state of charge at either end is the fallback a client
 /// turns into kWh with the battery's capacity, which only it knows for sure.
 /// </para>
+/// <see cref="OutsideTemperature"/> is the mean of the outside temperatures the car reported while
+/// it was driven, in °C: cold costs range, so it explains much of a trip's consumption.
 /// </summary>
-public sealed record TripEnergy(double? SocStartPercent, double? SocEndPercent, double? CounterUsed)
+public sealed record TripEnergy(double? SocStartPercent, double? SocEndPercent, double? CounterUsed, double? OutsideTemperature = null)
 {
     public static readonly TripEnergy None = new(null, null, null);
 }

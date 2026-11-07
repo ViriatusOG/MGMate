@@ -15,12 +15,14 @@ public sealed class TripEnergyReader(ITelemetryRepository telemetry)
         int vehicleId, DateTime startedAt, DateTime endedAt, double distanceKm, CancellationToken ct)
     {
         var settled = endedAt + TripSegmenter.ParkThreshold;
-        return TripEnergyCalculator.Compute(
+        var energy = TripEnergyCalculator.Compute(
             startedAt,
             distanceKm,
             await telemetry.GetSocAtAsync(vehicleId, startedAt, ct),
             await telemetry.GetSocAtAsync(vehicleId, settled, ct),
             await telemetry.GetDayCountersAtAsync(vehicleId, startedAt, ct),
             await telemetry.GetDayCountersAtAsync(vehicleId, settled, ct));
+        var outside = await telemetry.GetMeanOutsideTemperatureAsync(vehicleId, startedAt, endedAt, ct);
+        return energy with { OutsideTemperature = outside is { } t ? Math.Round(t, 1) : null };
     }
 }

@@ -72,6 +72,9 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
     }
 
     // Demo trips carry their energy already; nothing reads these in demo mode.
+    public Task<double?> GetMeanOutsideTemperatureAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        Task.FromResult<double?>(null);
+
     public Task<TimedReading?> GetSocAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
         Task.FromResult<TimedReading?>(null);
 

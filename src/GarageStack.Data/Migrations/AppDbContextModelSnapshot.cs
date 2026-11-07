@@ -1045,6 +1045,9 @@ namespace GarageStack.Data.Migrations
                     b.Property<string>("OriginalPointsJson")
                         .HasColumnType("text");
 
+                    b.Property<double?>("OutsideTemperature")
+                        .HasColumnType("double precision");
+
                     b.Property<int>("PointCount")
                         .HasColumnType("integer");
 

@@ -10,6 +10,7 @@ import type { StatsInsightId, StatsChartId } from '@/stores/settingsShared'
 import type { Quantity } from '@/utils/units'
 import { vehicleApi } from '@/services/vehicleApi'
 import type { VehicleAggregateStats } from '@/services/vehicleApi'
+import { tripLogApi, type TripLogEntry } from '@/services/tripLogApi'
 import { LMap, LMarker } from '@vue-leaflet/vue-leaflet'
 import { DEFAULT_MAP_CENTER, fitToPoints, type LeafletMap } from '@/utils/leaflet'
 import { useLeafletMap } from '@/composables/useLeafletMap'
@@ -61,6 +62,8 @@ const errorMessage = useErrorMessage()
 const editMode = ref(false)
 const loading = ref(false)
 const aggregateStats = ref<VehicleAggregateStats | null>(null)
+// The period's saved trips with their consumption, for the chart against outside temperature.
+const tripLog = ref<TripLogEntry[]>([])
 
 // The days the page shows, from its own period (the map keeps its 7, 30 or 90 days).
 const period = computed(() => resolveStatsPeriod(uiSettings.statsPeriod))
@@ -85,14 +88,19 @@ async function load() {
     await store.fetchVehicles()
     if (!vin.value) return
     const query = statsQuery(period.value)
-    const [, , , , stats] = await Promise.all([
+    const [, , , , stats, trips] = await Promise.all([
       store.fetchDailyStats(vin.value, query.fromDate, query.toDate),
       store.fetchTripSummaries(vin.value, query.fromIso, query.toIso),
       store.fetchStatus(vin.value),
       store.fetchConfig(vin.value),
       vehicleApi.stats(vin.value, query.fromIso, query.toIso),
+      // One chart among many: without it the rest of the page still shows.
+      tripLogApi
+        .log(vin.value, query.fromIso, query.toIso ?? new Date().toISOString())
+        .catch(() => [] as TripLogEntry[]),
     ])
     aggregateStats.value = stats
+    tripLog.value = trips
   } finally {
     loading.value = false
   }
@@ -327,7 +335,13 @@ const insightRows = computed(() =>
 
 // ── Charts ────────────────────────────────────────────────
 
-const chartDefs = useStatisticsCharts(buckets, grouping, vehicleType)
+const chartDefs = useStatisticsCharts(
+  buckets,
+  grouping,
+  vehicleType,
+  tripLog,
+  computed(() => store.hvBatteryCapacityKwh ?? status.value?.hvTotalCapacityKwh ?? null),
+)
 const chartDefMap = computed(() => new Map(chartDefs.value.map((d) => [d.id, d])))
 
 // Each chart in the user's order, with what it shows.

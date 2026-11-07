@@ -159,6 +159,7 @@ public sealed class DemoTripRepository : ITripRepository
                 OdometerEndKm = second.OdometerEndKm,
                 SocEndPercent = second.SocEndPercent,
                 EnergyCounterUsed = first.EnergyCounterUsed + second.EnergyCounterUsed,
+                OutsideTemperature = first.OutsideTemperature,
                 EndPlace = second.EndPlace,
                 IsHidden = first.IsHidden && second.IsHidden,
                 MaxSpeedKmh = joined.MaxSpeedKmh,

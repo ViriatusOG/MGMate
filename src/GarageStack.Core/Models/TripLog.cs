@@ -38,7 +38,9 @@ public sealed record TripLogEntry(
     // (Trip.SocStartPercent, Trip.SocEndPercent, Trip.EnergyCounterUsed); null when not reported.
     double? SocStartPercent = null,
     double? SocEndPercent = null,
-    double? EnergyCounterUsed = null);
+    double? EnergyCounterUsed = null,
+    // The mean outside temperature while it was driven, in °C (Trip.OutsideTemperature).
+    double? OutsideTemperature = null);
 
 /// <summary>A saved trip whose energy has not been read yet (<see cref="Trip.EnergyRead"/>).</summary>
 public sealed record TripEnergyPending(long Id, int VehicleId, DateTime StartedAt, DateTime EndedAt, double DistanceKm);

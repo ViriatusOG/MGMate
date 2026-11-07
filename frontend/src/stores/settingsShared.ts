@@ -51,6 +51,7 @@ export type StatsChartId =
   | 'distanceChart'
   | 'rangeChart'
   | 'temperatureChart'
+  | 'consumptionTempChart'
 
 export interface StatsItemConfig<T extends string> {
   id: T
@@ -77,6 +78,7 @@ export const ALL_STATS_CHART_IDS: StatsChartId[] = [
   'distanceChart',
   'rangeChart',
   'temperatureChart',
+  'consumptionTempChart',
 ]
 
 export function defaultStatsInsights(): StatsItemConfig<StatsInsightId>[] {

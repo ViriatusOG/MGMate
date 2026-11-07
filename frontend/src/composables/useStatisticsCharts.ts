@@ -1,7 +1,8 @@
-import { computed, type Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ChartData, ChartOptions } from 'chart.js'
 import type { StatsChartType } from '@/components/StatsChartCard.vue'
+import type { TripLogEntry } from '@/services/tripLogApi'
 import type { DailyStat } from '@/services/vehicleApi'
 import type { StatsChartId } from '@/stores/settingsShared'
 import type { VehicleType } from '@/stores/vehicle'
@@ -13,6 +14,8 @@ import {
   bucketMins,
   bucketTickFormat,
   bucketTotals,
+  consumptionByTemperature,
+  linearFit,
   roundedRange,
   roundTo2,
   type StatsBucket,
@@ -45,6 +48,7 @@ const CHART_ICONS: Record<StatsChartId, string> = {
   distanceChart: 'route',
   rangeChart: 'road',
   temperatureChart: 'temperature-half',
+  consumptionTempChart: 'snowflake',
 }
 
 // A day's lowest and highest reading, drawn thin and dashed around its average.
@@ -205,9 +209,13 @@ export function useStatisticsCharts(
   buckets: Ref<StatsBucket[]>,
   grouping: Ref<StatsGrouping>,
   vehicleType: Ref<VehicleType>,
+  /** The period's trips with their consumption, for the chart against outside temperature. */
+  trips: Ref<readonly TripLogEntry[]> = ref([]),
+  capacityKwh: Ref<number | null> = ref(null),
 ): Ref<ChartDef[]> {
   const { t } = useI18n()
   const units = useUnits()
+  const chartTheme = useChartTheme()
   const { labels, chartOptions, levelDataset } = useChartFrame(buckets, grouping)
 
   const hasLargeEv = computed(() => mayPlugIn(vehicleType.value))
@@ -346,6 +354,76 @@ export function useStatisticsCharts(
     ],
   }))
 
+  // One dot per trip: its consumption against the outside temperature, with the trend through them.
+  const tempPoints = computed(() => {
+    const u = units.value
+    return consumptionByTemperature(trips.value, vehicleType.value, capacityKwh.value)
+      .map((p) => ({
+        x: roundTo2(u.convert('temperature', p.temperature)),
+        y: roundTo2(u.convert('energyPerDistance', p.whPerKm)),
+      }))
+      .filter((p) => Number.isFinite(p.y))
+  })
+  const consumptionTempData = computed(() => {
+    const points = tempPoints.value
+    const fit = linearFit(points)
+    const xs = points.map((p) => p.x)
+    const trend =
+      fit && xs.length
+        ? [Math.min(...xs), Math.max(...xs)].map((x) => ({
+            x,
+            y: roundTo2(fit.slope * x + fit.intercept),
+          }))
+        : []
+    return {
+      datasets: [
+        {
+          label: t('statistics.series.trips'),
+          data: points,
+          backgroundColor: 'rgba(59,130,246,0.65)',
+          borderColor: '#3b82f6',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+        {
+          label: t('statistics.series.trend'),
+          data: trend,
+          type: 'line' as const,
+          showLine: true,
+          borderColor: '#f59e0b',
+          borderDash: [6, 4],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+        },
+      ],
+    }
+  })
+  const consumptionTempOptions = computed(() => {
+    const { text, grid } = chartTheme.value
+    const axis = { grid: { color: grid }, border: { color: grid }, ticks: { color: text } }
+    const u = units.value
+    return {
+      locale: numberLocale(),
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2.6,
+      animation: false as const,
+      plugins: { legend: { display: true, labels: { color: text, boxWidth: 20 } } },
+      scales: {
+        x: {
+          ...axis,
+          type: 'linear' as const,
+          title: { display: true, text: u.symbol('temperature'), color: text },
+        },
+        y: {
+          ...axis,
+          title: { display: true, text: u.symbol('energyPerDistance'), color: text },
+        },
+      },
+    }
+  })
+
   const percentOptions = computed(() => chartOptions(2.6, false, PERCENT_AXIS))
   const pressureOptions = computed(() => {
     const u = units.value
@@ -445,6 +523,17 @@ export function useStatisticsCharts(
       type: 'line',
       data: rangeChartData.value,
       options: kwhOptions.value,
+    },
+    {
+      id: 'consumptionTempChart',
+      icon: CHART_ICONS.consumptionTempChart,
+      title: t('statistics.consumptionTempChart'),
+      description: t('statistics.chartDesc.consumptionTempChart'),
+      vehicleApplicable: hasLargeEv.value,
+      applicable: hasLargeEv.value && tempPoints.value.length > 0,
+      type: 'scatter',
+      data: consumptionTempData.value as ChartData<StatsChartType>,
+      options: consumptionTempOptions.value as ChartOptions<StatsChartType>,
     },
     {
       id: 'temperatureChart',

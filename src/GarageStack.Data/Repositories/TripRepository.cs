@@ -122,6 +122,7 @@ public class TripRepository(
         trip.SocStartPercent = energy.SocStartPercent;
         trip.SocEndPercent = energy.SocEndPercent;
         trip.EnergyCounterUsed = energy.CounterUsed;
+        trip.OutsideTemperature = energy.OutsideTemperature;
         trip.EnergyRead = true;
     }
 
@@ -320,6 +321,7 @@ public class TripRepository(
         // only when both were matched; one without its count leaves the whole unknown.
         first.SocEndPercent = second.SocEndPercent;
         first.EnergyCounterUsed = first.EnergyCounterUsed + second.EnergyCounterUsed;
+        first.OutsideTemperature = Mean(first.OutsideTemperature, second.OutsideTemperature);
         first.EnergyRead = first.EnergyRead && second.EnergyRead;
         first.EndPlaceJson = second.EndPlaceJson;
         first.MaxSpeedKmh = joined.MaxSpeedKmh;
@@ -541,7 +543,7 @@ public class TripRepository(
         t.OdometerStartKm, t.OdometerEndKm,
         t.StartPlaceJson, t.EndPlaceJson, t.Purpose, t.Notes, t.PurposeIsManual, t.IsHidden, t.EditedAt != null,
         t.MaxSpeedKmh, t.AvgMovingSpeedKmh,
-        t.SocStartPercent, t.SocEndPercent, t.EnergyCounterUsed);
+        t.SocStartPercent, t.SocEndPercent, t.EnergyCounterUsed, t.OutsideTemperature);
 
     private sealed record LogRow(
         long Id, DateTime StartedAt, DateTime EndedAt, double DistanceKm,
@@ -549,7 +551,7 @@ public class TripRepository(
         double? OdometerStartKm, double? OdometerEndKm,
         string? StartPlaceJson, string? EndPlaceJson, TripPurpose? Purpose, string? Notes, bool PurposeIsManual, bool IsHidden,
         bool IsEdited, double? MaxSpeedKmh, double? AvgMovingSpeedKmh,
-        double? SocStartPercent, double? SocEndPercent, double? EnergyCounterUsed);
+        double? SocStartPercent, double? SocEndPercent, double? EnergyCounterUsed, double? OutsideTemperature);
 
     private TripLogEntry ToEntry(LogRow r) => new(
         r.Id, r.StartedAt, r.EndedAt, r.DistanceKm,
@@ -558,7 +560,11 @@ public class TripRepository(
         ReadPlace(r.Id, r.StartPlaceJson), ReadPlace(r.Id, r.EndPlaceJson),
         r.Purpose, r.Notes, PurposeIsAutomatic: r.Purpose is not null && !r.PurposeIsManual, IsHidden: r.IsHidden,
         IsEdited: r.IsEdited, MaxSpeedKmh: r.MaxSpeedKmh, AvgMovingSpeedKmh: r.AvgMovingSpeedKmh,
-        SocStartPercent: r.SocStartPercent, SocEndPercent: r.SocEndPercent, EnergyCounterUsed: r.EnergyCounterUsed);
+        SocStartPercent: r.SocStartPercent, SocEndPercent: r.SocEndPercent, EnergyCounterUsed: r.EnergyCounterUsed,
+        OutsideTemperature: r.OutsideTemperature);
+
+    // A joined trip's temperature: the mean of its halves, or the one that has one.
+    private static double? Mean(double? a, double? b) => a is { } x && b is { } y ? Math.Round((x + y) / 2, 1) : a ?? b;
 
     // An unreadable place is as good as none: the trip log looks it up again.
     private PlaceAddress? ReadPlace(long tripId, string? json) =>

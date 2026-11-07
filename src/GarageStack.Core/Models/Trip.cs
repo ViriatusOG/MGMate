@@ -66,6 +66,9 @@ public class Trip
     /// </summary>
     public double? EnergyCounterUsed { get; set; }
 
+    /// <summary>The mean outside temperature the car reported while it was driven, in °C.</summary>
+    public double? OutsideTemperature { get; set; }
+
     /// <summary>
     /// Whether the energy figures above were read when the trip was saved. False on a trip saved
     /// before they existed until housekeeping reads them (ITripRepository.FillEnergyAsync).

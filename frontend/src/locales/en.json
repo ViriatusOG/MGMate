@@ -85,7 +85,8 @@
       "voltage12vChart": "The 12V battery's average voltage per day, with the lowest and highest reading. Parked, a healthy battery rests around 12.4 – 12.8 V; while driving or charging the car tops it up to about 13.5 – 14.5 V. A low line that keeps drifting down, or rests below 12.2 V, points at a 12V battery on its way out.",
       "distanceChart": "How far the odometer moved per day, week or month, from the car's own readings.",
       "rangeChart": "The electric range the car estimated, averaged per day. It follows the state of charge, and drops in cold weather.",
-      "temperatureChart": "The outside temperature the car measured, averaged per day with its lowest and highest reading, and the temperature inside the car."
+      "temperatureChart": "The outside temperature the car measured, averaged per day with its lowest and highest reading, and the temperature inside the car.",
+      "consumptionTempChart": "Each dot is one trip: its consumption against the outside temperature it was driven in, with the trend line through them. It shows how much the cold costs your car, from your own driving. Trips under 2 km are left out, since warming the cabin is most of what they use."
     },
     "hybridSocChart": "EV & Fuel Levels",
     "weekOf": "Week of {date}",
@@ -139,8 +140,11 @@
       "outside": "Outside",
       "outsideLow": "Low",
       "outsideHigh": "High",
-      "inside": "Inside"
-    }
+      "inside": "Inside",
+      "trips": "Trips",
+      "trend": "Trend"
+    },
+    "consumptionTempChart": "Consumption vs Outside Temperature"
   },
   "vehicle": {
     "diagramLabel": "Vehicle status diagram",

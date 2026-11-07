@@ -85,7 +85,8 @@
       "voltage12vChart": "De gemiddelde spanning van de 12V-accu per dag, met de laagste en hoogste meting. Geparkeerd staat een gezonde accu rond 12,4 – 12,8 V; tijdens het rijden of laden houdt de auto hem op ongeveer 13,5 – 14,5 V. Een lage lijn die steeds verder zakt, of in rust onder 12,2 V komt, wijst op een 12V-accu die aan het eind van zijn leven is.",
       "distanceChart": "Hoe ver de kilometerteller per dag, week of maand opliep, uit de metingen van de auto zelf.",
       "rangeChart": "De elektrische actieradius die de auto schatte, gemiddeld per dag. Die volgt de laadtoestand en daalt bij koud weer.",
-      "temperatureChart": "De buitentemperatuur die de auto mat, gemiddeld per dag met de laagste en hoogste meting, en de temperatuur in de auto."
+      "temperatureChart": "De buitentemperatuur die de auto mat, gemiddeld per dag met de laagste en hoogste meting, en de temperatuur in de auto.",
+      "consumptionTempChart": "Elke stip is één rit: het verbruik tegen de buitentemperatuur waarin hij gereden is, met de trendlijn erdoor. Zo zie je wat de kou je auto kost, uit je eigen ritten. Ritten korter dan 2 km tellen niet mee: daarin gaat het meeste naar het verwarmen van het interieur."
     },
     "hybridSocChart": "EV & Brandstofniveaus",
     "weekOf": "Week van {date}",
@@ -139,8 +140,11 @@
       "outside": "Buiten",
       "outsideLow": "Laag",
       "outsideHigh": "Hoog",
-      "inside": "Binnen"
-    }
+      "inside": "Binnen",
+      "trips": "Ritten",
+      "trend": "Trend"
+    },
+    "consumptionTempChart": "Verbruik vs buitentemperatuur"
   },
   "vehicle": {
     "diagramLabel": "Voertuigstatusdiagram",

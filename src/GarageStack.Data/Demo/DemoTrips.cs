@@ -90,7 +90,9 @@ internal static class DemoTrips
             var trip = finished[i];
             var id = trip.Id!.Value;
             var start = odometer - trip.DistanceKm * RoadFactor;
-            var usedKwh = Math.Round(trip.DistanceKm * RoadFactor * DemoKwhPerKm, 2);
+            // Colder days cost more, as they do in a real car: about 1.2% per degree below 15 °C.
+            var outside = Math.Round(2 + (i * 5.3) % 20, 1);
+            var usedKwh = Math.Round(trip.DistanceKm * RoadFactor * DemoKwhPerKm * (1 + Math.Max(0, 15 - outside) * 0.012), 2);
             var socEnd = 60.0 + i * 1.5;
             entries[i] = new TripLogEntry(
                 id, trip.StartedAt, trip.EndedAt, trip.DistanceKm,
@@ -103,7 +105,8 @@ internal static class DemoTrips
                 MaxSpeedKmh: trip.MaxSpeedKmh, AvgMovingSpeedKmh: trip.AvgMovingSpeedKmh,
                 SocStartPercent: Math.Round(socEnd + usedKwh / DemoBatteryKwh * 100, 1),
                 SocEndPercent: socEnd,
-                EnergyCounterUsed: usedKwh);
+                EnergyCounterUsed: usedKwh,
+                OutsideTemperature: outside);
             odometer = start;
         }
 

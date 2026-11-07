@@ -380,6 +380,12 @@ public class TelemetryRepository(
             .Select(s => new TimedReading(s.RecordedAt, s.EvSocPercent!.Value))
             .FirstOrDefaultAsync(ct);
 
+    public Task<double?> GetMeanOutsideTemperatureAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt <= to && s.ExteriorTemperature != null)
+            .AverageAsync(s => s.ExteriorTemperature, ct);
+
     public async Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
         await db.TelemetrySnapshots
             .AsNoTracking()

@@ -50,6 +50,8 @@ export interface TripLogEntry {
    * on a plug-in car. Null when the counters could not be matched to this trip.
    */
   energyCounterUsed?: number | null
+  /** The mean outside temperature while it was driven, in °C. */
+  outsideTemperature?: number | null
 }
 
 /**
