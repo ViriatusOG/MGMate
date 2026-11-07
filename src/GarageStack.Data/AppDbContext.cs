@@ -9,6 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<TelemetrySnapshot> TelemetrySnapshots => Set<TelemetrySnapshot>();
     public DbSet<Trip> Trips => Set<Trip>();
+    public DbSet<ChargeSession> ChargeSessions => Set<ChargeSession>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<AppNotification> AppNotifications => Set<AppNotification>();
     public DbSet<PoiItem> PoiItems => Set<PoiItem>();
@@ -95,6 +96,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(t => t.Vehicle)
              .WithMany()
              .HasForeignKey(t => t.VehicleId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChargeSession>(e =>
+        {
+            e.HasKey(c => c.Id);
+            // One charge starts at a time; a slip in the recording line fails loudly.
+            e.HasIndex(c => new { c.VehicleId, c.StartedAt }).IsUnique();
+            e.Property(c => c.Notes).HasMaxLength(ChargeSession.NotesMaxLength);
+            e.Property(c => c.ChargeType).HasMaxLength(8);
+            e.Property(c => c.StopReason).HasMaxLength(64);
+            e.HasOne(c => c.Vehicle)
+             .WithMany()
+             .HasForeignKey(c => c.VehicleId)
              .OnDelete(DeleteBehavior.Cascade);
         });
 

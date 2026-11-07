@@ -51,6 +51,11 @@ const router = createRouter({
       component: () => import('@/views/TripEditView.vue'),
     },
     {
+      path: '/charges',
+      name: 'charges',
+      component: () => import('@/views/ChargesView.vue'),
+    },
+    {
       path: '/climate-schedules',
       name: 'climateSchedules',
       component: () => import('@/views/ClimateSchedulesView.vue'),

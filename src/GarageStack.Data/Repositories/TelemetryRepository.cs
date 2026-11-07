@@ -380,6 +380,25 @@ public class TelemetryRepository(
             .Select(s => new TimedReading(s.RecordedAt, s.EvSocPercent!.Value))
             .FirstOrDefaultAsync(ct);
 
+    public async Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt < to
+                        && (s.IsCharging != null || s.EvSocPercent != null || s.HvPower != null))
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => new ChargeSample(
+                s.RecordedAt, s.IsCharging, s.EvSocPercent, s.HvPower, s.ChargingType,
+                s.Latitude, s.Longitude, s.OdometerKm, s.ChargingStopReason, s.SocTargetPercent))
+            .ToListAsync(ct);
+
+    public Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.IsCharging == true)
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => (DateTime?)s.RecordedAt)
+            .FirstOrDefaultAsync(ct);
+
     // Both counters arrive in the same poll, so the row that carries the energy carries the distance.
     public Task<DayCounterReading?> GetDayCountersAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
         db.TelemetrySnapshots

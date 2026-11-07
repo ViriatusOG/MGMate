@@ -37,6 +37,12 @@ public class Vehicle
     public DateTime? TripsRecordedUntil { get; set; }
 
     /// <summary>
+    /// How far the Worker has cut the charging readings into saved charges: every finished charge
+    /// before it is saved. Null until the charge recorder has run once.
+    /// </summary>
+    public DateTime? ChargesRecordedUntil { get; set; }
+
+    /// <summary>
     /// How far the Worker has compacted this vehicle's telemetry into quarter-hour rows: every row
     /// before this moment is compacted. Null until the first compaction.
     /// </summary>

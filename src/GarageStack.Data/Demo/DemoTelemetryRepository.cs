@@ -78,6 +78,13 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
     public Task<DayCounterReading?> GetDayCountersAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
         Task.FromResult<DayCounterReading?>(null);
 
+    // Demo charges are fixed and carry their own chart; nothing records them.
+    public Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<ChargeSample>>([]);
+
+    public Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default) =>
+        Task.FromResult<DateTime?>(null);
+
     // Only the Worker's parked alerts weigh past polls, and demo mode runs no Worker.
     public Task<IReadOnlyList<StatusReading>> GetStatusReadingsAsync(int vehicleId, int count, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<StatusReading>>([]);

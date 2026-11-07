@@ -1,0 +1,215 @@
+.charges__month {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.charges__month-label {
+  min-width: 9rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.charges__error {
+  color: var(--color-danger-text);
+}
+
+.charges__tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.charges__tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+}
+
+.charges__tile-label,
+.charges__figures dt {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.charges__tile-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.charges__tile-value small {
+  margin-left: 0.25em;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.charges__tile-note {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.charges__daily {
+  margin-bottom: 1rem;
+}
+
+.charges__daily-canvas {
+  height: 160px;
+}
+
+/* The bar chart sits in this card already: no second frame or title around it. */
+.charges__daily-chart.chart-container {
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.charges__daily-chart .card-title {
+  display: none;
+}
+
+.charges__empty {
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.charges__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.charges__item {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.charges__item--hidden {
+  opacity: 0.55;
+}
+
+.charges__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) 3rem minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.charges__row:hover {
+  background: var(--color-surface-2);
+}
+
+.charges__when {
+  display: flex;
+  flex-direction: column;
+}
+
+.charges__type {
+  justify-self: start;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgb(59 130 246 / 15%);
+  color: var(--color-primary-light);
+}
+
+.charges__type--dc {
+  background: rgb(245 158 11 / 15%);
+  color: var(--color-warning-text);
+}
+
+.charges__soc,
+.charges__num {
+  font-variant-numeric: tabular-nums;
+}
+
+.charges__num {
+  text-align: right;
+}
+
+.charges__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.charges__figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.charges__figures > div {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-2);
+}
+
+.charges__figures dd {
+  margin: 0.15rem 0 0;
+  font-weight: 600;
+}
+
+.charges__notes-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.charges__notes {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font: inherit;
+  resize: vertical;
+}
+
+.charges__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (width < 640px) {
+  .charges__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .charges__soc,
+  .charges__num:last-child {
+    display: none;
+  }
+}

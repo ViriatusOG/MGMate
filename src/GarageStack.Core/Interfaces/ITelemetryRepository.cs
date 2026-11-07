@@ -85,6 +85,15 @@ public interface ITelemetryRepository
     Task<DayCounterReading?> GetDayCountersAtAsync(int vehicleId, DateTime at, CancellationToken ct = default);
 
     /// <summary>
+    /// The readings that say anything about charging between <paramref name="from"/> (inclusive)
+    /// and <paramref name="to"/> (exclusive), oldest first.
+    /// </summary>
+    Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
+    /// <summary>When the vehicle first reported that it was charging, or null when it never has.</summary>
+    Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default);
+
+    /// <summary>
     /// The car's last <paramref name="count"/> status polls (lock, doors, windows), newest first.
     /// A poll the broker delivers again, as it does with retained messages on a reconnect, is still
     /// one poll: it comes back once, at the time it first arrived.
