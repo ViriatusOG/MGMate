@@ -10,7 +10,8 @@
     "logs": "Logs",
     "menuLabel": "Menu",
     "batteryHealth": "Battery health",
-    "activity": "Activity"
+    "activity": "Activity",
+    "reports": "Reports"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1378,6 +1379,39 @@
       "missing": "Pick both days.",
       "backwards": "The last day comes before the first.",
       "tooLong": "Search at most a year at a time."
+    }
+  },
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Month by month: what you drove, what it used, what you charged and what it cost, set against the month before.",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "thisMonth": "This month",
+    "emptyMonth": "Nothing driven or charged in {month} yet.",
+    "change": "{change} vs {month}",
+    "unpriced": "1 charge has no price | {n} charges have no price",
+    "yearTitle": "The year month by month",
+    "tiles": {
+      "distance": "Distance",
+      "trips": "Trips",
+      "drivingTime": "Driving time",
+      "daysDriven": "Days driven",
+      "efficiency": "Consumption",
+      "energyUsed": "Energy used",
+      "charges": "Charges",
+      "charged": "Charged",
+      "chargingCost": "Charging cost",
+      "costPer100": "Cost per distance"
+    },
+    "table": {
+      "month": "Month",
+      "trips": "Trips",
+      "distance": "Distance ({unit})",
+      "efficiency": "Use ({unit})",
+      "charges": "Charges",
+      "charged": "Charged (kWh)",
+      "cost": "Cost",
+      "total": "Total"
     }
   }
 }

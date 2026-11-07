@@ -148,4 +148,31 @@ describe('ChargesView', () => {
     expect(detail).toContain('75.0 kW')
     expect(detail).toContain('Outside')
   })
+
+  it('searches the charges over the days asked for and adds up what it found', async () => {
+    const wrapper = await mountView()
+
+    const search = wrapper.find('.log-search')
+    await search.find('input[type=search]').setValue('dc')
+    const [from, to] = search.findAll('input[type=date]')
+    await from!.setValue('2026-01-01')
+    await to!.setValue('2026-10-19')
+    await search.trigger('submit')
+    await flushPromises()
+
+    expect(chargesApi.log).toHaveBeenLastCalledWith(
+      car.vin,
+      new Date(2026, 0, 1).toISOString(),
+      new Date(2026, 9, 20).toISOString(),
+    )
+    const results = wrapper.find('.log-search-results').text()
+    expect(results).toContain('1 charge found')
+    expect(results).toContain('25.0 kWh')
+    expect(wrapper.findAll('.ll-row')).toHaveLength(1)
+
+    await wrapper.find('.log-search-results button').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.log-search-results').exists()).toBe(false)
+    expect(wrapper.findAll('.ll-row')).toHaveLength(3)
+  })
 })

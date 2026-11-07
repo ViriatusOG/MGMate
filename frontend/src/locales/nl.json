@@ -10,7 +10,8 @@
     "logs": "Logboek",
     "menuLabel": "Menu",
     "batteryHealth": "Accugezondheid",
-    "activity": "Activiteit"
+    "activity": "Activiteit",
+    "reports": "Rapporten"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1378,6 +1379,39 @@
       "missing": "Kies beide dagen.",
       "backwards": "De laatste dag ligt voor de eerste.",
       "tooLong": "Zoek hooguit een jaar tegelijk."
+    }
+  },
+  "reports": {
+    "title": "Rapporten",
+    "subtitle": "Per maand: wat je reed, wat dat verbruikte, wat je laadde en wat het kostte, naast de maand ervoor.",
+    "previousMonth": "Vorige maand",
+    "nextMonth": "Volgende maand",
+    "thisMonth": "Deze maand",
+    "emptyMonth": "Nog niets gereden of geladen in {month}.",
+    "change": "{change} t.o.v. {month}",
+    "unpriced": "1 laadsessie zonder prijs | {n} laadsessies zonder prijs",
+    "yearTitle": "Het jaar per maand",
+    "tiles": {
+      "distance": "Afstand",
+      "trips": "Ritten",
+      "drivingTime": "Rijtijd",
+      "daysDriven": "Dagen gereden",
+      "efficiency": "Verbruik",
+      "energyUsed": "Energie verbruikt",
+      "charges": "Laadsessies",
+      "charged": "Geladen",
+      "chargingCost": "Laadkosten",
+      "costPer100": "Kosten per afstand"
+    },
+    "table": {
+      "month": "Maand",
+      "trips": "Ritten",
+      "distance": "Afstand ({unit})",
+      "efficiency": "Verbruik ({unit})",
+      "charges": "Laadsessies",
+      "charged": "Geladen (kWh)",
+      "cost": "Kosten",
+      "total": "Totaal"
     }
   }
 }

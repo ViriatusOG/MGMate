@@ -67,12 +67,21 @@ public class ChargeRecorderTests
         await db.SaveChangesAsync(ct);
         db.TelemetrySnapshots.AddRange(Enumerable.Range(0, 13).Select(i => new TelemetrySnapshot
         {
-            VehicleId = vehicle.Id, RecordedAt = T0.AddMinutes(i * 5), IsCharging = true,
-            EvSocPercent = 40 + i, HvPower = -7, ObcPowerSinglePhase = 7700, ObcPowerThreePhase = 2567,
+            VehicleId = vehicle.Id,
+            RecordedAt = T0.AddMinutes(i * 5),
+            IsCharging = true,
+            EvSocPercent = 40 + i,
+            HvPower = -7,
+            ObcPowerSinglePhase = 7700,
+            ObcPowerThreePhase = 2567,
         }));
         db.ChargeSessions.Add(new ChargeSession
         {
-            VehicleId = vehicle.Id, StartedAt = T0, EndedAt = T0.AddHours(1), EnergyAddedKwh = 7, ChargeType = "AC",
+            VehicleId = vehicle.Id,
+            StartedAt = T0,
+            EndedAt = T0.AddHours(1),
+            EnergyAddedKwh = 7,
+            ChargeType = "AC",
         });
         await db.SaveChangesAsync(ct);
 

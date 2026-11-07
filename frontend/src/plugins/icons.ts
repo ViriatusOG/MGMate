@@ -28,6 +28,7 @@ export {
   faCarRear,
   faCarSide,
   faChargingStation,
+  faChartColumn,
   faChartLine,
   faCheck,
   faChevronLeft,
