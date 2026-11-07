@@ -8,7 +8,8 @@
     "climateSchedules": "Climate schedules",
     "maintenance": "Maintenance",
     "logs": "Logs",
-    "menuLabel": "Menu"
+    "menuLabel": "Menu",
+    "batteryHealth": "Battery health"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1232,5 +1233,24 @@
     "invalid": "Check the times (HH:mm) and that every price is a number between 0 and 10.",
     "clear": "Remove prices",
     "save": "Save prices"
+  },
+  "batteryHealth": {
+    "title": "Battery health",
+    "subtitle": "How much the battery holds, worked out from your charges",
+    "usableNow": "Usable capacity now",
+    "againstNew": "Against new",
+    "nominal": "of {kwh} kWh new",
+    "noNominal": "Set your pack size to compare",
+    "basedOn": "Based on",
+    "charges": "charge | charges",
+    "minSpan": "each covering {percent}% or more",
+    "trendLabel": "Trend",
+    "perYear": "kWh a year",
+    "trendPending": "Needs a few more charges over a month or more",
+    "chart": "Capacity readings over time",
+    "reading": "One charge (bigger = more of the battery)",
+    "trend": "Trend",
+    "none": "No readings yet. A reading comes from a charge that adds {percent}% or more and whose energy the car measured.",
+    "disclaimer": "An estimate from the energy each charge put into the battery over the battery percentage it added, not a lab test. Readings vary with temperature and how the car rounds its percentage."
   }
 }

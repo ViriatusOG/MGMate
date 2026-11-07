@@ -8,7 +8,8 @@
     "climateSchedules": "Klimaatschema's",
     "maintenance": "Onderhoud",
     "logs": "Logboek",
-    "menuLabel": "Menu"
+    "menuLabel": "Menu",
+    "batteryHealth": "Accugezondheid"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1232,5 +1233,24 @@
     "invalid": "Controleer de tijden (UU:mm) en dat elke prijs een getal tussen 0 en 10 is.",
     "clear": "Prijzen verwijderen",
     "save": "Prijzen opslaan"
+  },
+  "batteryHealth": {
+    "title": "Accugezondheid",
+    "subtitle": "Hoeveel de accu vasthoudt, berekend uit je laadbeurten",
+    "usableNow": "Bruikbare capaciteit nu",
+    "againstNew": "Ten opzichte van nieuw",
+    "nominal": "van {kwh} kWh nieuw",
+    "noNominal": "Stel je accugrootte in om te vergelijken",
+    "basedOn": "Gebaseerd op",
+    "charges": "laadbeurt | laadbeurten",
+    "minSpan": "die elk {percent}% of meer laden",
+    "trendLabel": "Trend",
+    "perYear": "kWh per jaar",
+    "trendPending": "Nog een paar laadbeurten over een maand of langer nodig",
+    "chart": "Capaciteitsmetingen in de tijd",
+    "reading": "Eén laadbeurt (groter = meer van de accu)",
+    "trend": "Trend",
+    "none": "Nog geen metingen. Een meting komt van een laadbeurt die {percent}% of meer toevoegt en waarvan de auto de energie mat.",
+    "disclaimer": "Een schatting uit de energie die elke laadbeurt in de accu stopte, gedeeld door het percentage dat erbij kwam; geen labtest. Metingen schommelen met de temperatuur en hoe de auto het percentage afrondt."
   }
 }

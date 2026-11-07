@@ -60,6 +60,7 @@ export {
   faGaugeHigh,
   faGear,
   faGripLines,
+  faHeartPulse,
   faHouse,
   faKey,
   faLayerGroup,
