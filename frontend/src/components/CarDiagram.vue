@@ -16,6 +16,7 @@ import { evLevelVariant, fuelLevelVariant, type LevelVariant } from '@/utils/lev
 import { useVehicleStore } from '@/stores/vehicle'
 import { useVehiclePhoto } from '@/composables/useVehiclePhoto'
 import { useErrorMessage } from '@/composables/useErrorMessage'
+import { ApiError } from '@/services/apiCore'
 import { useTyreDisplay, type TyrePosition } from './carDiagram/useTyreDisplay'
 
 const { t } = useI18n()
@@ -146,6 +147,15 @@ const photo = useVehiclePhoto(computed(() => vehicleStore.activeVin))
 const errorMessage = useErrorMessage()
 const photoInput = ref<HTMLInputElement | null>(null)
 const tyreDisplay = useTyreDisplay()
+
+// Why an upload failed, said plainly for the two reasons a picked file is refused.
+const photoError = computed(() => {
+  const e = photo.error.value
+  if (e instanceof ApiError && e.status === 413) return t('vehicle.photo.tooLarge')
+  if (e instanceof ApiError && e.code === 'vehiclePhoto.unsupported')
+    return t('vehicle.photo.unsupported')
+  return e ? errorMessage(e) : null
+})
 
 function pickPhoto() {
   photoInput.value?.click()
@@ -289,7 +299,7 @@ const motionBlurAmount = computed(() => {
         </span>
       </div>
       <p v-if="photo.error.value" class="text-xs text-danger" role="alert">
-        {{ errorMessage(photo.error.value) }}
+        {{ photoError }}
       </p>
 
       <div v-if="showPhoto" class="car-photo">

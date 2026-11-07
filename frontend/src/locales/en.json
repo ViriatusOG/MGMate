@@ -271,7 +271,9 @@
       "remove": "Remove the photo and draw the car again",
       "removeConfirm": "Remove the photo of your car? The card draws the car again.",
       "alt": "Your car",
-      "lightsOn": "Lights on"
+      "lightsOn": "Lights on",
+      "tooLarge": "That photo is too large to upload. Try one under 3 MB.",
+      "unsupported": "That file is not a PNG, JPEG or WebP image."
     }
   },
   "control": {

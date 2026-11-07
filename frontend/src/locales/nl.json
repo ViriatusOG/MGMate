@@ -271,7 +271,9 @@
       "remove": "Foto verwijderen en de auto weer tekenen",
       "removeConfirm": "De foto van je auto verwijderen? De kaart tekent de auto dan weer.",
       "alt": "Je auto",
-      "lightsOn": "Lichten aan"
+      "lightsOn": "Lichten aan",
+      "tooLarge": "Die foto is te groot om te uploaden. Probeer er een onder de 3 MB.",
+      "unsupported": "Dat bestand is geen PNG-, JPEG- of WebP-afbeelding."
     }
   },
   "control": {

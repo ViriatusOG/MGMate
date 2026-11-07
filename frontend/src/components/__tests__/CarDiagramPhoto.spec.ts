@@ -6,6 +6,7 @@ import en from '@/locales/en.json'
 import CarDiagram from '../CarDiagram.vue'
 import { vehiclePhotoApi } from '@/services/vehiclePhotoApi'
 import { resetVehiclePhotoCache } from '@/composables/useVehiclePhoto'
+import { ApiError } from '@/services/apiCore'
 
 vi.mock('@/stores/vehicle', () => ({ useVehicleStore: () => ({ activeVin: 'FAKEVN00000000001' }) }))
 
@@ -101,5 +102,19 @@ describe('CarDiagram with a photo of the car', () => {
 
     expect(vehiclePhotoApi.remove).toHaveBeenCalledWith('FAKEVN00000000001')
     expect(wrapper.find('.car-photo').exists()).toBe(false)
+  })
+
+  it('says plainly when the photo is too large', async () => {
+    vi.mocked(vehiclePhotoApi.upload).mockRejectedValue(new ApiError(413, '/photo'))
+    const wrapper = await mountDiagram()
+    const input = wrapper.find('.car-photo__input')
+    Object.defineProperty(input.element, 'files', {
+      value: [new File([new Uint8Array([1])], 'car.png', { type: 'image/png' })],
+    })
+
+    await input.trigger('change')
+    await flushPromises()
+
+    expect(wrapper.find('[role="alert"]').text()).toBe(en.vehicle.photo.tooLarge)
   })
 })
