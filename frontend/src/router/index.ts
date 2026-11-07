@@ -61,6 +61,11 @@ const router = createRouter({
       component: () => import('@/views/BatteryHealthView.vue'),
     },
     {
+      path: '/activity',
+      name: 'activity',
+      component: () => import('@/views/ActivityView.vue'),
+    },
+    {
       path: '/climate-schedules',
       name: 'climateSchedules',
       component: () => import('@/views/ClimateSchedulesView.vue'),

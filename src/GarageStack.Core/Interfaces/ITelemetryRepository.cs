@@ -97,6 +97,9 @@ public interface ITelemetryRepository
     /// </summary>
     Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
 
+    /// <summary>Every reading from <paramref name="from"/> up to <paramref name="to"/>, oldest first, as the activity timeline reads it.</summary>
+    Task<IReadOnlyList<ActivitySample>> GetActivitySamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
     /// <summary>When the vehicle first reported that it was charging, or null when it never has.</summary>
     Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default);
 

@@ -9,7 +9,8 @@
     "maintenance": "Maintenance",
     "logs": "Logs",
     "menuLabel": "Menu",
-    "batteryHealth": "Battery health"
+    "batteryHealth": "Battery health",
+    "activity": "Activity"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1252,5 +1253,34 @@
     "trend": "Trend",
     "none": "No readings yet. A reading comes from a charge that adds {percent}% or more and whose energy the car measured.",
     "disclaimer": "An estimate from the energy each charge put into the battery over the battery percentage it added, not a lab test. Readings vary with temperature and how the car rounds its percentage."
+  },
+  "activity": {
+    "title": "Activity",
+    "subtitle": "What the car did, and when it went quiet",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "events": "Events",
+    "reporting": "Reporting",
+    "gaps": "no gaps | {n} gap | {n} gaps",
+    "longestGap": "Longest gap",
+    "readings": "Readings",
+    "perHour": "Readings per hour",
+    "none": "Nothing recorded on this day.",
+    "gap": "No data for {duration}, until {until}",
+    "hint": "Read from the car's own reports. A gap is an hour or more with nothing from the car: asleep, out of signal, or the gateway signed out.",
+    "kinds": {
+      "locked": "Locked",
+      "unlocked": "Unlocked",
+      "doorOpened": "A door opened",
+      "doorsClosed": "Doors closed",
+      "plugged": "Plugged in",
+      "unplugged": "Unplugged",
+      "chargingStarted": "Charging started",
+      "chargingStopped": "Charging stopped",
+      "climateOn": "Climate on",
+      "climateOff": "Climate off",
+      "driveStarted": "Drive started",
+      "driveEnded": "Parked"
+    }
   }
 }

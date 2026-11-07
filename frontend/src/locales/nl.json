@@ -9,7 +9,8 @@
     "maintenance": "Onderhoud",
     "logs": "Logboek",
     "menuLabel": "Menu",
-    "batteryHealth": "Accugezondheid"
+    "batteryHealth": "Accugezondheid",
+    "activity": "Activiteit"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1252,5 +1253,34 @@
     "trend": "Trend",
     "none": "Nog geen metingen. Een meting komt van een laadbeurt die {percent}% of meer toevoegt en waarvan de auto de energie mat.",
     "disclaimer": "Een schatting uit de energie die elke laadbeurt in de accu stopte, gedeeld door het percentage dat erbij kwam; geen labtest. Metingen schommelen met de temperatuur en hoe de auto het percentage afrondt."
+  },
+  "activity": {
+    "title": "Activiteit",
+    "subtitle": "Wat de auto deed, en wanneer hij stil bleef",
+    "previousDay": "Vorige dag",
+    "nextDay": "Volgende dag",
+    "events": "Gebeurtenissen",
+    "reporting": "Bereikbaar",
+    "gaps": "geen gaten | {n} gat | {n} gaten",
+    "longestGap": "Langste gat",
+    "readings": "Metingen",
+    "perHour": "Metingen per uur",
+    "none": "Niets vastgelegd op deze dag.",
+    "gap": "Geen gegevens gedurende {duration}, tot {until}",
+    "hint": "Gelezen uit de meldingen van de auto zelf. Een gat is een uur of langer zonder iets van de auto: in slaap, geen bereik, of de gateway uitgelogd.",
+    "kinds": {
+      "locked": "Vergrendeld",
+      "unlocked": "Ontgrendeld",
+      "doorOpened": "Een deur ging open",
+      "doorsClosed": "Deuren dicht",
+      "plugged": "Stekker erin",
+      "unplugged": "Stekker eruit",
+      "chargingStarted": "Laden gestart",
+      "chargingStopped": "Laden gestopt",
+      "climateOn": "Klimaat aan",
+      "climateOff": "Klimaat uit",
+      "driveStarted": "Rit gestart",
+      "driveEnded": "Geparkeerd"
+    }
   }
 }

@@ -182,6 +182,7 @@ try
     app.MapVehicleEndpoints();
     app.MapTripEndpoints();
     app.MapChargeEndpoints();
+    app.MapActivityEndpoints();
     app.MapPushEndpoints();
     app.MapNotificationEndpoints();
     app.MapMaintenanceEndpoints();

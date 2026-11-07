@@ -45,6 +45,7 @@ export {
   faCouch,
   faDatabase,
   faDiamondTurnRight,
+  faDoorClosed,
   faDoorOpen,
   faDownload,
   faEye,

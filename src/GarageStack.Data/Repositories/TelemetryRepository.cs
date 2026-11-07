@@ -402,6 +402,26 @@ public class TelemetryRepository(
                 s.RecordedAt, s.Speed, s.EvSocPercent, s.HvPower, s.Elevation, s.ExteriorTemperature, s.ClimateOn))
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<ActivitySample>> GetActivitySamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt < to)
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => new ActivitySample(
+                s.RecordedAt,
+                s.IsLocked,
+                s.DriverDoorOpen == null && s.PassengerDoorOpen == null && s.RearLeftDoorOpen == null
+                    && s.RearRightDoorOpen == null && s.TrunkOpen == null && s.BonnetOpen == null
+                    ? null
+                    : s.DriverDoorOpen == true || s.PassengerDoorOpen == true || s.RearLeftDoorOpen == true
+                      || s.RearRightDoorOpen == true || s.TrunkOpen == true || s.BonnetOpen == true,
+                s.ChargerConnected,
+                s.IsCharging,
+                s.ClimateOn,
+                s.EngineRunning,
+                s.EvSocPercent))
+            .ToListAsync(ct);
+
     public Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default) =>
         db.TelemetrySnapshots
             .AsNoTracking()

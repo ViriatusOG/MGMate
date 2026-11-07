@@ -86,6 +86,9 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
     public Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<TripTelemetryPoint>>([]);
 
+    public Task<IReadOnlyList<ActivitySample>> GetActivitySamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<ActivitySample>>([]);
+
     public Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default) =>
         Task.FromResult<DateTime?>(null);
 
