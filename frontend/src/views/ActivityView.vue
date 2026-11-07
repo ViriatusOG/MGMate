@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import '@/assets/charges.css'
+import '@/assets/logList.css'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ChartData, ChartOptions } from 'chart.js'
@@ -150,11 +151,11 @@ function gapLength(from: string, to: string): string {
       </div>
     </div>
 
-    <div v-if="timeline && timeline.readings > 0" class="charges__daily chart-container">
+    <div v-if="timeline && timeline.readings > 0" class="chart-container">
       <h2 class="card-title"><font-awesome-icon icon="wifi" />{{ t('activity.perHour') }}</h2>
-      <div class="charges__daily-canvas">
+      <!-- A fixed height: a chart left to size itself keeps growing as its canvas does. -->
+      <div class="activity__hours ll-chart">
         <StatsChartCard
-          class="charges__daily-chart"
           :title="''"
           icon="wifi"
           type="bar"
@@ -165,7 +166,7 @@ function gapLength(from: string, to: string): string {
       </div>
     </div>
 
-    <p v-if="!loading && rows.length === 0" class="text-muted charges__empty">
+    <p v-if="!loading && rows.length === 0" class="text-muted activity__empty">
       {{ t('activity.none') }}
     </p>
 
@@ -197,6 +198,19 @@ function gapLength(from: string, to: string): string {
 </template>
 
 <style scoped>
+.activity__hours {
+  position: relative;
+  height: 14rem;
+}
+
+.activity__hours > * {
+  height: 100%;
+}
+
+.activity__empty {
+  margin-top: 1rem;
+}
+
 .activity__row {
   display: grid;
   grid-template-columns: 3.5rem 1.5rem minmax(0, 1fr) auto;
