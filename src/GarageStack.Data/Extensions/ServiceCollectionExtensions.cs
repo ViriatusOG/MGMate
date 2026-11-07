@@ -67,6 +67,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
         services.AddScoped<IApiTokenRepository, ApiTokenRepository>();
+        services.AddScoped<IVehiclePhotoRepository, VehiclePhotoRepository>();
         return services.AddGarageStackPoiClients();
     }
 

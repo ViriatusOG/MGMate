@@ -264,7 +264,15 @@
       "schedule": "Schedule",
       "startTime": "Start time"
     },
-    "windowsOpenCount": "{n} open"
+    "windowsOpenCount": "{n} open",
+    "photo": {
+      "add": "Use a photo of your car",
+      "change": "Change the photo",
+      "remove": "Remove the photo and draw the car again",
+      "removeConfirm": "Remove the photo of your car? The card draws the car again.",
+      "alt": "Your car",
+      "lightsOn": "Lights on"
+    }
   },
   "control": {
     "climate": "Climate control",

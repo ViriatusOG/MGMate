@@ -1184,6 +1184,37 @@ namespace GarageStack.Data.Migrations
                     b.ToTable("Vehicles");
                 });
 
+            modelBuilder.Entity("GarageStack.Core.Models.VehiclePhoto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VehicleId")
+                        .IsUnique();
+
+                    b.ToTable("VehiclePhotos");
+                });
+
             modelBuilder.Entity("GarageStack.Core.Models.ChargeSession", b =>
                 {
                     b.HasOne("GarageStack.Core.Models.Vehicle", "Vehicle")
@@ -1270,6 +1301,15 @@ namespace GarageStack.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("GarageStack.Core.Models.VehiclePhoto", b =>
+                {
+                    b.HasOne("GarageStack.Core.Models.Vehicle", null)
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("GarageStack.Core.Models.MaintenanceItem", b =>

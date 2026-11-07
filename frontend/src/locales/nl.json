@@ -264,7 +264,15 @@
       "schedule": "Schema",
       "startTime": "Starttijd"
     },
-    "windowsOpenCount": "{n} open"
+    "windowsOpenCount": "{n} open",
+    "photo": {
+      "add": "Gebruik een foto van je auto",
+      "change": "Foto wijzigen",
+      "remove": "Foto verwijderen en de auto weer tekenen",
+      "removeConfirm": "De foto van je auto verwijderen? De kaart tekent de auto dan weer.",
+      "alt": "Je auto",
+      "lightsOn": "Lichten aan"
+    }
   },
   "control": {
     "climate": "Klimaatbeheersing",

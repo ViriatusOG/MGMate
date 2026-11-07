@@ -386,6 +386,46 @@ public class AuthenticationFlowTests
         Assert.Empty((await client.GetFromJsonAsync<List<CommutePlaceDto>>(placesUrl, ct))!);
     }
 
+    // Through the whole stack: an image uploaded as the body comes back with the type its bytes
+    // say, anything that is not an image is refused, and removing it leaves none.
+    [Fact]
+    public async Task VehiclePhoto_UploadServeAndRemove()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var factory = CreatePasswordOnlyFactory();
+        using var client = CreateClient(factory);
+        var login = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            new { username = DemoUsername, password = DemoPassword, rememberMe = false },
+            ct);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var vehicles = await client.GetFromJsonAsync<JsonElement>("/api/vehicles", ct);
+        var url = $"/api/vehicles/{vehicles[0].GetProperty("vin").GetString()}/photo";
+
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(url, ct)).StatusCode);
+
+        byte[] png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3, 4];
+        var upload = await client.PutAsync(url, new ByteArrayContent(png), ct);
+        Assert.Equal(HttpStatusCode.OK, upload.StatusCode);
+        var info = await upload.Content.ReadFromJsonAsync<VehiclePhotoInfo>(ct);
+        Assert.True(info!.HasPhoto);
+
+        var served = await client.GetAsync(url, ct);
+        Assert.Equal("image/png", served.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(png, await served.Content.ReadAsByteArrayAsync(ct));
+        Assert.True((await client.GetFromJsonAsync<VehiclePhotoInfo>($"{url}/info", ct))!.HasPhoto);
+
+        var html = await client.PutAsync(url, new StringContent("<html>"), ct);
+        Assert.Equal(HttpStatusCode.BadRequest, html.StatusCode);
+        Assert.Equal("vehiclePhoto.unsupported", await ProblemCodeAsync(html, ct));
+
+        var tooLarge = await client.PutAsync(url, new ByteArrayContent(new byte[VehiclePhoto.MaxBytes + 1]), ct);
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, tooLarge.StatusCode);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync(url, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(url, ct)).StatusCode);
+    }
+
     // Through the whole stack, on the demo's trips: hiding needs a yes or no, hides the trip from
     // the map and keeps it in the log, the compact format serves the same trips, and a merge leaves
     // one trip where there were two.
