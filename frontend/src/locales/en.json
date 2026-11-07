@@ -758,7 +758,15 @@
       "duringTrip": "During the trip",
       "batteryLevel": "Battery",
       "power": "Power, below 0 is regen",
-      "elevation": "Elevation"
+      "elevation": "Elevation",
+      "summary": "Trip summary",
+      "tripDetails": "Trip details",
+      "tripData": "Trip data",
+      "soc": "Battery",
+      "maxPower": "Max power",
+      "maxRegen": "Max regen",
+      "ascentDescent": "Ascent / descent",
+      "gpsPoints": "GPS points"
     },
     "purposeLabel": "Purpose",
     "purpose": {
@@ -838,7 +846,16 @@
     "editRoute": "Edit route",
     "edited": "Edited",
     "editedHint": "The route was edited by hand. The distance still comes from the odometer.",
-    "downloadGpx": "Download GPX"
+    "downloadGpx": "Download GPX",
+    "tiles": {
+      "distance": "Distance",
+      "trips": "Trips",
+      "efficiency": "Avg consumption",
+      "energy": "Energy used",
+      "cost": "Cost"
+    },
+    "tripCount": "{n} trip | {n} trips",
+    "showWholeYear": "Whole of {year}"
   },
   "tripEdit": {
     "title": "Edit route",
@@ -1207,7 +1224,21 @@
     },
     "paid": "What you paid ({currency}, optional)",
     "paidPlaceholder": "Leave empty to use your prices",
-    "paidInvalid": "What you paid must be a number of 0 or more"
+    "paidInvalid": "What you paid must be a number of 0 or more",
+    "acVsDc": "AC vs DC",
+    "homeVsPublic": "Home vs public",
+    "avgDuration": "Avg duration",
+    "avgPrice": "Avg price",
+    "avgEnergy": "Avg per charge",
+    "batteryAdded": "Battery added",
+    "daysCharged": "Days with a charge",
+    "count": "{n} charge | {n} charges",
+    "peak": "peak",
+    "summary": "Charge summary",
+    "target": "Target {n}%",
+    "avgPower": "Average power",
+    "outside": "Outside",
+    "noChart": "The car sent too few readings to draw this charge."
   },
   "tariff": {
     "button": "Prices",
@@ -1282,5 +1313,10 @@
       "driveStarted": "Drive started",
       "driveEnded": "Parked"
     }
+  },
+  "calendar": {
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "jumpToToday": "Jump to today"
   }
 }

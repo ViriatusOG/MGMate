@@ -10,7 +10,6 @@ import { vehicleApi, type Vehicle } from '@/services/vehicleApi'
 import { downloadCsv } from '@/utils/download'
 import { useUiSettingsStore } from '@/stores/settingsUi'
 import { logEntry } from '@/services/__tests__/tripLogFixtures'
-import { WIDE_MEDIA_QUERY } from '@/utils/viewport'
 
 vi.mock('@/services/tripLogApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/services/tripLogApi')>()
@@ -77,8 +76,15 @@ async function mountView() {
   return wrapper
 }
 
+// The day each listed trip sits under, in the order they are listed.
 function listedIds(wrapper: Awaited<ReturnType<typeof mountView>>) {
-  return wrapper.findAll('.trip-log-item').map((item) => item.find('.trip-log-item__date').text())
+  return wrapper
+    .findAll('.ll-day')
+    .flatMap((day) => day.findAll('.trip-log-item').map(() => day.find('.ll-day__title').text()))
+}
+
+function flat(text: string) {
+  return text.replace(/\s+/g, ' ')
 }
 
 function button(wrapper: Awaited<ReturnType<typeof mountView>>, text: string) {
@@ -89,16 +95,6 @@ function button(wrapper: Awaited<ReturnType<typeof mountView>>, text: string) {
 async function pickTrip(wrapper: Awaited<ReturnType<typeof mountView>>, index: number) {
   await wrapper.findAll('.trip-log-item__select')[index]!.trigger('click')
   await flushPromises()
-}
-
-// A window wide enough for the detail beside the list.
-function wideWindow() {
-  vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: query === WIDE_MEDIA_QUERY,
-    media: query,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  }))
 }
 
 // Handed to the mount and to every store the test reads, rather than left to the active pinia,
@@ -146,17 +142,17 @@ describe('TripLogView', () => {
     expect(vin).toBe(car.vin)
     expect(new Date(from).getMonth()).toBe(9)
     expect(new Date(to).getTime()).toBeGreaterThan(new Date(from).getTime())
-    expect(listedIds(wrapper)).toEqual(['Sat, 3 Oct', 'Thu, 1 Oct'])
+    expect(listedIds(wrapper)).toEqual(['Sat, 3 Oct 2026', 'Thu, 1 Oct 2026'])
   })
 
   it('lists the hidden trips once asked to, and counts them on the switch', async () => {
     const wrapper = await mountView()
-    const toggle = wrapper.find('.trip-log-hidden-toggle')
+    const toggle = wrapper.find('.trip-log-hidden-toggle:not(.trip-log-year-toggle)')
 
     expect(toggle.text()).toBe('Show hidden trip')
     await toggle.find('input').setValue(true)
 
-    expect(listedIds(wrapper)).toEqual(['Sat, 3 Oct', 'Fri, 2 Oct', 'Thu, 1 Oct'])
+    expect(listedIds(wrapper)).toEqual(['Sat, 3 Oct 2026', 'Fri, 2 Oct 2026', 'Thu, 1 Oct 2026'])
     expect(wrapper.find('.trip-log-item--hidden').exists()).toBe(true)
   })
 
@@ -169,6 +165,7 @@ describe('TripLogView', () => {
     expect(csv).not.toContain('GPS glitch')
     expect(csv.trim().split('\n')).toHaveLength(3)
     expect(wrapper.find('.trip-log-totals').text()).toContain('Unclassified (0)')
+    expect(wrapper.find('.ll-tiles').text()).toContain('2')
   })
 
   it('joins a trip with the next one once confirmed, and offers none for the newest', async () => {
@@ -208,17 +205,37 @@ describe('TripLogView', () => {
     await flushPromises()
 
     expect(tripLogApi.setHidden).toHaveBeenCalledWith(car.vin, 3, true)
-    expect(listedIds(wrapper)).toEqual(['Thu, 1 Oct'])
-    expect(wrapper.find('.trip-log-hidden-toggle').text()).toBe('Show 2 hidden trips')
+    expect(listedIds(wrapper)).toEqual(['Thu, 1 Oct 2026'])
+    expect(wrapper.find('.trip-log-hidden-toggle:not(.trip-log-year-toggle)').text()).toBe(
+      'Show 2 hidden trips',
+    )
   })
 
-  it('loads the whole year when the month is cleared', async () => {
+  it('steps to the month before from the calendar, and not past this month', async () => {
+    const wrapper = await mountView()
+    const [prev, next] = wrapper.findAll('.month-cal__nav')
+
+    expect(next!.attributes('disabled')).toBeDefined()
+    await prev!.trigger('click')
+    await flushPromises()
+
+    const [, from] = vi.mocked(tripLogApi.log).mock.lastCall!
+    expect(new Date(from).getMonth()).toBe(8)
+  })
+
+  it('marks the days with trips on the calendar', async () => {
     const wrapper = await mountView()
 
-    // The first option, "Whole year", has no month.
-    const month = wrapper.findAll('select')[1]!
-    ;(month.element as HTMLSelectElement).selectedIndex = 0
-    await month.trigger('change')
+    const active = wrapper
+      .findAll('.month-cal__day--active')
+      .map((d) => d.find('.month-cal__num').text())
+    expect(active).toEqual(['1', '3'])
+  })
+
+  it('loads the whole year when asked to', async () => {
+    const wrapper = await mountView()
+
+    await wrapper.find('.trip-log-year-toggle input').setValue(true)
     await flushPromises()
 
     const [, from, to] = vi.mocked(tripLogApi.log).mock.lastCall!
@@ -239,13 +256,11 @@ describe('TripLogView', () => {
 
   it('totals all trips and each purpose with its share of the distance', async () => {
     const wrapper = await mountView()
-    const totals = wrapper.find('.trip-log-totals').text()
+    const totals = flat(wrapper.find('.trip-log-totals').text())
 
-    expect(totals).toContain('All trips (2)')
-    expect(totals).toContain('85.0km')
-    expect(totals).toContain('Business (1)')
-    expect(totals).toContain('50% of the distance')
-    expect(wrapper.findAll('.trip-log-totals progress')).toHaveLength(4)
+    expect(totals).toContain('All trips (2)85.0 km')
+    expect(totals).toContain('Business (1)42.5 km')
+    expect(totals).toContain('Private (1)42.5 km')
   })
 
   it('sums up the driving: time, average and longest trip, average speed', async () => {
@@ -254,12 +269,12 @@ describe('TripLogView', () => {
       logEntry({ id: 3, startedAt: '2026-10-03T07:00:00Z', endedAt: '2026-10-03T07:34:00Z' }),
     ])
     const wrapper = await mountView()
-    const summary = wrapper.find('.trip-log-summary').text()
+    const summary = flat(wrapper.find('.trip-log-totals').text())
 
     // Two trips of 34 minutes and 42.5 km each.
     expect(summary).toContain('1h 8m')
-    expect(summary).toContain('42.5km')
-    expect(summary).toContain('75km/h')
+    expect(summary).toContain('42.5 km')
+    expect(summary).toContain('75 km/h')
   })
 
   it('says how far the unclassified trips went', async () => {
@@ -271,29 +286,18 @@ describe('TripLogView', () => {
     )
   })
 
-  it('shows no detail on a narrow screen until a trip is picked, then in a dialog', async () => {
+  it('opens a trip inside the list when picked, and closes it when picked again', async () => {
     const wrapper = await mountView()
 
     expect(wrapper.find('.trip-log-detail').exists()).toBe(false)
     await pickTrip(wrapper, 1)
 
-    expect(wrapper.find('.detail-modal .trip-log-detail').exists()).toBe(true)
+    const item = wrapper.findAll('.trip-log-item')[1]!
+    expect(item.find('.trip-log-detail').exists()).toBe(true)
+    expect(item.classes()).toContain('trip-log-item--selected')
     expect(tripLogApi.editor).toHaveBeenCalledWith(car.vin, 1)
-    expect(wrapper.findAll('.trip-log-item')[1]!.classes()).toContain('trip-log-item--selected')
-  })
-
-  it('shows the newest trip beside the list on a wide screen, until another is picked', async () => {
-    wideWindow()
-    const wrapper = await mountView()
-    const detail = () => wrapper.find('.trip-log-layout__detail .trip-log-detail')
-
-    expect(detail().exists()).toBe(true)
-    expect(wrapper.find('.detail-modal .trip-log-detail').exists()).toBe(false)
-    expect(tripLogApi.editor).toHaveBeenLastCalledWith(car.vin, 3)
 
     await pickTrip(wrapper, 1)
-
-    expect(tripLogApi.editor).toHaveBeenLastCalledWith(car.vin, 1)
-    expect(wrapper.findAll('.trip-log-item')[1]!.classes()).toContain('trip-log-item--selected')
+    expect(wrapper.find('.trip-log-detail').exists()).toBe(false)
   })
 })

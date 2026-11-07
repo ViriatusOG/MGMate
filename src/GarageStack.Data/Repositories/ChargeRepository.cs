@@ -56,7 +56,7 @@ public class ChargeRepository(AppDbContext db, ITelemetryRepository telemetry) :
             vehicleId, session.StartedAt.AddMinutes(-5), session.EndedAt + ChargeSegmenter.PauseThreshold, ct);
         var points = samples
             .Where(s => s.PowerKw is not null || s.SocPercent is not null)
-            .Select(s => new ChargeChartPoint(s.RecordedAt, s.PowerKw is { } p ? Math.Abs(p) : null, s.SocPercent))
+            .Select(s => new ChargeChartPoint(s.RecordedAt, s.PowerKw is { } p ? Math.Abs(p) : null, s.SocPercent, s.OutsideTemperature))
             .ToList();
         if (points.Count <= MaxChartPoints) return points;
 

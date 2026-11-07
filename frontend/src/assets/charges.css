@@ -58,111 +58,6 @@
   color: var(--color-text-muted);
 }
 
-.charges__daily {
-  margin-bottom: 1rem;
-}
-
-.charges__daily-canvas {
-  height: 160px;
-}
-
-/* The bar chart sits in this card already: no second frame or title around it. */
-.charges__daily-chart.chart-container {
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-}
-
-.charges__daily-chart .card-title {
-  display: none;
-}
-
-.charges__empty {
-  margin: 2rem 0;
-  text-align: center;
-}
-
-.charges__list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.charges__item {
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
-  overflow: hidden;
-}
-
-.charges__item--hidden {
-  opacity: 0.55;
-}
-
-.charges__row {
-  display: grid;
-  grid-template-columns:
-    minmax(0, 1.6fr) 3rem minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr)
-    minmax(0, 1fr);
-  gap: 0.75rem;
-  align-items: center;
-  width: 100%;
-  min-height: 44px;
-  padding: 0.7rem 1rem;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.charges__row:hover {
-  background: var(--color-surface-2);
-}
-
-.charges__when {
-  display: flex;
-  flex-direction: column;
-}
-
-.charges__type {
-  justify-self: start;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  background: rgb(59 130 246 / 15%);
-  color: var(--color-primary-light);
-}
-
-.charges__type--dc {
-  background: rgb(245 158 11 / 15%);
-  color: var(--color-warning-text);
-}
-
-.charges__soc,
-.charges__num {
-  font-variant-numeric: tabular-nums;
-}
-
-.charges__num {
-  text-align: right;
-}
-
-.charges__detail {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem 1rem;
-  border-top: 1px solid var(--color-border);
-}
-
 .charges__figures {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
@@ -183,6 +78,8 @@
 }
 
 .charges__notes-label {
+  display: block;
+  margin-bottom: 0.25rem;
   font-size: 0.85rem;
   color: var(--color-text-muted);
 }
@@ -199,12 +96,10 @@
   resize: vertical;
 }
 
-.charges__cost {
-  font-weight: 600;
-}
-
 .charges__edit {
   display: grid;
+  align-items: end;
+  margin-bottom: 0.75rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
@@ -221,16 +116,29 @@
 }
 
 @media (width < 640px) {
-  .charges__row {
-    grid-template-columns: minmax(0, 1fr) auto auto auto;
-  }
-
-  .charges__soc,
-  .charges__num.text-muted {
-    display: none;
-  }
-
   .charges__edit {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.charges__splits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.charges__lead--ac {
+  color: #3b82f6;
+}
+
+.charges__lead--dc {
+  color: #f59e0b;
+}
+
+.charges__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
 }

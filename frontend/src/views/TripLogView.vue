@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import '@/assets/tripLog.css'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import '@/assets/logList.css'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useTripLogStore } from '@/stores/tripLog'
 import { useUiSettingsStore } from '@/stores/settingsUi'
-import StatusCard from '@/components/StatusCard.vue'
 import TripLogItem from '@/components/TripLogItem.vue'
 import TripLogDetail from '@/components/TripLogDetail.vue'
 import CommutePlacesModal from '@/components/CommutePlacesModal.vue'
@@ -23,13 +23,16 @@ import {
 } from '@/utils/tripLog'
 import { tripLogCsv, tripLogFileName } from '@/utils/tripLogCsv'
 import { formatDurationMs } from '@/utils/tripRows'
-import { WIDE_MEDIA_QUERY } from '@/utils/viewport'
 import type { Measure } from '@/utils/units'
 import { useUnits } from '@/composables/useUnits'
 import { useErrorMessage } from '@/composables/useErrorMessage'
-import { useMediaQuery } from '@/composables/useMediaQuery'
 import { useTripRoute } from '@/composables/useTripRoute'
 import ViewHeader from '@/components/ViewHeader.vue'
+import MonthCalendar, { type CalendarDay } from '@/components/MonthCalendar.vue'
+import { groupByDay } from '@/utils/dayGroups'
+import { loggedDistanceKm } from '@/utils/tripLog'
+import { tripEnergy } from '@/utils/energy'
+import { cheapestHomePrice, formatMoney } from '@/utils/tariff'
 
 const { t } = useI18n()
 const vehicleStore = useVehicleStore()
@@ -43,22 +46,28 @@ const vin = computed(() => vehicleStore.activeVin)
 
 // The current month to start with: the one a driver is most likely filling in.
 const today = new Date()
-const year = ref(today.getFullYear())
-const month = ref<number | null>(today.getMonth())
-const period = computed<TripLogPeriod>(() => ({ year: year.value, month: month.value }))
+const shownMonth = ref(new Date(today.getFullYear(), today.getMonth(), 1))
+// The whole year at once, for the tax log's yearly export; the calendar still pages by month.
+const wholeYear = ref(false)
+const period = computed<TripLogPeriod>(() => ({
+  year: shownMonth.value.getFullYear(),
+  month: wholeYear.value ? null : shownMonth.value.getMonth(),
+}))
+const canNextMonth = computed(
+  () => shownMonth.value < new Date(today.getFullYear(), today.getMonth(), 1),
+)
 
-// Trips are saved from the Worker's first run onwards, which also saves the history before it,
-// so a few years back covers any install; there is nothing to page to before that.
-const YEARS_OFFERED = 5
-const years = computed(() =>
-  Array.from({ length: YEARS_OFFERED }, (_, i) => today.getFullYear() - i),
-)
-const months = computed(() =>
-  Array.from({ length: 12 }, (_, m) => ({
-    value: m,
-    label: formatDate(new Date(2000, m, 1), { month: 'long' }),
-  })),
-)
+function stepMonth(offset: number) {
+  shownMonth.value = new Date(
+    shownMonth.value.getFullYear(),
+    shownMonth.value.getMonth() + offset,
+    1,
+  )
+}
+
+function jumpToToday() {
+  shownMonth.value = new Date(today.getFullYear(), today.getMonth(), 1)
+}
 
 // Hidden trips stay out of the list unless asked for, as they stay out of the totals and export.
 const showHidden = ref(false)
@@ -138,24 +147,173 @@ const summaryCards = computed(() => {
 
 // ── The trip shown in detail ──────────────────────────────
 
-// Beside the list on a wide screen, where a trip is always shown: the newest until another is
-// picked. In a dialog on a narrower one, once a trip is picked.
-const wide = useMediaQuery(WIDE_MEDIA_QUERY)
+// A trip opens in place, under its row; picking it again closes it.
 const pickedId = ref<number | null>(null)
 
 // Looked up among all trips, hidden ones too: a trip just hidden stays in view to show again.
-const selected = computed(() => {
-  const picked =
-    pickedId.value === null ? undefined : store.entries.find((e) => e.id === pickedId.value)
-  if (picked) return picked
-  return wide.value ? (newestFirst.value[0] ?? null) : null
-})
+const selected = computed(() =>
+  pickedId.value === null ? null : (store.entries.find((e) => e.id === pickedId.value) ?? null),
+)
 
 const route = useTripRoute(vin, selected)
-const detailInModal = computed(() => !wide.value && selected.value !== null)
 
-function closeDetail() {
-  pickedId.value = null
+function toggle(id: number) {
+  pickedId.value = pickedId.value === id ? null : id
+}
+
+// ── Days and figures ──────────────────────────────────────
+
+const capacityKwh = computed(
+  () => vehicleStore.hvBatteryCapacityKwh ?? vehicleStore.currentStatus?.hvTotalCapacityKwh ?? null,
+)
+
+function energyOf(entry: (typeof store.entries)[number]) {
+  return tripEnergy(
+    entry,
+    loggedDistanceKm(entry),
+    vehicleStore.effectiveVehicleType,
+    capacityKwh.value,
+  )
+}
+
+// Trips are reckoned at the cheapest home rate: most of what a car drives on was charged there.
+const homeRate = computed(() => (uiSettings.tariff ? cheapestHomePrice(uiSettings.tariff) : null))
+
+function money(amount: number) {
+  return formatMoney(amount, uiSettings.tariff?.currency ?? 'GBP')
+}
+
+interface Totals {
+  trips: number
+  km: number
+  ms: number
+  kwh: number
+  kwhKm: number
+}
+
+function totalsOf(entries: readonly (typeof store.entries)[number][]): Totals {
+  const totals: Totals = { trips: 0, km: 0, ms: 0, kwh: 0, kwhKm: 0 }
+  for (const e of entries) {
+    if (e.isHidden) continue
+    const km = loggedDistanceKm(e) ?? 0
+    totals.trips++
+    totals.km += km
+    totals.ms += Date.parse(e.endedAt) - Date.parse(e.startedAt)
+    const energy = energyOf(e)
+    if (energy) {
+      totals.kwh += energy.kwh
+      totals.kwhKm += km
+    }
+  }
+  return totals
+}
+
+function efficiencyOf(totals: Totals) {
+  return totals.kwh > 0 && totals.kwhKm > 0
+    ? units.value.measure('energyPerDistance', (totals.kwh * 1000) / totals.kwhKm)
+    : null
+}
+
+const monthTotals = computed(() => totalsOf(listed.value))
+
+const tiles = computed(() => {
+  const m = monthTotals.value
+  const distance = units.value.measure('distance', m.km, { decimals: 1 })
+  const efficiency = efficiencyOf(m)
+  const rate = homeRate.value
+  return [
+    {
+      key: 'distance',
+      variant: 'teal',
+      icon: 'road',
+      value: distance?.value ?? '-',
+      unit: distance?.unit,
+      label: t('tripLog.tiles.distance'),
+    },
+    {
+      key: 'trips',
+      variant: 'indigo',
+      icon: 'car',
+      value: String(m.trips),
+      unit: undefined,
+      label: t('tripLog.tiles.trips'),
+    },
+    {
+      key: 'efficiency',
+      variant: '',
+      icon: 'bolt',
+      value: efficiency?.value ?? '-',
+      unit: efficiency?.unit,
+      label: t('tripLog.tiles.efficiency'),
+    },
+    {
+      key: 'energy',
+      variant: 'blue',
+      icon: 'plug-circle-bolt',
+      value: m.kwh > 0 ? formatNumber(m.kwh, 1) : '-',
+      unit: m.kwh > 0 ? t('common.kwh') : undefined,
+      label: t('tripLog.tiles.energy'),
+    },
+    {
+      key: 'cost',
+      variant: 'green',
+      icon: 'coins',
+      value: rate !== null && m.kwh > 0 ? money(m.kwh * rate) : '-',
+      unit: undefined,
+      label: t('tripLog.tiles.cost'),
+    },
+  ]
+})
+
+const days = computed(() => groupByDay(newestFirst.value, (e) => e.startedAt))
+
+function dayFigures(entries: readonly (typeof store.entries)[number][]) {
+  const totals = totalsOf(entries)
+  const oldest = entries[entries.length - 1]
+  const newest = entries[0]
+  const socStart = oldest?.socStartPercent
+  const socEnd = newest?.socEndPercent
+  const efficiency = efficiencyOf(totals)
+  const rate = homeRate.value
+  return {
+    trips: t('tripLog.tripCount', totals.trips),
+    soc:
+      socStart != null && socEnd != null
+        ? `${Math.round(socStart)}% → ${Math.round(socEnd)}%`
+        : null,
+    distance: units.value.format('distance', totals.km),
+    duration: totals.ms > 0 ? formatDurationMs(totals.ms, t) : null,
+    kwh: totals.kwh > 0 ? `${formatNumber(totals.kwh, 1)} ${t('common.kwh')}` : null,
+    efficiency: efficiency ? `${efficiency.value} ${efficiency.unit}` : null,
+    cost: rate !== null && totals.kwh > 0 ? money(totals.kwh * rate) : null,
+  }
+}
+
+const calendarDays = computed(() => {
+  const result: Record<string, CalendarDay> = {}
+  const groups = days.value.filter(
+    (d) =>
+      d.date.getFullYear() === shownMonth.value.getFullYear() &&
+      d.date.getMonth() === shownMonth.value.getMonth(),
+  )
+  const kms = groups.map((g) => totalsOf(g.items).km)
+  const most = Math.max(1, ...kms)
+  groups.forEach((g, i) => {
+    result[g.key] = {
+      value: units.value.format('distance', kms[i]!, { decimals: 0 }) ?? '',
+      count: g.items.length,
+      level: kms[i]! / most,
+    }
+  })
+  return result
+})
+
+const selectedDay = ref<string | null>(null)
+
+async function selectDay(key: string) {
+  selectedDay.value = key
+  await nextTick()
+  document.getElementById(`trip-day-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 // What the detail shows and does, the same beside the list and in the dialog.
@@ -202,6 +360,7 @@ async function load() {
 // Another period or car shows other trips: the newest of those, not one picked before.
 function reload() {
   pickedId.value = null
+  selectedDay.value = null
   void load()
 }
 
@@ -299,58 +458,19 @@ function exportCsv() {
       </template>
     </ViewHeader>
 
-    <div class="trip-log-filters">
-      <label class="trip-log-filters__field">
-        <span class="text-xs text-muted">{{ t('tripLog.year') }}</span>
-        <select v-model="year" class="form-select">
-          <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
-        </select>
-      </label>
-      <label class="trip-log-filters__field">
-        <span class="text-xs text-muted">{{ t('tripLog.month') }}</span>
-        <select v-model="month" class="form-select">
-          <option :value="null">{{ t('tripLog.wholeYear') }}</option>
-          <option v-for="m in months" :key="m.value" :value="m.value">{{ m.label }}</option>
-        </select>
-      </label>
-      <label v-if="store.hiddenCount > 0" class="trip-log-hidden-toggle text-sm">
-        <input v-model="showHidden" type="checkbox" class="form-check-input" />
-        {{ t('tripLog.showHidden', store.hiddenCount) }}
-      </label>
-    </div>
-
-    <section class="trip-log-totals" :aria-label="t('tripLog.totalsLabel')">
-      <StatusCard
-        class="trip-log-totals__all"
-        icon="car"
-        :label="t('tripLog.allTrips', { n: store.summary.trips })"
-        :value="allTrips?.value ?? null"
-        :unit="allTrips?.unit"
-      />
-      <StatusCard
-        v-for="card in purposeCards"
-        :key="card.key"
-        :icon="PURPOSE_ICONS[card.key]"
-        :label="card.label"
-        :value="card.value"
-        :unit="units.symbol('distance')"
-        :variant="card.variant"
-        :note="card.note"
-        :share="card.share"
-        :share-label="card.note"
-      />
-    </section>
-
-    <section class="trip-log-summary" :aria-label="t('tripLog.summary.label')">
-      <StatusCard
-        v-for="card in summaryCards"
-        :key="card.key"
-        :icon="card.icon"
-        :label="card.label"
-        :value="card.value"
-        :unit="card.unit"
-        :subtitle="card.subtitle"
-      />
+    <section class="ll-tiles" :aria-label="t('tripLog.totalsLabel')">
+      <div
+        v-for="tile in tiles"
+        :key="tile.key"
+        class="ll-tile"
+        :class="tile.variant ? `ll-tile--${tile.variant}` : ''"
+      >
+        <span class="ll-tile__icon"><font-awesome-icon :icon="tile.icon" /></span>
+        <span class="ll-tile__value"
+          >{{ tile.value }}<small v-if="tile.unit">{{ tile.unit }}</small></span
+        >
+        <span class="ll-tile__label">{{ tile.label }}</span>
+      </div>
     </section>
 
     <div v-if="unclassified > 0 && !store.loading" class="trip-log-bulk">
@@ -382,39 +502,112 @@ function exportCsv() {
       {{ errorMessage(store.actionError) }}
     </p>
 
-    <div v-if="store.loadError" class="empty-state text-danger" role="alert">
-      {{ errorMessage(store.loadError) }}
-    </div>
-    <div v-else-if="!store.loading && listed.length === 0" class="empty-state">
-      {{ t('tripLog.empty') }}
-    </div>
-    <div v-else class="trip-log-layout">
-      <ul class="trip-log-list">
-        <TripLogItem
-          v-for="entry in newestFirst"
-          :key="entry.id"
-          :entry="entry"
-          :places-shown="placesShown"
-          :places-resolving="store.placesResolving"
-          :saving="store.saving.has(entry.id)"
-          :commute-places="commutePlaces.places"
-          :selected="selected?.id === entry.id"
-          @select="pickedId = entry.id"
+    <div class="ll-layout">
+      <aside class="ll-side">
+        <MonthCalendar
+          :month="shownMonth"
+          :days="calendarDays"
+          :selected="selectedDay"
+          :can-next="canNextMonth"
+          @prev="stepMonth(-1)"
+          @next="stepMonth(1)"
+          @today="jumpToToday"
+          @select="selectDay"
         />
-      </ul>
 
-      <aside
-        v-if="wide && detail"
-        class="trip-log-layout__detail"
-        :aria-label="t('tripLog.detail.title')"
-      >
-        <TripLogDetail v-bind="detail.props" v-on="detail.on" />
+        <div class="ll-card trip-log-totals">
+          <dl class="ll-stats">
+            <div>
+              <dt>{{ t('tripLog.allTrips', { n: store.summary.trips }) }}</dt>
+              <dd>{{ allTrips ? `${allTrips.value} ${allTrips.unit}` : '-' }}</dd>
+            </div>
+            <div v-for="card in purposeCards" :key="card.key">
+              <dt><font-awesome-icon :icon="PURPOSE_ICONS[card.key]" /> {{ card.label }}</dt>
+              <dd>{{ card.value ?? '-' }} {{ units.symbol('distance') }}</dd>
+            </div>
+            <div v-for="card in summaryCards" :key="card.key">
+              <dt>{{ card.label }}</dt>
+              <dd>{{ card.value ?? '-' }} {{ card.unit ?? '' }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="ll-card trip-log-filters">
+          <label class="trip-log-hidden-toggle trip-log-year-toggle text-sm">
+            <input v-model="wholeYear" type="checkbox" class="form-check-input" />
+            {{ t('tripLog.showWholeYear', { year: shownMonth.getFullYear() }) }}
+          </label>
+          <label v-if="store.hiddenCount > 0" class="trip-log-hidden-toggle text-sm">
+            <input v-model="showHidden" type="checkbox" class="form-check-input" />
+            {{ t('tripLog.showHidden', store.hiddenCount) }}
+          </label>
+        </div>
       </aside>
-    </div>
 
-    <DetailModal :open="detailInModal" :title="t('tripLog.detail.title')" wide @close="closeDetail">
-      <TripLogDetail v-if="detailInModal && detail" v-bind="detail.props" v-on="detail.on" />
-    </DetailModal>
+      <div class="ll-days">
+        <div v-if="store.loadError" class="empty-state text-danger" role="alert">
+          {{ errorMessage(store.loadError) }}
+        </div>
+        <div v-else-if="!store.loading && listed.length === 0" class="empty-state">
+          {{ t('tripLog.empty') }}
+        </div>
+        <section
+          v-for="day in days"
+          v-else
+          :id="`trip-day-${day.key}`"
+          :key="day.key"
+          class="ll-day"
+          :class="{ 'll-day--selected': selectedDay === day.key }"
+        >
+          <header class="ll-day__head">
+            <h2 class="ll-day__title">
+              {{
+                formatDate(day.date, {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })
+              }}
+            </h2>
+            <span class="text-sm text-muted">{{ dayFigures(day.items).trips }}</span>
+            <span class="ll-day__figures">
+              <span v-if="dayFigures(day.items).soc">{{ dayFigures(day.items).soc }}</span>
+              <strong v-if="dayFigures(day.items).distance">{{
+                dayFigures(day.items).distance
+              }}</strong>
+              <span v-if="dayFigures(day.items).duration">{{
+                dayFigures(day.items).duration
+              }}</span>
+              <span v-if="dayFigures(day.items).kwh">{{ dayFigures(day.items).kwh }}</span>
+              <span v-if="dayFigures(day.items).efficiency" class="ll-pill ll-pill--good">{{
+                dayFigures(day.items).efficiency
+              }}</span>
+              <span v-if="dayFigures(day.items).cost" class="ll-cost">{{
+                dayFigures(day.items).cost
+              }}</span>
+            </span>
+          </header>
+          <ul class="ll-list trip-log-list">
+            <TripLogItem
+              v-for="entry in day.items"
+              :key="entry.id"
+              :entry="entry"
+              :places-shown="placesShown"
+              :places-resolving="store.placesResolving"
+              :saving="store.saving.has(entry.id)"
+              :commute-places="commutePlaces.places"
+              :selected="selected?.id === entry.id"
+              @select="toggle(entry.id)"
+            >
+              <div v-if="selected?.id === entry.id && detail" class="ll-detail">
+                <TripLogDetail v-bind="detail.props" v-on="detail.on" />
+              </div>
+            </TripLogItem>
+          </ul>
+        </section>
+      </div>
+    </div>
 
     <DetailModal :open="joiningId !== null" :title="t('tripLog.joinNext')" @close="cancelJoin">
       <p class="text-sm">{{ t('tripLog.joinNextHint') }}</p>

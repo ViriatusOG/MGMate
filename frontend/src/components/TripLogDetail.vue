@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import '@/assets/logList.css'
 import { computed, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -307,74 +308,194 @@ const figures = computed((): Figure[] => [
   ...telemetryFigures.value,
 ])
 
-const MAX_TELEMETRY_CHART_POINTS = 200
+const MAX_TELEMETRY_CHART_POINTS = 300
 
-// Battery level, power and elevation over the trip, each on an axis of its own.
+// Speed, power, battery level and elevation over the trip, each in a band of its own on one time
+// axis, so a slow-down lines up with the regen it brought and the hill it was on.
 const telemetryChart = computed(() => {
   const all = telemetry.value
-  const hasPower = all.some((p) => p.powerKw !== null)
-  const hasSoc = all.some((p) => p.socPercent !== null)
-  const hasElevation = all.some((p) => p.elevation !== null)
-  if (all.length < 3 || !(hasPower || hasSoc)) return null
+  if (all.length < 3) return null
+  const has = (pick: (p: TripTelemetryPoint) => number | null) => all.some((p) => pick(p) !== null)
+  const hasSpeed = has((p) => p.speed)
+  const hasPower = has((p) => p.powerKw)
+  const hasSoc = has((p) => p.socPercent)
+  const hasElevation = has((p) => p.elevation)
+  if (!hasSpeed && !hasPower && !hasSoc) return null
+
   const shown = downsample([...all], MAX_TELEMETRY_CHART_POINTS)
   const sign = drivingPowerSign(all)
+  const feet = uiSettings.effectiveUnits.distance === 'mi'
   const { text, grid } = chartTheme.value
-  const axis = { grid: { color: grid }, border: { color: grid } }
+  const band = (weight: number, color: string, title: string, extra = {}) => ({
+    type: 'linear' as const,
+    position: 'left' as const,
+    stack: 'trip',
+    stackWeight: weight,
+    offset: true,
+    grid: { color: grid },
+    border: { color: grid },
+    ticks: { color, maxTicksLimit: 4 },
+    title: { display: true, text: title, color, font: { size: 10 } },
+    ...extra,
+  })
+
   const datasets: ChartData<'line'>['datasets'] = []
-  if (hasSoc) {
+  const scales: ChartOptions<'line'>['scales'] = {
+    x: {
+      grid: { color: grid },
+      ticks: { color: text, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 },
+    },
+  }
+  // Chart.js lays a stack out from the bottom up, so the bands are added bottom first.
+  if (hasElevation) {
+    scales.elevation = band(1, '#c08a4a', feet ? 'ft' : 'm')
     datasets.push({
-      label: `${t('tripLog.detail.batteryLevel')} (%)`,
+      label: t('tripLog.detail.elevation'),
+      data: shown.map((p) =>
+        p.elevation === null ? null : feet ? p.elevation * 3.28084 : p.elevation,
+      ),
+      borderColor: '#c08a4a',
+      backgroundColor: 'rgba(192,138,74,0.15)',
+      fill: true,
+      yAxisID: 'elevation',
+    })
+  }
+  if (hasSoc) {
+    scales.soc = band(1, '#22c55e', '%')
+    datasets.push({
+      label: t('tripLog.detail.batteryLevel'),
       data: shown.map((p) => p.socPercent),
       borderColor: '#22c55e',
-      spanGaps: true,
-      pointRadius: 0,
       yAxisID: 'soc',
     })
   }
   if (hasPower) {
+    scales.power = band(1.4, '#ef4444', 'kW')
     datasets.push({
-      label: `${t('tripLog.detail.power')} (kW)`,
-      data: shown.map((p) => (p.powerKw === null ? null : p.powerKw * sign)),
-      borderColor: '#f59e0b',
-      spanGaps: true,
-      pointRadius: 0,
+      label: t('tripLog.detail.power'),
+      data: shown.map((p) => (p.powerKw === null ? null : Math.round(p.powerKw * sign * 10) / 10)),
+      borderColor: '#ef4444',
+      borderWidth: 1.25,
       yAxisID: 'power',
     })
   }
-  if (hasElevation) {
+  if (hasSpeed) {
+    scales.speed = band(1.6, '#3b82f6', units.value.symbol('speed'), { min: 0 })
     datasets.push({
-      label: `${t('tripLog.detail.elevation')} (m)`,
-      data: shown.map((p) => p.elevation),
-      borderColor: 'rgba(148,163,184,0.6)',
-      backgroundColor: 'rgba(148,163,184,0.18)',
-      fill: true,
-      spanGaps: true,
-      pointRadius: 0,
-      yAxisID: 'elevation',
+      label: t('tripLog.detail.speed'),
+      data: shown.map((p) =>
+        p.speed === null ? null : Math.round(units.value.convert('speed', p.speed)),
+      ),
+      borderColor: '#3b82f6',
+      borderWidth: 1.25,
+      yAxisID: 'speed',
     })
   }
+  for (const d of datasets) {
+    Object.assign(d, { pointRadius: 0, spanGaps: true, tension: 0.2 })
+  }
+  // The legend reads top to bottom, as the bands do.
+  datasets.reverse()
+
   const data: ChartData<'line'> = { labels: shown.map((p) => formatTime(p.recordedAt)), datasets }
   const options: ChartOptions<'line'> = {
     locale: numberLocale(),
     responsive: true,
-    maintainAspectRatio: true,
-    aspectRatio: 2.4,
+    maintainAspectRatio: false,
     animation: false,
     interaction: { mode: 'index', intersect: false },
-    plugins: { legend: { labels: { color: text } } },
-    scales: {
-      x: { ...axis, ticks: { color: text, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } },
-      soc: { display: hasSoc, position: 'left', min: 0, max: 100, ...axis, ticks: { color: text } },
-      power: {
-        display: hasPower,
-        position: 'right',
-        grid: { drawOnChartArea: false },
-        ticks: { color: text },
-      },
-      elevation: { display: false },
-    },
+    plugins: { legend: { labels: { color: text, boxWidth: 10, boxHeight: 10 } } },
+    scales,
   }
   return { data, options }
+})
+
+// The figures the panel lists under the summary, like a trip computer would: only those known.
+const details = computed(() => {
+  const s = telemetrySummary.value
+  const e = props.entry
+  const rows: { key: string; label: string; value: string; note?: string }[] = []
+  const { socStartPercent: socStart, socEndPercent: socEnd } = e
+  if (socStart != null && socEnd != null) {
+    const delta = Math.round(socEnd - socStart)
+    rows.push({
+      key: 'soc',
+      label: t('tripLog.detail.soc'),
+      value: `${Math.round(socStart)}% → ${Math.round(socEnd)}%`,
+      note: `(${delta > 0 ? '+' : ''}${delta}%)`,
+    })
+  }
+  const odoStart = units.value.format('distance', e.odometerStartKm ?? null, {
+    decimals: 0,
+    grouped: true,
+  })
+  const odoEnd = units.value.format('distance', e.odometerEndKm ?? null, {
+    decimals: 0,
+    grouped: true,
+  })
+  if (odoStart && odoEnd) {
+    rows.push({ key: 'odometer', label: t('tripLog.odometer'), value: `${odoStart} → ${odoEnd}` })
+  }
+  const sign = drivingPowerSign(telemetry.value)
+  const powers = telemetry.value
+    .map((p) => (p.powerKw === null ? null : p.powerKw * sign))
+    .filter((v): v is number => v !== null)
+  if (powers.length > 0) {
+    rows.push({
+      key: 'maxPower',
+      label: t('tripLog.detail.maxPower'),
+      value: `${formatNumber(Math.max(...powers), 0)} kW`,
+    })
+    const regen = Math.min(...powers)
+    if (regen < 0) {
+      rows.push({
+        key: 'maxRegen',
+        label: t('tripLog.detail.maxRegen'),
+        value: `${formatNumber(-regen, 0)} kW`,
+      })
+    }
+  }
+  if (s.climbM !== null && s.descentM !== null) {
+    const unit = uiSettings.effectiveUnits.distance === 'mi' ? 'ft' : 'm'
+    rows.push({
+      key: 'climb',
+      label: t('tripLog.detail.ascentDescent'),
+      value: `↑ ${climbLabel(s.climbM)} ${unit}  ↓ ${climbLabel(s.descentM)} ${unit}`,
+    })
+  }
+  if (s.outsideStart !== null && s.outsideEnd !== null) {
+    const lo = units.value.measure('temperature', Math.min(s.outsideStart, s.outsideEnd), {
+      decimals: 1,
+    })
+    const hi = units.value.measure('temperature', Math.max(s.outsideStart, s.outsideEnd), {
+      decimals: 1,
+    })
+    if (lo && hi) {
+      rows.push({
+        key: 'outside',
+        label: t('tripLog.detail.outside'),
+        value: `${lo.value} – ${hi.value} ${hi.unit}`,
+      })
+    }
+  }
+  if (s.climateMinutes !== null) {
+    rows.push({
+      key: 'climate',
+      label: t('tripLog.detail.climate'),
+      value:
+        s.climateMinutes < 1
+          ? t('tripLog.detail.climateOff')
+          : t('tripLog.detail.climateOn', { minutes: Math.round(s.climateMinutes) }),
+    })
+  }
+  if (props.routePoints && props.routePoints.length > 0) {
+    rows.push({
+      key: 'points',
+      label: t('tripLog.detail.gpsPoints'),
+      value: String(props.routePoints.length),
+    })
+  }
+  return rows
 })
 
 function downloadGpx() {
@@ -455,166 +576,194 @@ const notesId = computed(() => `trip-log-notes-${props.entry.id}`)
       </div>
     </header>
 
-    <div class="trip-log-detail__ends">
-      <template v-for="end in [from, to]" :key="end === from ? 'from' : 'to'">
-        <span
-          v-if="end.pending"
-          class="skeleton skeleton--text skeleton--text-md"
-          :aria-label="t('tripLog.resolvingPlaces')"
-        />
-        <button
-          v-else
-          type="button"
-          class="trip-log-detail__place"
-          :class="end === from ? 'trip-log-detail__place--start' : 'trip-log-detail__place--end'"
-          :title="t('tripLog.places.useEnd', { place: end.label })"
-          :aria-label="t('tripLog.places.useEnd', { place: end.label })"
-          @click="emit('pickPlace', end.lat, end.lng)"
-        >
-          <font-awesome-icon
-            v-if="end.commutePlace"
-            :icon="COMMUTE_PLACE_ICONS[end.commutePlace.kind]"
-            class="trip-log-detail__place-icon"
-          />{{ end.label }}
-        </button>
-      </template>
-    </div>
-
-    <TripRouteMap
-      :key="entry.id"
-      :points="routePoints"
-      :loading="routeLoading"
-      :start="[entry.startLatitude, entry.startLongitude]"
-      :end="[entry.endLatitude, entry.endLongitude]"
-      :trip-id="entry.id"
-      :started-at="entry.startedAt"
-      :link-to-map="!entry.isHidden"
-    />
-    <p v-if="routeError" class="text-xs text-muted" role="status">
-      {{ t('tripLog.detail.routeUnavailable') }}
-    </p>
-
-    <dl
-      class="trip-log-detail__figures"
-      :class="{ 'trip-log-detail__figures--six': figures.length > 4 }"
-    >
-      <div
-        v-for="figure in figures"
-        :key="figure.key"
-        class="trip-log-detail__figure"
-        :title="figure.title"
-      >
-        <dt class="trip-log-detail__figure-label">
-          <font-awesome-icon :icon="figure.icon" aria-hidden="true" />{{ figure.label }}
-        </dt>
-        <dd class="trip-log-detail__figure-value">
-          {{ figure.measure?.value ?? '-'
-          }}<span v-if="figure.measure?.unit" class="trip-log-detail__figure-unit">
-            {{ figure.measure.unit }}</span
+    <div class="trip-detail__grid">
+      <div class="trip-detail__col">
+        <section class="trip-detail__card">
+          <h3 class="trip-detail__card-title">
+            <font-awesome-icon icon="location-dot" />{{ t('tripLog.detail.summary') }}
+          </h3>
+          <div class="trip-log-detail__ends">
+            <template v-for="end in [from, to]" :key="end === from ? 'from' : 'to'">
+              <span
+                v-if="end.pending"
+                class="skeleton skeleton--text skeleton--text-md"
+                :aria-label="t('tripLog.resolvingPlaces')"
+              />
+              <button
+                v-else
+                type="button"
+                class="trip-log-detail__place"
+                :class="
+                  end === from ? 'trip-log-detail__place--start' : 'trip-log-detail__place--end'
+                "
+                :title="t('tripLog.places.useEnd', { place: end.label })"
+                :aria-label="t('tripLog.places.useEnd', { place: end.label })"
+                @click="emit('pickPlace', end.lat, end.lng)"
+              >
+                <font-awesome-icon
+                  v-if="end.commutePlace"
+                  :icon="COMMUTE_PLACE_ICONS[end.commutePlace.kind]"
+                  class="trip-log-detail__place-icon"
+                />{{ end.label }}
+              </button>
+            </template>
+          </div>
+          <dl
+            class="trip-log-detail__figures"
+            :class="{ 'trip-log-detail__figures--six': figures.length > 4 }"
           >
-        </dd>
-        <dd
-          v-if="figure.note"
-          class="trip-log-detail__figure-note text-xs text-muted"
-          :title="figure.noteTitle"
-        >
-          <font-awesome-icon :icon="figure.noteIcon ?? 'gauge'" aria-hidden="true" />
-          {{ figure.note }}
-        </dd>
+            <div
+              v-for="figure in figures"
+              :key="figure.key"
+              class="trip-log-detail__figure"
+              :title="figure.title"
+            >
+              <dt class="trip-log-detail__figure-label">
+                <font-awesome-icon :icon="figure.icon" aria-hidden="true" />{{ figure.label }}
+              </dt>
+              <dd class="trip-log-detail__figure-value">
+                {{ figure.measure?.value ?? '-'
+                }}<span v-if="figure.measure?.unit" class="trip-log-detail__figure-unit">
+                  {{ figure.measure.unit }}</span
+                >
+              </dd>
+              <dd
+                v-if="figure.note"
+                class="trip-log-detail__figure-note text-xs text-muted"
+                :title="figure.noteTitle"
+              >
+                <font-awesome-icon :icon="figure.noteIcon ?? 'gauge'" aria-hidden="true" />
+                {{ figure.note }}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section v-if="details.length" class="trip-detail__card">
+          <h3 class="trip-detail__card-title">{{ t('tripLog.detail.tripDetails') }}</h3>
+          <dl class="trip-detail__list">
+            <div v-for="row in details" :key="row.key">
+              <dt>{{ row.label }}</dt>
+              <dd>
+                {{ row.value }}<span v-if="row.note" class="text-muted"> {{ row.note }}</span>
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="trip-detail__card">
+          <section class="trip-log-detail__classify" :aria-label="t('tripLog.purposeLabel')">
+            <ChipGroup
+              class="trip-log-detail__purpose"
+              :options="purposeOptions"
+              :model-value="entry.purpose"
+              :group-label="t('tripLog.purposeLabel')"
+              :disabled="saving"
+              deselectable
+              @update:model-value="choosePurpose"
+            />
+
+            <label :for="notesId" class="text-xs text-muted">{{ t('tripLog.notesLabel') }}</label>
+            <input
+              :id="notesId"
+              v-model="notesDraft"
+              type="text"
+              class="trip-log-detail__notes"
+              :maxlength="TRIP_NOTES_MAX_LENGTH"
+              :placeholder="t('tripLog.notesPlaceholder')"
+              :disabled="saving"
+              @change="saveNotes"
+              @keydown.enter="($event.target as HTMLInputElement).blur()"
+            />
+          </section>
+        </section>
       </div>
-    </dl>
 
-    <StatsChartCard
-      v-if="speedChart"
-      class="trip-log-detail__chart"
-      :title="t('tripLog.detail.speedChart')"
-      icon="chart-line"
-      type="line"
-      :data="speedChart.data"
-      :options="speedChart.options"
-      :show-info="false"
-    />
+      <div class="trip-detail__col">
+        <TripRouteMap
+          :key="entry.id"
+          :points="routePoints"
+          :loading="routeLoading"
+          :start="[entry.startLatitude, entry.startLongitude]"
+          :end="[entry.endLatitude, entry.endLongitude]"
+          :trip-id="entry.id"
+          :started-at="entry.startedAt"
+          :link-to-map="!entry.isHidden"
+        />
+        <p v-if="routeError" class="text-xs text-muted" role="status">
+          {{ t('tripLog.detail.routeUnavailable') }}
+        </p>
 
-    <StatsChartCard
-      v-if="telemetryChart"
-      class="trip-log-detail__chart"
-      :title="t('tripLog.detail.duringTrip')"
-      icon="chart-line"
-      type="line"
-      :data="telemetryChart.data"
-      :options="telemetryChart.options"
-      :show-info="false"
-    />
+        <section v-if="telemetryChart" class="trip-detail__card trip-detail__chart">
+          <h3 class="trip-detail__card-title">{{ t('tripLog.detail.tripData') }}</h3>
+          <div class="trip-detail__chart-canvas ll-chart">
+            <StatsChartCard
+              :title="''"
+              icon="chart-line"
+              type="line"
+              :data="telemetryChart.data"
+              :options="telemetryChart.options"
+              :show-info="false"
+            />
+          </div>
+        </section>
+        <StatsChartCard
+          v-else-if="speedChart"
+          class="trip-log-detail__chart"
+          :title="t('tripLog.detail.speedChart')"
+          icon="chart-line"
+          type="line"
+          :data="speedChart.data"
+          :options="speedChart.options"
+          :show-info="false"
+        />
 
-    <section class="trip-log-detail__classify" :aria-label="t('tripLog.purposeLabel')">
-      <ChipGroup
-        class="trip-log-detail__purpose"
-        :options="purposeOptions"
-        :model-value="entry.purpose"
-        :group-label="t('tripLog.purposeLabel')"
-        :disabled="saving"
-        deselectable
-        @update:model-value="choosePurpose"
-      />
-
-      <label :for="notesId" class="text-xs text-muted">{{ t('tripLog.notesLabel') }}</label>
-      <input
-        :id="notesId"
-        v-model="notesDraft"
-        type="text"
-        class="trip-log-detail__notes"
-        :maxlength="TRIP_NOTES_MAX_LENGTH"
-        :placeholder="t('tripLog.notesPlaceholder')"
-        :disabled="saving"
-        @change="saveNotes"
-        @keydown.enter="($event.target as HTMLInputElement).blur()"
-      />
-    </section>
-
-    <div class="trip-log-detail__actions">
-      <!-- A hidden trip is left off the map, so there is nothing there to show it on. -->
-      <RouterLink
-        v-if="!entry.isHidden"
-        class="btn btn-outline-secondary btn-sm"
-        :to="{ name: 'map', query: { trip: entry.id, at: entry.startedAt } }"
-      >
-        <font-awesome-icon icon="map" />{{ t('tripLog.showOnMap') }}
-      </RouterLink>
-      <RouterLink
-        class="btn btn-outline-secondary btn-sm"
-        :to="{ name: 'tripEdit', params: { id: entry.id } }"
-      >
-        <font-awesome-icon icon="pen-to-square" />{{ t('tripLog.editRoute') }}
-      </RouterLink>
-      <button
-        type="button"
-        class="btn btn-outline-secondary btn-sm"
-        :disabled="!routePoints || routePoints.length === 0"
-        @click="downloadGpx"
-      >
-        <font-awesome-icon icon="download" />{{ t('tripLog.downloadGpx') }}
-      </button>
-      <button
-        v-if="canJoinNext"
-        type="button"
-        class="btn btn-outline-secondary btn-sm"
-        :disabled="saving"
-        :title="t('tripLog.joinNextHint')"
-        @click="emit('joinNext')"
-      >
-        <font-awesome-icon icon="link" />{{ t('tripLog.joinNext') }}
-      </button>
-      <button
-        type="button"
-        class="btn btn-outline-secondary btn-sm trip-log-detail__hide"
-        :disabled="saving"
-        :title="entry.isHidden ? undefined : t('tripLog.hideHint')"
-        @click="emit('setHidden', !entry.isHidden)"
-      >
-        <font-awesome-icon :icon="entry.isHidden ? 'eye' : 'eye-slash'" />{{
-          entry.isHidden ? t('tripLog.show') : t('tripLog.hide')
-        }}
-      </button>
+        <div class="trip-log-detail__actions">
+          <!-- A hidden trip is left off the map, so there is nothing there to show it on. -->
+          <RouterLink
+            v-if="!entry.isHidden"
+            class="btn btn-outline-secondary btn-sm"
+            :to="{ name: 'map', query: { trip: entry.id, at: entry.startedAt } }"
+          >
+            <font-awesome-icon icon="map" />{{ t('tripLog.showOnMap') }}
+          </RouterLink>
+          <RouterLink
+            class="btn btn-outline-secondary btn-sm"
+            :to="{ name: 'tripEdit', params: { id: entry.id } }"
+          >
+            <font-awesome-icon icon="pen-to-square" />{{ t('tripLog.editRoute') }}
+          </RouterLink>
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            :disabled="!routePoints || routePoints.length === 0"
+            @click="downloadGpx"
+          >
+            <font-awesome-icon icon="download" />{{ t('tripLog.downloadGpx') }}
+          </button>
+          <button
+            v-if="canJoinNext"
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            :disabled="saving"
+            :title="t('tripLog.joinNextHint')"
+            @click="emit('joinNext')"
+          >
+            <font-awesome-icon icon="link" />{{ t('tripLog.joinNext') }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm trip-log-detail__hide"
+            :disabled="saving"
+            :title="entry.isHidden ? undefined : t('tripLog.hideHint')"
+            @click="emit('setHidden', !entry.isHidden)"
+          >
+            <font-awesome-icon :icon="entry.isHidden ? 'eye' : 'eye-slash'" />{{
+              entry.isHidden ? t('tripLog.show') : t('tripLog.hide')
+            }}
+          </button>
+        </div>
+      </div>
     </div>
   </article>
 </template>

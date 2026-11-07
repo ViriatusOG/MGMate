@@ -758,7 +758,15 @@
       "duringTrip": "Tijdens de rit",
       "batteryLevel": "Accu",
       "power": "Vermogen, onder 0 is terugwinning",
-      "elevation": "Hoogte"
+      "elevation": "Hoogte",
+      "summary": "Ritoverzicht",
+      "tripDetails": "Ritgegevens",
+      "tripData": "Ritdata",
+      "soc": "Accu",
+      "maxPower": "Max. vermogen",
+      "maxRegen": "Max. terugwinning",
+      "ascentDescent": "Stijgen / dalen",
+      "gpsPoints": "GPS-punten"
     },
     "purposeLabel": "Doel",
     "purpose": {
@@ -838,7 +846,16 @@
     "editRoute": "Route bewerken",
     "edited": "Bewerkt",
     "editedHint": "De route is met de hand bewerkt. De afstand komt nog steeds van de kilometerteller.",
-    "downloadGpx": "GPX downloaden"
+    "downloadGpx": "GPX downloaden",
+    "tiles": {
+      "distance": "Afstand",
+      "trips": "Ritten",
+      "efficiency": "Gem. verbruik",
+      "energy": "Energie verbruikt",
+      "cost": "Kosten"
+    },
+    "tripCount": "{n} rit | {n} ritten",
+    "showWholeYear": "Heel {year}"
   },
   "tripEdit": {
     "title": "Route bewerken",
@@ -1207,7 +1224,21 @@
     },
     "paid": "Wat je betaalde ({currency}, optioneel)",
     "paidPlaceholder": "Leeg laten om je prijzen te gebruiken",
-    "paidInvalid": "Wat je betaalde moet een getal van 0 of meer zijn"
+    "paidInvalid": "Wat je betaalde moet een getal van 0 of meer zijn",
+    "acVsDc": "AC tegen DC",
+    "homeVsPublic": "Thuis tegen openbaar",
+    "avgDuration": "Gem. duur",
+    "avgPrice": "Gem. prijs",
+    "avgEnergy": "Gem. per laadbeurt",
+    "batteryAdded": "Accu bijgeladen",
+    "daysCharged": "Dagen met een laadbeurt",
+    "count": "{n} laadbeurt | {n} laadbeurten",
+    "peak": "piek",
+    "summary": "Samenvatting laadbeurt",
+    "target": "Doel {n}%",
+    "avgPower": "Gemiddeld vermogen",
+    "outside": "Buiten",
+    "noChart": "De auto stuurde te weinig metingen om deze laadbeurt te tekenen."
   },
   "tariff": {
     "button": "Prijzen",
@@ -1282,5 +1313,10 @@
       "driveStarted": "Rit gestart",
       "driveEnded": "Geparkeerd"
     }
+  },
+  "calendar": {
+    "previousMonth": "Vorige maand",
+    "nextMonth": "Volgende maand",
+    "jumpToToday": "Naar vandaag"
   }
 }

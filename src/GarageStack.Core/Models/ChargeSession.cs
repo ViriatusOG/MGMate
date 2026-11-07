@@ -103,7 +103,8 @@ public sealed record ChargeSample(
     double? Longitude,
     double? OdometerKm,
     string? StopReason,
-    int? SocTargetPercent);
+    int? SocTargetPercent,
+    double? OutsideTemperature = null);
 
 /// <summary>The places a charge can be set to.</summary>
 public static class ChargePlaces
@@ -114,8 +115,8 @@ public static class ChargePlaces
 /// <summary>What the owner can change on a charge: replaced as a whole.</summary>
 public sealed record ChargeEdit(string? Notes, string? Place, decimal? PaidAmount);
 
-/// <summary>One point of a charge's chart: when, the power in kW and the state of charge.</summary>
-public sealed record ChargeChartPoint(DateTime RecordedAt, double? PowerKw, double? SocPercent);
+/// <summary>One point of a charge's chart: when, the power in kW, the state of charge and the outside temperature in °C.</summary>
+public sealed record ChargeChartPoint(DateTime RecordedAt, double? PowerKw, double? SocPercent, double? OutsideTemperature = null);
 
 /// <summary>How joining a charge with the next one went.</summary>
 public enum ChargeMergeOutcome

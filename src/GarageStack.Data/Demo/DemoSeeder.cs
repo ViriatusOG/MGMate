@@ -32,6 +32,9 @@ public static class DemoSeeder
         if (rdwEnabled && !await db.RdwVehicleInfos.AnyAsync(ct))
             await SeedRdwAsync(db, ct);
 
+        if (!await db.ChargeSessions.AnyAsync(ct))
+            await SeedChargesAsync(db, ct);
+
         if (await db.MaintenanceItems.AnyAsync(ct))
             return;
 
@@ -167,6 +170,46 @@ public static class DemoSeeder
             schedule.NextRunUtc = ClimateScheduleCalendar.NextRunUtc(schedule.StartTime, schedule.Days, zone, DateTime.UtcNow);
 
         db.ClimateSchedules.AddRange(work, frostyMorning);
+        await db.SaveChangesAsync(ct);
+    }
+
+    // Two months of charging: overnight at home every few days, and a rapid charge on a long day out.
+    private static async Task SeedChargesAsync(AppDbContext db, CancellationToken ct)
+    {
+        var vehicleId = DemoVehicleRepository.DemoVehicle.Id;
+        var today = DateTime.UtcNow.Date;
+        var sessions = new List<ChargeSession>();
+        var odometer = 14_200.0;
+        for (var daysAgo = 60; daysAgo >= 1; daysAgo -= 3 + daysAgo % 2)
+        {
+            var rapid = daysAgo % 13 == 0;
+            var startSoc = 22.0 + (daysAgo * 7) % 25;
+            var endSoc = rapid ? 78.0 : 80.0 + (daysAgo % 3 == 0 ? 20 : 0);
+            var started = rapid ? today.AddDays(-daysAgo).AddHours(13).AddMinutes(daysAgo % 40) : today.AddDays(-daysAgo).AddHours(22).AddMinutes(30 + daysAgo % 25);
+            var minutes = rapid ? 26 + daysAgo % 9 : (endSoc - startSoc) * 0.64 * 60 / 7.0;
+            odometer += 140 + daysAgo % 60;
+            sessions.Add(new ChargeSession
+            {
+                VehicleId = vehicleId,
+                StartedAt = started,
+                EndedAt = started.AddMinutes(minutes),
+                SocStartPercent = startSoc,
+                SocEndPercent = endSoc,
+                // 64 kWh usable, give or take what a real reading wanders by.
+                EnergyAddedKwh = Math.Round((endSoc - startSoc) / 100 * (64 + Math.Sin(daysAgo) * 0.8), 2),
+                MaxPowerKw = rapid ? 96.4 : 7.2,
+                ChargeType = rapid ? "DC" : "AC",
+                Latitude = rapid ? 52.0907 : 52.3676,
+                Longitude = rapid ? 5.1214 : 4.9041,
+                OdometerKm = Math.Round(odometer),
+                StopReason = rapid ? "Stopped by user" : "Target reached",
+                SocTargetPercent = (int)endSoc,
+                // Marked rather than left to a home place, which the demo has none of until one is added.
+                Place = rapid ? "public" : "home",
+                PaidAmount = rapid ? Math.Round((decimal)((endSoc - startSoc) / 100 * 64 * 0.69), 2) : null,
+            });
+        }
+        db.ChargeSessions.AddRange(sessions);
         await db.SaveChangesAsync(ct);
     }
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import '@/assets/charges.css'
-import { computed, onMounted, ref, watch } from 'vue'
+import '@/assets/logList.css'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { useVehicleStore } from '@/stores/vehicle'
@@ -8,6 +9,10 @@ import { useUiSettingsStore } from '@/stores/settingsUi'
 import { useCommutePlacesStore } from '@/stores/commutePlaces'
 import { chargeCost, chargePlace, formatMoney, type ChargeCost } from '@/utils/tariff'
 import TariffModal from '@/components/TariffModal.vue'
+import MonthCalendar, { type CalendarDay } from '@/components/MonthCalendar.vue'
+import DonutCard, { type DonutSlice } from '@/components/DonutCard.vue'
+import SocBar from '@/components/SocBar.vue'
+import { dayKey, groupByDay } from '@/utils/dayGroups'
 import {
   chargesApi,
   CHARGE_NOTES_MAX_LENGTH,
@@ -23,7 +28,7 @@ import { useErrorMessage } from '@/composables/useErrorMessage'
 import ViewHeader from '@/components/ViewHeader.vue'
 import StatsChartCard from '@/components/StatsChartCard.vue'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const vehicleStore = useVehicleStore()
 const uiSettings = useUiSettingsStore()
 const placesStore = useCommutePlacesStore()
@@ -47,9 +52,6 @@ const notesDraft = ref('')
 const paidDraft = ref('')
 const saving = ref(false)
 
-const monthLabel = computed(() =>
-  month.value.toLocaleDateString(locale.value, { month: 'long', year: 'numeric' }),
-)
 const isCurrentMonth = computed(() => month.value.getTime() >= monthStart(new Date()).getTime())
 
 async function load() {
@@ -78,6 +80,15 @@ watch(vin, load)
 function stepMonth(offset: number) {
   month.value = monthStart(month.value, offset)
   selectedId.value = null
+  selectedDay.value = null
+  load()
+}
+
+function jumpToToday() {
+  if (isCurrentMonth.value) return
+  month.value = monthStart(new Date())
+  selectedId.value = null
+  selectedDay.value = null
   load()
 }
 
@@ -117,51 +128,6 @@ const spend = computed(() => {
   return { amount, perKwh: kwh > 0 ? amount / kwh : null, unpriced, home, away }
 })
 
-// One bar per day of the month: the kWh added, split AC and DC.
-const daily = computed(() => {
-  const days = new Date(month.value.getFullYear(), month.value.getMonth() + 1, 0).getDate()
-  const ac = Array<number>(days).fill(0)
-  const dc = Array<number>(days).fill(0)
-  for (const c of charges.value) {
-    if (c.isHidden) continue
-    const day = new Date(c.startedAt).getDate() - 1
-    const kwh = chargeEnergy(c, capacityKwh.value)?.kwh ?? 0
-    if (c.chargeType === 'DC') dc[day]! += kwh
-    else ac[day]! += kwh
-  }
-  return { days, ac, dc }
-})
-
-const dailyChart = computed(() => {
-  const { days, ac, dc } = daily.value
-  const { text, grid } = chartTheme.value
-  const axis = { grid: { color: grid }, border: { color: grid } }
-  const data: ChartData<'bar'> = {
-    labels: Array.from({ length: days }, (_, i) => String(i + 1)),
-    datasets: [
-      { label: t('charges.ac'), data: ac.map(round1), backgroundColor: '#3b82f6', stack: 'kwh' },
-      { label: t('charges.dc'), data: dc.map(round1), backgroundColor: '#f59e0b', stack: 'kwh' },
-    ],
-  }
-  const options: ChartOptions<'bar'> = {
-    locale: numberLocale(),
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
-    plugins: { legend: { labels: { color: text } } },
-    scales: {
-      x: { ...axis, stacked: true, ticks: { color: text, maxRotation: 0, autoSkip: true } },
-      y: {
-        ...axis,
-        stacked: true,
-        ticks: { color: text },
-        title: { display: true, text: t('common.kwh'), color: text },
-      },
-    },
-  }
-  return { data, options }
-})
-
 const selected = computed(() => charges.value.find((c) => c.id === selectedId.value) ?? null)
 
 async function select(charge: ChargeSession) {
@@ -181,56 +147,102 @@ async function select(charge: ChargeSession) {
   }
 }
 
+// Power, battery and outside temperature as bands over one time axis, as the trip data chart shows a drive.
 const sessionChart = computed(() => {
   const points = chart.value
   if (!points || points.length < 2) return null
+  const hasTemp = points.some((p) => p.outsideTemperature != null)
   const { text, grid } = chartTheme.value
-  const axis = { grid: { color: grid }, border: { color: grid } }
-  const data: ChartData<'line'> = {
-    labels: points.map((p) => formatTime(p.recordedAt)),
-    datasets: [
-      {
-        label: `${t('charges.power')} (kW)`,
-        data: points.map((p) => p.powerKw),
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59,130,246,0.12)',
-        fill: true,
-        spanGaps: true,
-        pointRadius: 0,
-        yAxisID: 'y',
-      },
-      {
-        label: `${t('charges.battery')} (%)`,
-        data: points.map((p) => p.socPercent),
-        borderColor: '#22c55e',
-        spanGaps: true,
-        pointRadius: 0,
-        yAxisID: 'y1',
-      },
-    ],
+  const band = (weight: number, color: string, title: string, extra = {}) => ({
+    type: 'linear' as const,
+    position: 'left' as const,
+    stack: 'charge',
+    stackWeight: weight,
+    offset: true,
+    grid: { color: grid },
+    border: { color: grid },
+    ticks: { color, maxTicksLimit: 4 },
+    title: { display: true, text: title, color, font: { size: 10 } },
+    ...extra,
+  })
+  const scales: ChartOptions<'line'>['scales'] = {
+    x: {
+      grid: { color: grid },
+      ticks: { color: text, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 },
+    },
   }
+  const datasets: ChartData<'line'>['datasets'] = []
+  // Chart.js stacks bands from the bottom up, so the bottom band goes first.
+  if (hasTemp) {
+    scales.temp = band(0.8, '#f59e0b', units.value.symbol('temperature'))
+    datasets.push({
+      label: t('charges.outside'),
+      data: points.map((p) =>
+        p.outsideTemperature == null
+          ? null
+          : round1(units.value.convert('temperature', p.outsideTemperature)),
+      ),
+      borderColor: '#f59e0b',
+      yAxisID: 'temp',
+    })
+  }
+  scales.soc = band(1, '#22c55e', '%', { min: 0, max: 100 })
+  datasets.push({
+    label: t('charges.battery'),
+    data: points.map((p) => p.socPercent),
+    borderColor: '#22c55e',
+    backgroundColor: 'rgba(34,197,94,0.12)',
+    fill: true,
+    yAxisID: 'soc',
+  })
+  scales.power = band(1.4, '#3b82f6', 'kW', { min: 0 })
+  datasets.push({
+    label: t('charges.power'),
+    data: points.map((p) => (p.powerKw === null ? null : round1(Math.abs(p.powerKw)))),
+    borderColor: '#3b82f6',
+    backgroundColor: 'rgba(59,130,246,0.15)',
+    fill: true,
+    yAxisID: 'power',
+  })
+  for (const d of datasets) Object.assign(d, { pointRadius: 0, spanGaps: true, tension: 0.2 })
+  datasets.reverse()
+  const data: ChartData<'line'> = { labels: points.map((p) => formatTime(p.recordedAt)), datasets }
   const options: ChartOptions<'line'> = {
     locale: numberLocale(),
     responsive: true,
-    maintainAspectRatio: true,
-    aspectRatio: 2.4,
+    maintainAspectRatio: false,
     animation: false,
     interaction: { mode: 'index', intersect: false },
-    plugins: { legend: { labels: { color: text } } },
-    scales: {
-      x: { ...axis, ticks: { color: text, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } },
-      y: { ...axis, min: 0, ticks: { color: text } },
-      y1: {
-        position: 'right',
-        min: 0,
-        max: 100,
-        grid: { drawOnChartArea: false },
-        ticks: { color: text },
-      },
-    },
+    plugins: { legend: { labels: { color: text, boxWidth: 10, boxHeight: 10 } } },
+    scales,
   }
   return { data, options }
 })
+
+const chartFigures = computed(() => {
+  const points = chart.value ?? []
+  const power = points
+    .map((p) => p.powerKw)
+    .filter((v): v is number => v !== null)
+    .map(Math.abs)
+  const temps = points
+    .map((p) => p.outsideTemperature)
+    .filter((v): v is number => v !== null && v !== undefined)
+  return {
+    avgPower: power.length > 0 ? power.reduce((s, v) => s + v, 0) / power.length : null,
+    tempLow: temps.length > 0 ? Math.min(...temps) : null,
+    tempHigh: temps.length > 0 ? Math.max(...temps) : null,
+  }
+})
+
+function temperatureRange(): string | null {
+  const { tempLow, tempHigh } = chartFigures.value
+  if (tempLow === null || tempHigh === null) return null
+  const lo = units.value.measure('temperature', tempLow, { decimals: 0 })
+  const hi = units.value.measure('temperature', tempHigh, { decimals: 0 })
+  if (!lo || !hi) return null
+  return lo.value === hi.value ? `${lo.value} ${lo.unit}` : `${lo.value} – ${hi.value} ${hi.unit}`
+}
 
 function round1(value: number): number {
   return Math.round(value * 10) / 10
@@ -318,6 +330,217 @@ const hasNext = computed(() => {
   const charge = selected.value
   return charge !== null && charges.value.some((c) => c.startedAt > charge.startedAt)
 })
+
+const visible = computed(() => charges.value.filter((c) => !c.isHidden))
+const days = computed(() => groupByDay(rows.value, (c) => c.startedAt))
+
+function kwhOf(charge: ChargeSession): number | null {
+  return chargeEnergy(charge, capacityKwh.value)?.kwh ?? null
+}
+
+function placeOf(charge: ChargeSession): 'home' | 'work' | 'public' {
+  return chargePlace(charge, placesStore.places)
+}
+
+function socChange(charge: ChargeSession): string | null {
+  const { socStartPercent: start, socEndPercent: end } = charge
+  if (start === null || end === null) return null
+  const diff = Math.round(end) - Math.round(start)
+  return `${Math.round(start)}% → ${Math.round(end)}% (${diff >= 0 ? '+' : ''}${diff}%)`
+}
+
+function perKwh(charge: ChargeSession): string | null {
+  const cost = costOf(charge)
+  const kwh = kwhOf(charge)
+  if (!cost || !kwh || kwh <= 0) return null
+  return formatMoney(cost.amount / kwh, uiSettings.tariff?.currency ?? 'GBP', 3)
+}
+
+function durationOf(charge: ChargeSession): string {
+  return formatDurationMs(chargeMinutes(charge) * 60_000, t)
+}
+
+const peakPower = computed(() => {
+  const peaks = visible.value.map((c) => c.maxPowerKw).filter((v): v is number => v !== null)
+  return peaks.length > 0 ? Math.max(...peaks) : null
+})
+
+const tiles = computed(() => {
+  const n = totals.value.sessions
+  const priced = uiSettings.tariff !== null || spend.value.amount > 0
+  return [
+    {
+      key: 'sessions',
+      icon: 'plug',
+      label: t('charges.sessions'),
+      value: String(n),
+      unit: '',
+      variant: 'teal',
+    },
+    {
+      key: 'energy',
+      icon: 'bolt',
+      label: t('charges.energyAdded'),
+      value: formatNumber(totals.value.kwh, 1),
+      unit: t('common.kwh'),
+      variant: 'indigo',
+    },
+    {
+      key: 'duration',
+      icon: 'clock',
+      label: t('charges.avgDuration'),
+      value: n > 0 ? formatDurationMs((totals.value.minutes / n) * 60_000, t) : '-',
+      unit: '',
+      variant: '',
+    },
+    {
+      key: 'peak',
+      icon: 'gauge-high',
+      label: t('charges.peakPower'),
+      value: peakPower.value !== null ? formatNumber(peakPower.value, 1) : '-',
+      unit: peakPower.value !== null ? 'kW' : '',
+      variant: 'blue',
+    },
+    {
+      key: 'cost',
+      icon: 'coins',
+      label: t('charges.cost'),
+      value: priced ? money(spend.value.amount) : '-',
+      unit: '',
+      variant: 'green',
+    },
+    {
+      key: 'price',
+      icon: 'tag',
+      label: t('charges.avgPrice'),
+      value:
+        spend.value.perKwh !== null
+          ? formatMoney(spend.value.perKwh, uiSettings.tariff?.currency ?? 'GBP', 3)
+          : '-',
+      unit: spend.value.perKwh !== null ? `/${t('common.kwh')}` : '',
+      variant: 'amber',
+    },
+  ]
+})
+
+function splitNote(list: ChargeSession[]): string {
+  const kwh = list.reduce((s, c) => s + (kwhOf(c) ?? 0), 0)
+  let cost = 0
+  let priced = false
+  for (const c of list) {
+    const x = costOf(c)
+    if (x) {
+      cost += x.amount
+      priced = true
+    }
+  }
+  const parts = [`${formatNumber(kwh, 1)} ${t('common.kwh')}`]
+  if (priced) parts.push(money(cost))
+  return parts.join(' · ')
+}
+
+const typeSlices = computed<DonutSlice[]>(() => {
+  const ac = visible.value.filter((c) => c.chargeType !== 'DC')
+  const dc = visible.value.filter((c) => c.chargeType === 'DC')
+  return [
+    { key: 'ac', label: t('charges.ac'), count: ac.length, note: splitNote(ac), color: '#3b82f6' },
+    { key: 'dc', label: t('charges.dc'), count: dc.length, note: splitNote(dc), color: '#f59e0b' },
+  ]
+})
+
+const PLACE_COLORS = { home: '#22c55e', work: '#8b5cf6', public: '#ef4444' } as const
+const PLACE_ICONS = { home: 'house', work: 'building', public: 'charging-station' } as const
+
+const placeSlices = computed<DonutSlice[]>(() =>
+  (['home', 'work', 'public'] as const)
+    .map((key) => {
+      const list = visible.value.filter((c) => placeOf(c) === key)
+      return {
+        key,
+        label: t(`charges.places.${key}`),
+        count: list.length,
+        note: splitNote(list),
+        color: PLACE_COLORS[key],
+      }
+    })
+    .filter((s) => s.key !== 'work' || s.count > 0),
+)
+
+function dayFigures(list: ChargeSession[]) {
+  const shown = list.filter((c) => !c.isHidden)
+  const kwh = shown.reduce((s, c) => s + (kwhOf(c) ?? 0), 0)
+  const minutes = shown.reduce((s, c) => s + chargeMinutes(c), 0)
+  let cost: number | null = null
+  for (const c of shown) {
+    const x = costOf(c)
+    if (x) cost = (cost ?? 0) + x.amount
+  }
+  return {
+    count: t('charges.count', shown.length),
+    kwh: kwh > 0 ? `+${formatNumber(kwh, 1)} ${t('common.kwh')}` : null,
+    duration: minutes > 0 ? formatDurationMs(minutes * 60_000, t) : null,
+    cost: cost !== null ? money(cost) : null,
+  }
+}
+
+const calendarDays = computed(() => {
+  const result: Record<string, CalendarDay> = {}
+  const groups = days.value.map((g) => ({
+    key: g.key,
+    items: g.items.filter((c) => !c.isHidden),
+  }))
+  const kwh = groups.map((g) => g.items.reduce((s, c) => s + (kwhOf(c) ?? 0), 0))
+  const most = Math.max(1, ...kwh)
+  groups.forEach((g, i) => {
+    if (g.items.length === 0) return
+    result[g.key] = {
+      value: formatNumber(kwh[i]!, 0),
+      count: g.items.length,
+      level: kwh[i]! / most,
+    }
+  })
+  return result
+})
+
+const selectedDay = ref<string | null>(null)
+
+async function selectDay(key: string) {
+  selectedDay.value = key
+  await nextTick()
+  document
+    .getElementById(`charge-day-${key}`)
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+const monthStats = computed(() => {
+  const n = totals.value.sessions
+  const list = visible.value
+  const socAdded = list.reduce(
+    (s, c) =>
+      c.socStartPercent !== null && c.socEndPercent !== null
+        ? s + Math.max(0, c.socEndPercent - c.socStartPercent)
+        : s,
+    0,
+  )
+  const daysCharged = new Set(list.map((c) => dayKey(new Date(c.startedAt)))).size
+  return [
+    {
+      key: 'time',
+      label: t('charges.timeCharging'),
+      value: formatDurationMs(totals.value.minutes * 60_000, t),
+    },
+    {
+      key: 'avg',
+      label: t('charges.avgEnergy'),
+      value: n > 0 ? `${formatNumber(totals.value.kwh / n, 1)} ${t('common.kwh')}` : '-',
+    },
+    { key: 'soc', label: t('charges.batteryAdded'), value: `${Math.round(socAdded)}%` },
+    { key: 'days', label: t('charges.daysCharged'), value: String(daysCharged) },
+    ...(spend.value.unpriced > 0 && uiSettings.tariff
+      ? [{ key: 'unpriced', label: t('charges.unpriced', spend.value.unpriced), value: '' }]
+      : []),
+  ]
+})
 </script>
 
 <template>
@@ -327,245 +550,327 @@ const hasNext = computed(() => {
         <button class="btn btn-sm btn-outline-secondary" @click="tariffOpen = true">
           <font-awesome-icon icon="coins" />{{ t('tariff.button') }}
         </button>
-        <div class="charges__month">
-          <button
-            class="btn btn-sm"
-            :aria-label="t('charges.previousMonth')"
-            @click="stepMonth(-1)"
-          >
-            <font-awesome-icon icon="chevron-left" />
-          </button>
-          <span class="charges__month-label">{{ monthLabel }}</span>
-          <button
-            class="btn btn-sm"
-            :aria-label="t('charges.nextMonth')"
-            :disabled="isCurrentMonth"
-            @click="stepMonth(1)"
-          >
-            <font-awesome-icon icon="chevron-right" />
-          </button>
-        </div>
       </template>
     </ViewHeader>
 
     <p v-if="error" class="charges__error" role="alert">{{ error }}</p>
 
-    <div class="charges__tiles">
-      <div class="charges__tile">
-        <span class="charges__tile-label">{{ t('charges.sessions') }}</span>
-        <span class="charges__tile-value">{{ totals.sessions }}</span>
-        <span class="charges__tile-note">{{
-          t('charges.acDcSplit', { ac: totals.ac, dc: totals.dc })
-        }}</span>
-      </div>
-      <div class="charges__tile">
-        <span class="charges__tile-label">{{ t('charges.energyAdded') }}</span>
-        <span class="charges__tile-value">
-          {{ formatNumber(totals.kwh, 1) }}<small>{{ t('common.kwh') }}</small>
-        </span>
-      </div>
-      <div class="charges__tile">
-        <span class="charges__tile-label">{{ t('charges.timeCharging') }}</span>
-        <span class="charges__tile-value">{{ formatDurationMs(totals.minutes * 60_000, t) }}</span>
-        <span class="charges__tile-note">{{
-          t('charges.homeAwaySplit', { home: spend.home, away: spend.away })
-        }}</span>
-      </div>
-      <div class="charges__tile">
-        <span class="charges__tile-label">{{ t('charges.cost') }}</span>
-        <template v-if="uiSettings.tariff || spend.amount > 0">
-          <span class="charges__tile-value">{{ money(spend.amount) }}</span>
-          <span v-if="spend.perKwh !== null" class="charges__tile-note">{{
-            t('charges.perKwhAverage', {
-              rate: formatMoney(spend.perKwh, uiSettings.tariff?.currency ?? 'GBP', 3),
-            })
-          }}</span>
-          <span v-if="spend.unpriced > 0" class="charges__tile-note">{{
-            t('charges.unpriced', spend.unpriced)
-          }}</span>
-        </template>
-        <button v-else class="btn btn-sm btn-link charges__set-prices" @click="tariffOpen = true">
-          {{ t('tariff.setUp') }}
-        </button>
-      </div>
-    </div>
-
-    <div v-if="totals.sessions > 0" class="charges__daily chart-container">
-      <h2 class="card-title"><font-awesome-icon icon="chart-line" />{{ t('charges.perDay') }}</h2>
-      <div class="charges__daily-canvas">
-        <StatsChartCard
-          class="charges__daily-chart"
-          :title="''"
-          icon="plug-circle-bolt"
-          type="bar"
-          :data="dailyChart.data"
-          :options="dailyChart.options"
-          :show-info="false"
-        />
-      </div>
-    </div>
-
-    <p v-if="!loading && rows.length === 0" class="text-muted charges__empty">
-      {{ t('charges.none') }}
-    </p>
-
-    <ul class="charges__list">
-      <li
-        v-for="charge in rows"
-        :key="charge.id"
-        class="charges__item"
-        :class="{ 'charges__item--hidden': charge.isHidden }"
+    <section class="ll-tiles">
+      <div
+        v-for="tile in tiles"
+        :key="tile.key"
+        class="ll-tile"
+        :class="tile.variant ? `ll-tile--${tile.variant}` : ''"
       >
-        <button
-          class="charges__row"
-          :aria-expanded="selectedId === charge.id"
-          @click="select(charge)"
+        <span class="ll-tile__icon"><font-awesome-icon :icon="tile.icon" /></span>
+        <span class="ll-tile__value"
+          >{{ tile.value }}<small v-if="tile.unit">{{ tile.unit }}</small></span
         >
-          <span class="charges__when">
-            <strong>{{
-              formatDate(charge.startedAt, { weekday: 'short', day: 'numeric', month: 'short' })
-            }}</strong>
-            <span class="text-muted text-sm"
-              >{{ formatTime(charge.startedAt) }} - {{ formatTime(charge.endedAt) }}</span
-            >
-          </span>
-          <span
-            class="charges__type"
-            :class="`charges__type--${(charge.chargeType ?? 'AC').toLowerCase()}`"
-          >
-            {{ charge.chargeType ?? '?' }}
-          </span>
-          <span class="charges__soc">{{ socLabel(charge) }}</span>
-          <span class="charges__num"
-            >{{ energyLabel(charge) }} <small>{{ t('common.kwh') }}</small></span
-          >
-          <span class="charges__num text-muted">
-            {{ charge.maxPowerKw !== null ? formatNumber(charge.maxPowerKw, 1) : '-' }}
-            <small>kW</small>
-          </span>
-          <span class="charges__num charges__cost">{{
-            costOf(charge) ? money(costOf(charge)!.amount) : '-'
-          }}</span>
-        </button>
+        <span class="ll-tile__label">{{ tile.label }}</span>
+      </div>
+    </section>
 
-        <div v-if="selectedId === charge.id" class="charges__detail">
-          <dl class="charges__figures">
-            <div>
-              <dt>{{ t('charges.added') }}</dt>
-              <dd>{{ energyLabel(charge) }} {{ t('common.kwh') }}</dd>
-              <dd
-                v-if="chargeEnergy(charge, capacityKwh)?.source === 'soc'"
-                class="text-xs text-muted"
-              >
-                {{ t('charges.estimated') }}
-              </dd>
-            </div>
-            <div>
-              <dt>{{ t('charges.battery') }}</dt>
-              <dd>{{ socLabel(charge) }}</dd>
-            </div>
-            <div>
-              <dt>{{ t('charges.duration') }}</dt>
-              <dd>{{ formatDurationMs(chargeMinutes(charge) * 60_000, t) }}</dd>
-            </div>
-            <div>
-              <dt>{{ t('charges.peakPower') }}</dt>
-              <dd>
-                {{ charge.maxPowerKw !== null ? `${formatNumber(charge.maxPowerKw, 1)} kW` : '-' }}
-              </dd>
-            </div>
-            <div v-if="costOf(charge)">
-              <dt>{{ t('charges.cost') }}</dt>
-              <dd>{{ money(costOf(charge)!.amount) }}</dd>
-              <dd class="text-xs text-muted">{{ costNote(charge, costOf(charge)!) }}</dd>
-            </div>
-            <div v-if="charge.odometerKm !== null">
-              <dt>{{ t('vehicle.odometer') }}</dt>
-              <dd>
-                {{ units.format('distance', charge.odometerKm, { decimals: 0, grouped: true }) }}
-              </dd>
-            </div>
-            <div v-if="charge.stopReason">
-              <dt>{{ t('charges.stopReason') }}</dt>
-              <dd>{{ charge.stopReason }}</dd>
+    <div v-if="totals.sessions > 0" class="charges__splits">
+      <DonutCard
+        :title="t('charges.acVsDc')"
+        :centre="t('charges.sessions')"
+        :slices="typeSlices"
+      />
+      <DonutCard
+        :title="t('charges.homeVsPublic')"
+        :centre="t('charges.sessions')"
+        :slices="placeSlices"
+      />
+    </div>
+
+    <div class="ll-layout">
+      <aside class="ll-side">
+        <MonthCalendar
+          :month="month"
+          :days="calendarDays"
+          :selected="selectedDay"
+          :can-next="!isCurrentMonth"
+          @prev="stepMonth(-1)"
+          @next="stepMonth(1)"
+          @today="jumpToToday"
+          @select="selectDay"
+        />
+        <div class="ll-card">
+          <dl class="ll-stats">
+            <div v-for="stat in monthStats" :key="stat.key">
+              <dt>{{ stat.label }}</dt>
+              <dd>{{ stat.value }}</dd>
             </div>
           </dl>
-
-          <StatsChartCard
-            v-if="sessionChart"
-            :title="t('charges.chart')"
-            icon="chart-line"
-            type="line"
-            :data="sessionChart.data"
-            :options="sessionChart.options"
-            :show-info="false"
-          />
-
-          <div class="charges__edit">
-            <label>
-              <span class="charges__notes-label">{{ t('charges.place') }}</span>
-              <select class="form-select" :value="charge.place ?? ''" @change="onPlaceChange">
-                <option value="">
-                  {{
-                    t('charges.placeAuto', {
-                      place: t(
-                        `charges.places.${chargePlace({ ...charge, place: null }, placesStore.places)}`,
-                      ),
-                    })
-                  }}
-                </option>
-                <option value="home">{{ t('charges.places.home') }}</option>
-                <option value="work">{{ t('charges.places.work') }}</option>
-                <option value="public">{{ t('charges.places.public') }}</option>
-              </select>
-            </label>
-            <label>
-              <span class="charges__notes-label">{{
-                t('charges.paid', { currency: uiSettings.tariff?.currency ?? 'GBP' })
-              }}</span>
-              <input
-                v-model="paidDraft"
-                class="form-control"
-                inputmode="decimal"
-                :placeholder="t('charges.paidPlaceholder')"
-                @blur="saveEdit()"
-              />
-            </label>
-          </div>
-
-          <label :for="`charge-notes-${charge.id}`" class="charges__notes-label">{{
-            t('charges.notes')
-          }}</label>
-          <textarea
-            :id="`charge-notes-${charge.id}`"
-            v-model="notesDraft"
-            class="charges__notes"
-            rows="2"
-            :maxlength="CHARGE_NOTES_MAX_LENGTH"
-            @blur="saveEdit()"
-          ></textarea>
-
-          <div class="charges__actions">
-            <button
-              class="btn btn-sm btn-outline-secondary"
-              :disabled="saving"
-              @click="toggleHidden"
-            >
-              <font-awesome-icon :icon="charge.isHidden ? 'eye' : 'eye-slash'" />
-              {{ charge.isHidden ? t('charges.show') : t('charges.hide') }}
-            </button>
-            <button
-              v-if="hasNext"
-              class="btn btn-sm btn-outline-secondary"
-              :disabled="saving"
-              @click="joinNext"
-            >
-              <font-awesome-icon icon="link" />{{ t('charges.joinNext') }}
-            </button>
-          </div>
+          <button
+            v-if="!uiSettings.tariff"
+            class="btn btn-sm btn-link charges__set-prices"
+            @click="tariffOpen = true"
+          >
+            {{ t('tariff.setUp') }}
+          </button>
         </div>
-      </li>
-    </ul>
+      </aside>
+
+      <div class="ll-days">
+        <p v-if="!loading && rows.length === 0" class="empty-state">{{ t('charges.none') }}</p>
+        <section
+          v-for="day in days"
+          :id="`charge-day-${day.key}`"
+          :key="day.key"
+          class="ll-day"
+          :class="{ 'll-day--selected': selectedDay === day.key }"
+        >
+          <header class="ll-day__head">
+            <h2 class="ll-day__title">
+              {{
+                formatDate(day.date, {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })
+              }}
+            </h2>
+            <span class="text-sm text-muted">{{ dayFigures(day.items).count }}</span>
+            <span class="ll-day__figures">
+              <strong v-if="dayFigures(day.items).kwh">{{ dayFigures(day.items).kwh }}</strong>
+              <span v-if="dayFigures(day.items).duration">{{
+                dayFigures(day.items).duration
+              }}</span>
+              <span v-if="dayFigures(day.items).cost" class="ll-cost">{{
+                dayFigures(day.items).cost
+              }}</span>
+            </span>
+          </header>
+
+          <ul class="ll-list">
+            <li
+              v-for="charge in day.items"
+              :key="charge.id"
+              class="ll-item charges__item"
+              :class="{
+                'll-item--open': selectedId === charge.id,
+                'll-item--hidden': charge.isHidden,
+              }"
+            >
+              <button
+                type="button"
+                class="ll-row"
+                :aria-expanded="selectedId === charge.id"
+                @click="select(charge)"
+              >
+                <span
+                  class="ll-row__lead charges__lead"
+                  :class="`charges__lead--${(charge.chargeType ?? 'AC').toLowerCase()}`"
+                >
+                  <font-awesome-icon
+                    :icon="charge.chargeType === 'DC' ? 'bolt' : 'plug'"
+                    :title="charge.chargeType ?? undefined"
+                  />
+                </span>
+                <span class="ll-row__main">
+                  <span class="ll-row__time">
+                    {{ formatTime(charge.startedAt) }} → {{ formatTime(charge.endedAt) }}
+                    <small>{{ durationOf(charge) }}</small>
+                  </span>
+                  <span class="ll-row__meta charges__meta">
+                    <span
+                      class="ll-pill"
+                      :class="charge.chargeType === 'DC' ? 'll-pill--warn' : 'll-pill--info'"
+                      >{{ charge.chargeType ?? '?' }}</span
+                    >
+                    <span class="ll-pill ll-pill--muted">
+                      <font-awesome-icon :icon="PLACE_ICONS[placeOf(charge)]" />
+                      {{ t(`charges.places.${placeOf(charge)}`) }}
+                    </span>
+                    <span v-if="charge.maxPowerKw !== null"
+                      >{{ t('charges.peak') }} {{ formatNumber(charge.maxPowerKw, 1) }} kW</span
+                    >
+                    <span v-if="charge.stopReason">· {{ charge.stopReason }}</span>
+                  </span>
+                </span>
+                <span class="ll-row__soc">
+                  <SocBar :start="charge.socStartPercent" :end="charge.socEndPercent" />
+                  <span v-if="socChange(charge)">{{ socChange(charge) }}</span>
+                </span>
+                <span class="ll-row__figures">
+                  <span class="ll-row__big"
+                    >+{{ energyLabel(charge) }} <small>{{ t('common.kwh') }}</small></span
+                  >
+                  <span v-if="costOf(charge)" class="ll-cost">{{
+                    money(costOf(charge)!.amount)
+                  }}</span>
+                  <span v-if="perKwh(charge)" class="ll-row__small"
+                    >{{ perKwh(charge) }}/{{ t('common.kwh') }}</span
+                  >
+                </span>
+              </button>
+
+              <div v-if="selectedId === charge.id" class="ll-detail charges__detail">
+                <div class="trip-detail__grid">
+                  <div class="trip-detail__col">
+                    <section class="trip-detail__card">
+                      <h3 class="trip-detail__card-title">{{ t('charges.summary') }}</h3>
+                      <dl class="charges__figures">
+                        <div>
+                          <dt>{{ t('charges.added') }}</dt>
+                          <dd>{{ energyLabel(charge) }} {{ t('common.kwh') }}</dd>
+                          <dd
+                            v-if="chargeEnergy(charge, capacityKwh)?.source === 'soc'"
+                            class="text-xs text-muted"
+                          >
+                            {{ t('charges.estimated') }}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>{{ t('charges.battery') }}</dt>
+                          <dd>{{ socLabel(charge) }}</dd>
+                          <dd v-if="charge.socTargetPercent !== null" class="text-xs text-muted">
+                            {{ t('charges.target', { n: charge.socTargetPercent }) }}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>{{ t('charges.duration') }}</dt>
+                          <dd>{{ durationOf(charge) }}</dd>
+                        </div>
+                        <div>
+                          <dt>{{ t('charges.peakPower') }}</dt>
+                          <dd>
+                            {{
+                              charge.maxPowerKw !== null
+                                ? `${formatNumber(charge.maxPowerKw, 1)} kW`
+                                : '-'
+                            }}
+                          </dd>
+                        </div>
+                        <div v-if="chartFigures.avgPower !== null">
+                          <dt>{{ t('charges.avgPower') }}</dt>
+                          <dd>{{ formatNumber(chartFigures.avgPower, 1) }} kW</dd>
+                        </div>
+                        <div v-if="temperatureRange()">
+                          <dt>{{ t('charges.outside') }}</dt>
+                          <dd>{{ temperatureRange() }}</dd>
+                        </div>
+                        <div v-if="costOf(charge)">
+                          <dt>{{ t('charges.cost') }}</dt>
+                          <dd>{{ money(costOf(charge)!.amount) }}</dd>
+                          <dd class="text-xs text-muted">
+                            {{ costNote(charge, costOf(charge)!) }}
+                          </dd>
+                        </div>
+                        <div v-if="charge.odometerKm !== null">
+                          <dt>{{ t('vehicle.odometer') }}</dt>
+                          <dd>
+                            {{
+                              units.format('distance', charge.odometerKm, {
+                                decimals: 0,
+                                grouped: true,
+                              })
+                            }}
+                          </dd>
+                        </div>
+                        <div v-if="charge.stopReason">
+                          <dt>{{ t('charges.stopReason') }}</dt>
+                          <dd>{{ charge.stopReason }}</dd>
+                        </div>
+                      </dl>
+                    </section>
+
+                    <section class="trip-detail__card">
+                      <div class="charges__edit">
+                        <label>
+                          <span class="charges__notes-label">{{ t('charges.place') }}</span>
+                          <select
+                            class="form-select"
+                            :value="charge.place ?? ''"
+                            @change="onPlaceChange"
+                          >
+                            <option value="">
+                              {{
+                                t('charges.placeAuto', {
+                                  place: t(
+                                    `charges.places.${chargePlace({ ...charge, place: null }, placesStore.places)}`,
+                                  ),
+                                })
+                              }}
+                            </option>
+                            <option value="home">{{ t('charges.places.home') }}</option>
+                            <option value="work">{{ t('charges.places.work') }}</option>
+                            <option value="public">{{ t('charges.places.public') }}</option>
+                          </select>
+                        </label>
+                        <label>
+                          <span class="charges__notes-label">{{
+                            t('charges.paid', { currency: uiSettings.tariff?.currency ?? 'GBP' })
+                          }}</span>
+                          <input
+                            v-model="paidDraft"
+                            class="form-control"
+                            inputmode="decimal"
+                            :placeholder="t('charges.paidPlaceholder')"
+                            @blur="saveEdit()"
+                          />
+                        </label>
+                      </div>
+                      <label :for="`charge-notes-${charge.id}`" class="charges__notes-label">{{
+                        t('charges.notes')
+                      }}</label>
+                      <textarea
+                        :id="`charge-notes-${charge.id}`"
+                        v-model="notesDraft"
+                        class="charges__notes"
+                        rows="2"
+                        :maxlength="CHARGE_NOTES_MAX_LENGTH"
+                        @blur="saveEdit()"
+                      ></textarea>
+                    </section>
+                  </div>
+
+                  <div class="trip-detail__col">
+                    <section class="trip-detail__card">
+                      <h3 class="trip-detail__card-title">{{ t('charges.chart') }}</h3>
+                      <div v-if="sessionChart" class="trip-detail__chart-canvas ll-chart">
+                        <StatsChartCard
+                          :title="''"
+                          icon="chart-line"
+                          type="line"
+                          :data="sessionChart.data"
+                          :options="sessionChart.options"
+                          :show-info="false"
+                        />
+                      </div>
+                      <p v-else-if="chart === null" class="text-sm text-muted">
+                        {{ t('common.loading') }}
+                      </p>
+                      <p v-else class="text-sm text-muted">{{ t('charges.noChart') }}</p>
+                    </section>
+                    <div class="charges__actions">
+                      <button
+                        class="btn btn-sm btn-outline-secondary"
+                        :disabled="saving"
+                        @click="toggleHidden"
+                      >
+                        <font-awesome-icon :icon="charge.isHidden ? 'eye' : 'eye-slash'" />
+                        {{ charge.isHidden ? t('charges.show') : t('charges.hide') }}
+                      </button>
+                      <button
+                        v-if="hasNext"
+                        class="btn btn-sm btn-outline-secondary"
+                        :disabled="saving"
+                        @click="joinNext"
+                      >
+                        <font-awesome-icon icon="link" />{{ t('charges.joinNext') }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </div>
 
     <TariffModal :open="tariffOpen" @close="tariffOpen = false" />
   </div>

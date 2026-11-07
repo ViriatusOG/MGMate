@@ -79,12 +79,46 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
         Task.FromResult<DayCounterReading?>(null);
 
     // Demo charges are fixed and carry their own chart; nothing records them.
-    public Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<ChargeSample>>([]);
+    // Nothing records demo charges (DemoSeeder saves them), so their chart is drawn here: a
+    // steady charge that tapers at the end, every five minutes, as the readings the window asks for.
+    public Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default)
+    {
+        var start = from.AddMinutes(5);
+        var end = to - ChargeSegmenter.PauseThreshold;
+        if (end <= start) return Task.FromResult<IReadOnlyList<ChargeSample>>([]);
+        var dc = (end - start) < TimeSpan.FromHours(1.5);
+        var steps = Math.Max(2, (int)((end - start).TotalMinutes / (dc ? 2 : 5)));
+        var samples = new List<ChargeSample>(steps + 1);
+        for (var i = 0; i <= steps; i++)
+        {
+            var share = (double)i / steps;
+            var power = dc ? 95 - 55 * share : share < 0.85 ? 7.1 : 7.1 * (1 - share) / 0.15;
+            samples.Add(new ChargeSample(
+                start.AddMinutes((end - start).TotalMinutes * share), true, Math.Round(30 + 50 * share, 1), -power,
+                dc ? "DC" : "AC", null, null, null, null, 80, Math.Round(11 - 2 * share + Math.Sin(i / 6.0) * 0.4, 1)));
+        }
+        return Task.FromResult<IReadOnlyList<ChargeSample>>(samples);
+    }
 
-    // Demo trips carry their route only; the trip detail leaves out what this would add.
-    public Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<TripTelemetryPoint>>([]);
+    // Demo trips carry their route only, so what the car would have reported along it is drawn here:
+    // speed, falling charge, power with regen on the slow-downs, rolling elevation and temperature.
+    public Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default)
+    {
+        var steps = Math.Max(2, (int)(to - from).TotalSeconds / 20);
+        var points = new List<TripTelemetryPoint>(steps + 1);
+        for (var i = 0; i <= steps; i++)
+        {
+            var share = (double)i / steps;
+            var speed = Math.Max(0, 55 + 35 * Math.Sin(i / 9.0) + 10 * Math.Sin(i / 3.1)) * Math.Min(1, Math.Min(share, 1 - share) * 12);
+            var accelerating = Math.Cos(i / 9.0) + 0.3 * Math.Cos(i / 3.1);
+            var power = speed < 1 ? 0.4 : accelerating < -0.4 ? -12 * -accelerating : 6 + speed * 0.18 + accelerating * 8;
+            points.Add(new TripTelemetryPoint(
+                from.AddSeconds((to - from).TotalSeconds * share), Math.Round(speed, 1), Math.Round(72 - 6 * share, 1),
+                Math.Round(power, 1), Math.Round(30 + 25 * Math.Sin(share * Math.PI * 2) + 8 * Math.Sin(i / 5.0), 1),
+                Math.Round(9 + 2 * share, 1), true));
+        }
+        return Task.FromResult<IReadOnlyList<TripTelemetryPoint>>(points);
+    }
 
     public Task<IReadOnlyList<ActivitySample>> GetActivitySamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<ActivitySample>>([]);

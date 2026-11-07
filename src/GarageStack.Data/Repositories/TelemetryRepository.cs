@@ -388,7 +388,7 @@ public class TelemetryRepository(
             .OrderBy(s => s.RecordedAt)
             .Select(s => new ChargeSample(
                 s.RecordedAt, s.IsCharging, s.EvSocPercent, s.HvPower, s.ChargingType,
-                s.Latitude, s.Longitude, s.OdometerKm, s.ChargingStopReason, s.SocTargetPercent))
+                s.Latitude, s.Longitude, s.OdometerKm, s.ChargingStopReason, s.SocTargetPercent, s.ExteriorTemperature))
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>

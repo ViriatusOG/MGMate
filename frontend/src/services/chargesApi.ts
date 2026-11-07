@@ -38,6 +38,7 @@ export interface ChargeChartPoint {
   recordedAt: string
   powerKw: number | null
   socPercent: number | null
+  outsideTemperature?: number | null
 }
 
 export const chargesApi = {
