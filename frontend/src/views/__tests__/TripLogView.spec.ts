@@ -164,7 +164,7 @@ describe('TripLogView', () => {
     const csv = vi.mocked(downloadCsv).mock.calls[0]![1]
     expect(csv).not.toContain('GPS glitch')
     expect(csv.trim().split('\n')).toHaveLength(3)
-    expect(wrapper.find('.trip-log-totals').text()).toContain('Unclassified (0)')
+    expect(wrapper.find('.trip-log-side-stats').text()).toContain('Unclassified (0)')
     expect(wrapper.find('.ll-tiles').text()).toContain('2')
   })
 
@@ -256,7 +256,7 @@ describe('TripLogView', () => {
 
   it('totals all trips and each purpose with its share of the distance', async () => {
     const wrapper = await mountView()
-    const totals = flat(wrapper.find('.trip-log-totals').text())
+    const totals = flat(wrapper.find('.trip-log-side-stats').text())
 
     expect(totals).toContain('All trips (2)85.0 km')
     expect(totals).toContain('Business (1)42.5 km')
@@ -269,7 +269,7 @@ describe('TripLogView', () => {
       logEntry({ id: 3, startedAt: '2026-10-03T07:00:00Z', endedAt: '2026-10-03T07:34:00Z' }),
     ])
     const wrapper = await mountView()
-    const summary = flat(wrapper.find('.trip-log-totals').text())
+    const summary = flat(wrapper.find('.trip-log-side-stats').text())
 
     // Two trips of 34 minutes and 42.5 km each.
     expect(summary).toContain('1h 8m')

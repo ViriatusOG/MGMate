@@ -515,7 +515,7 @@ function exportCsv() {
           @select="selectDay"
         />
 
-        <div class="ll-card trip-log-totals">
+        <div class="ll-card trip-log-side-stats">
           <dl class="ll-stats">
             <div>
               <dt>{{ t('tripLog.allTrips', { n: store.summary.trips }) }}</dt>
