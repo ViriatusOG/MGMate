@@ -1,7 +1,10 @@
 namespace GarageStack.Core.Models;
 
-/// <summary>A finished trip with the odometer readings at either end, as the Worker saves it.</summary>
-public sealed record RecordedTrip(TripDto Trip, double? OdometerStartKm, double? OdometerEndKm);
+/// <summary>
+/// A finished trip with the odometer readings at either end, as the Worker saves it, and what it
+/// took out of the battery (null when that was not read).
+/// </summary>
+public sealed record RecordedTrip(TripDto Trip, double? OdometerStartKm, double? OdometerEndKm, TripEnergy? Energy = null);
 
 /// <summary>
 /// One line of the trip log: a saved trip without its fixes, plus what the driver recorded about
@@ -30,7 +33,15 @@ public sealed record TripLogEntry(
     bool IsEdited = false,
     // The highest speed a fix reported, and the mean while moving; null when no fix carried one.
     double? MaxSpeedKmh = null,
-    double? AvgMovingSpeedKmh = null);
+    double? AvgMovingSpeedKmh = null,
+    // The state of charge at either end and the car's own count of what the trip used
+    // (Trip.SocStartPercent, Trip.SocEndPercent, Trip.EnergyCounterUsed); null when not reported.
+    double? SocStartPercent = null,
+    double? SocEndPercent = null,
+    double? EnergyCounterUsed = null);
+
+/// <summary>A saved trip whose energy has not been read yet (<see cref="Trip.EnergyRead"/>).</summary>
+public sealed record TripEnergyPending(long Id, int VehicleId, DateTime StartedAt, DateTime EndedAt, double DistanceKm);
 
 /// <summary>How joining a trip with the next one went (<see cref="Interfaces.ITripRepository.MergeWithNextAsync"/>).</summary>
 public enum TripMergeOutcome

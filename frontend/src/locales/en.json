@@ -38,7 +38,7 @@
       "efficiencyDistance": "Total distance driven so far today.",
       "efficiencyEnergy": "What the car has used since midnight. On a BEV or PHEV that is electrical energy through the high-voltage battery, in kilowatt-hours. On an HEV the same counter carries the trip computer's fuel total instead, so it is shown in litres.",
       "efficiencyCharge": "Distance driven since the last charge session.",
-      "efficiencyRatio": "How much the car used for the distance driven today. On a BEV or PHEV that is {energyPerDistance}, where lower is better, and it translates directly to electricity cost per {distance}. On an HEV it is fuel consumption in {fuelConsumption}, where {fuelBetter}: motorway driving gives a better figure than short stop-start trips from cold. When no driving data is available yet, HEV and PHEV fall back to estimated fuel economy ({distancePerPercent}) derived from the car's own range computer, where higher is more efficient.",
+      "efficiencyRatio": "How much the car used for the distance driven today. On a BEV or PHEV that is {energyPerDistance}, where {energyBetter}, and it translates directly to electricity cost per {distance}. On an HEV it is fuel consumption in {fuelConsumption}, where {fuelBetter}: motorway driving gives a better figure than short stop-start trips from cold. When no driving data is available yet, HEV and PHEV fall back to estimated fuel economy ({distancePerPercent}) derived from the car's own range computer, where higher is more efficient.",
       "speed": "Current vehicle speed as reported by the gateway.",
       "topSpeed": "Highest speed recorded across all GPS points in the most recent completed trip.",
       "activeTrip": "Distance covered in the current trip while active, or the distance of the last completed trip when parked.",
@@ -586,6 +586,8 @@
       "pressure": "Tyre pressure",
       "fuelConsumption": "Fuel consumption",
       "fuelConsumptionDesc": "Fuel used is counted in the same gallon",
+      "energyEfficiency": "Energy efficiency",
+      "energyEfficiencyDesc": "Counted in the distance unit above",
       "options": {
         "km": "Kilometres (km, km/h)",
         "mi": "Miles (mi, mph)",
@@ -596,7 +598,9 @@
         "kpa": "kPa",
         "l100km": "L/100 km",
         "mpgUk": "mpg (UK gallon)",
-        "mpgUs": "mpg (US gallon)"
+        "mpgUs": "mpg (US gallon)",
+        "whPerDistance": "Energy per distance (Wh/km, Wh/mi)",
+        "distancePerKwh": "Distance per kWh (km/kWh, mi/kWh)"
       }
     },
     "apiTokens": {
@@ -633,6 +637,8 @@
     "whPerMi": "Wh/mi",
     "kmPerPercent": "km/%",
     "miPerPercent": "mi/%",
+    "kmPerKwh": "km/kWh",
+    "miPerKwh": "mi/kWh",
     "bar": "bar",
     "psi": "psi",
     "kpa": "kPa",
@@ -730,7 +736,12 @@
       "averageSpeedHint": "The mean of the speeds the car reported while moving",
       "topSpeed": "Top speed",
       "speed": "Speed",
-      "speedChart": "Speed during the trip"
+      "speedChart": "Speed during the trip",
+      "energy": "Energy",
+      "energyFromCar": "As counted by the car",
+      "energyFromSoc": "Estimated from the battery level, {start}% to {end}%",
+      "battery": "Battery {start}% to {end}%",
+      "efficiency": "Efficiency"
     },
     "purposeLabel": "Purpose",
     "purpose": {

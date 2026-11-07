@@ -42,6 +42,14 @@ export interface TripLogEntry {
   /** The highest speed a fix reported, and the mean while moving; null when no fix carried one. */
   maxSpeedKmh: number | null
   avgMovingSpeedKmh: number | null
+  /** The state of charge at either end, in percent; null when the car reported none. */
+  socStartPercent?: number | null
+  socEndPercent?: number | null
+  /**
+   * What the car's own day counter says the trip used, in the counter's unit (utils/energy): kWh
+   * on a plug-in car. Null when the counters could not be matched to this trip.
+   */
+  energyCounterUsed?: number | null
 }
 
 /**

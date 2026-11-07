@@ -54,6 +54,24 @@ public class Trip
     /// <summary>The odometer once the car had parked, or null when it reported none.</summary>
     public double? OdometerEndKm { get; set; }
 
+    /// <summary>The state of charge in percent as the car set off, or null when it had reported none.</summary>
+    public double? SocStartPercent { get; set; }
+
+    /// <summary>The state of charge in percent once the car had parked, or null when it reported none.</summary>
+    public double? SocEndPercent { get; set; }
+
+    /// <summary>
+    /// What the car's own day counter says the trip used, in the counter's unit (see
+    /// <see cref="TripEnergy.CounterUsed"/>), or null when its counters could not be matched to it.
+    /// </summary>
+    public double? EnergyCounterUsed { get; set; }
+
+    /// <summary>
+    /// Whether the energy figures above were read when the trip was saved. False on a trip saved
+    /// before they existed until housekeeping reads them (ITripRepository.FillEnergyAsync).
+    /// </summary>
+    public bool EnergyRead { get; set; }
+
     /// <summary>
     /// The address at either end, as a JSON <see cref="PlaceAddress"/>. Null until the trip log
     /// has looked it up. Kept here rather than in the geocode cache, which expires: a trip log

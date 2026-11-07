@@ -577,6 +577,30 @@ public class TripRepositoryTests
     }
 
     [Fact]
+    public async Task EnergyPending_ListsTripsNotRead_UntilTheirEnergyIsSaved()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (db, repo, vehicle) = await SetupAsync(ct);
+        await using var _ = db;
+        await SaveOneAsync(repo, vehicle, T0, ct);
+        await SaveOneAsync(repo, vehicle, T0.AddDays(1), ct);
+
+        var pending = await repo.GetEnergyPendingAsync(10, ct);
+        Assert.Equal(2, pending.Count);
+        Assert.Equal(T0, pending[0].StartedAt);
+
+        await repo.SaveEnergyAsync(new Dictionary<long, TripEnergy>
+        {
+            [pending[0].Id] = new(80, 75, 3.1),
+            [pending[1].Id] = TripEnergy.None,
+        }, ct);
+
+        Assert.Empty(await repo.GetEnergyPendingAsync(10, ct));
+        var entry = Assert.Single(await repo.GetLogEntriesAsync(vehicle.Id, [pending[0].Id], ct));
+        Assert.Equal((80.0, 75.0, 3.1), (entry.SocStartPercent!.Value, entry.SocEndPercent!.Value, entry.EnergyCounterUsed!.Value));
+    }
+
+    [Fact]
     public async Task FillSpeedFigures_WorksOutOlderTrips_InBatches()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -685,6 +709,24 @@ public class TripManagementTests
         var (first, _) = await SaveCommuteWithAStopAsync(db, repo, vehicle, ct);
 
         Assert.Null(await repo.SetHiddenAsync(vehicle.Id + 1, first, hidden: true, ct));
+    }
+
+    [Fact]
+    public async Task Merge_TakesTheBatteryFromTheFirstsStartToTheSecondsEnd()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (db, repo, vehicle) = await SetupAsync(ct);
+        await using var _ = db;
+        var (first, second) = await SaveCommuteWithAStopAsync(db, repo, vehicle, ct);
+        await repo.SaveEnergyAsync(new Dictionary<long, TripEnergy>
+        {
+            [first] = new(80, 76, 2.5),
+            [second] = new(76, 71, 3.0),
+        }, ct);
+
+        var merged = (await repo.MergeWithNextAsync(vehicle.Id, first, ct)).Merged!;
+
+        Assert.Equal((80.0, 71.0, 5.5), (merged.SocStartPercent!.Value, merged.SocEndPercent!.Value, merged.EnergyCounterUsed!.Value));
     }
 
     [Fact]

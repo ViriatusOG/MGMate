@@ -11,24 +11,35 @@ export type DistanceUnit = 'km' | 'mi'
 export type TemperatureUnit = 'celsius' | 'fahrenheit'
 export type PressureUnit = 'bar' | 'psi' | 'kpa'
 export type FuelConsumptionUnit = 'l100km' | 'mpgUk' | 'mpgUs'
+/**
+ * How energy use is quoted, in the distance unit chosen: energy per distance (Wh/km, Wh/mi), where
+ * lower is better, or distance per energy (km/kWh, mi/kWh), where higher is better.
+ */
+export type EnergyEfficiencyUnit = 'whPerDistance' | 'distancePerKwh'
 
 export interface UnitPreferences {
   distance: DistanceUnit
   temperature: TemperatureUnit
   pressure: PressureUnit
   fuelConsumption: FuelConsumptionUnit
+  energyEfficiency: EnergyEfficiencyUnit
 }
 
 export const DISTANCE_UNITS: readonly DistanceUnit[] = ['km', 'mi']
 export const TEMPERATURE_UNITS: readonly TemperatureUnit[] = ['celsius', 'fahrenheit']
 export const PRESSURE_UNITS: readonly PressureUnit[] = ['bar', 'psi', 'kpa']
 export const FUEL_CONSUMPTION_UNITS: readonly FuelConsumptionUnit[] = ['l100km', 'mpgUk', 'mpgUs']
+export const ENERGY_EFFICIENCY_UNITS: readonly EnergyEfficiencyUnit[] = [
+  'whPerDistance',
+  'distancePerKwh',
+]
 
 export const METRIC_UNITS: Readonly<UnitPreferences> = {
   distance: 'km',
   temperature: 'celsius',
   pressure: 'bar',
   fuelConsumption: 'l100km',
+  energyEfficiency: 'whPerDistance',
 }
 
 /** The units as chosen in the settings: each one a unit, or "auto" for the one the region uses. */
@@ -39,6 +50,7 @@ export const AUTO_UNITS: Readonly<UnitSettings> = {
   temperature: 'auto',
   pressure: 'auto',
   fuelConsumption: 'auto',
+  energyEfficiency: 'auto',
 }
 
 // The United States and the territories that sign their roads the same way.
@@ -65,6 +77,8 @@ export function regionUnits(region: Region): UnitPreferences {
       : UK_ROADS.includes(region)
         ? 'mpgUk'
         : 'l100km',
+    // Where the road signs are in miles, an EV's economy is quoted the way a car's is: miles per kWh.
+    energyEfficiency: MILE_REGIONS.has(region) ? 'distancePerKwh' : 'whPerDistance',
   }
 }
 
@@ -80,6 +94,7 @@ export function resolveUnits(settings: Readonly<UnitSettings>, region: Region): 
     temperature: chosen('temperature'),
     pressure: chosen('pressure'),
     fuelConsumption: chosen('fuelConsumption'),
+    energyEfficiency: chosen('energyEfficiency'),
   }
 }
 
@@ -160,6 +175,12 @@ const ENERGY_PER_DISTANCE: Record<DistanceUnit, UnitDefinition> = {
   mi: scaled('units.whPerMi', KM_PER_MILE, 0),
 }
 
+// The same figure turned over: x Wh/km is 1000 / x km per kWh, and a mile is 1.6 times a km.
+const DISTANCE_PER_ENERGY: Record<DistanceUnit, UnitDefinition> = {
+  km: reciprocalOf('units.kmPerKwh', 1000, 1),
+  mi: reciprocalOf('units.miPerKwh', 1000 / KM_PER_MILE, 1),
+}
+
 const DISTANCE_PER_PERCENT: Record<DistanceUnit, UnitDefinition> = {
   km: scaled('units.kmPerPercent', 1, 1),
   mi: scaled('units.miPerPercent', 1 / KM_PER_MILE, 1),
@@ -199,7 +220,10 @@ const VOLUME: Record<FuelConsumptionUnit, UnitDefinition> = {
 const UNIT_OF: { [Q in Quantity]: (preferences: UnitPreferences) => UnitDefinition } = {
   distance: (p) => DISTANCE[p.distance],
   speed: (p) => SPEED[p.distance],
-  energyPerDistance: (p) => ENERGY_PER_DISTANCE[p.distance],
+  energyPerDistance: (p) =>
+    p.energyEfficiency === 'distancePerKwh'
+      ? DISTANCE_PER_ENERGY[p.distance]
+      : ENERGY_PER_DISTANCE[p.distance],
   distancePerPercent: (p) => DISTANCE_PER_PERCENT[p.distance],
   pressure: (p) => PRESSURE[p.pressure],
   temperature: (p) => TEMPERATURE[p.temperature],

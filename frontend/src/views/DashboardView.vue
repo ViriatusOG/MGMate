@@ -96,6 +96,9 @@ const cardDescriptionParams = computed(() => {
     fuelBetter: u.isReciprocal('fuelConsumption')
       ? t('units.higherIsBetter')
       : t('units.lowerIsBetter'),
+    energyBetter: u.isReciprocal('energyPerDistance')
+      ? t('units.higherIsBetter')
+      : t('units.lowerIsBetter'),
   }
 })
 

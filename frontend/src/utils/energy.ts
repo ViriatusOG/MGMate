@@ -80,3 +80,43 @@ export function hvBatteryReading(
     capacityKwh,
   }
 }
+
+/** What a trip took out of the battery, and where that figure came from. */
+export interface TripEnergyFigure {
+  kwh: number
+  /** Counted by the car itself, or estimated from the state of charge at either end. */
+  source: 'car' | 'soc'
+  /** Energy per distance over the trip, null when the distance is not known. */
+  whPerKm: number | null
+}
+
+/**
+ * A trip's energy, from what the trip log stores for it. The car's own count wins; without it
+ * the drop in state of charge is scaled by the battery's capacity, configured or reported. A
+ * plain hybrid's counter holds fuel and its battery is a buffer, so it gets neither.
+ */
+export function tripEnergy(
+  trip: {
+    socStartPercent?: number | null
+    socEndPercent?: number | null
+    energyCounterUsed?: number | null
+  },
+  distanceKm: number | null,
+  vehicleType: VehicleType,
+  capacityKwh: number | null,
+): TripEnergyFigure | null {
+  if (energyUnit(vehicleType) !== 'kwh') return null
+
+  const counted = trip.energyCounterUsed ?? null
+  if (counted !== null && counted > 0) {
+    return { kwh: counted, source: 'car', whPerKm: whPerKm(counted, distanceKm) }
+  }
+
+  const start = trip.socStartPercent ?? null
+  const end = trip.socEndPercent ?? null
+  if (start === null || end === null || capacityKwh === null || capacityKwh <= 0) return null
+  const kwh = ((start - end) / 100) * capacityKwh
+  // A level that held or rose says nothing about the trip: the gauge did not move, or it charged.
+  if (kwh <= 0) return null
+  return { kwh, source: 'soc', whPerKm: whPerKm(kwh, distanceKm) }
+}

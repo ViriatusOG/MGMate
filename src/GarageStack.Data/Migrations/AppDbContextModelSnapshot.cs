@@ -939,6 +939,12 @@ namespace GarageStack.Data.Migrations
                     b.Property<DateTime>("EndedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<double?>("EnergyCounterUsed")
+                        .HasColumnType("double precision");
+
+                    b.Property<bool>("EnergyRead")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsHidden")
                         .HasColumnType("boolean");
 
@@ -974,6 +980,12 @@ namespace GarageStack.Data.Migrations
 
                     b.Property<bool>("PurposeIsManual")
                         .HasColumnType("boolean");
+
+                    b.Property<double?>("SocEndPercent")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("SocStartPercent")
+                        .HasColumnType("double precision");
 
                     b.Property<double>("StartLatitude")
                         .HasColumnType("double precision");

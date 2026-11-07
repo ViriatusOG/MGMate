@@ -71,6 +71,13 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
         lock (_lock) { return Task.FromResult(_current.OdometerKm); }
     }
 
+    // Demo trips carry their energy already; nothing reads these in demo mode.
+    public Task<TimedReading?> GetSocAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
+        Task.FromResult<TimedReading?>(null);
+
+    public Task<DayCounterReading?> GetDayCountersAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
+        Task.FromResult<DayCounterReading?>(null);
+
     // Only the Worker's parked alerts weigh past polls, and demo mode runs no Worker.
     public Task<IReadOnlyList<StatusReading>> GetStatusReadingsAsync(int vehicleId, int count, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<StatusReading>>([]);

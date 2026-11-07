@@ -38,7 +38,7 @@
       "efficiencyDistance": "Totale afstand gereden vandaag.",
       "efficiencyEnergy": "Wat de auto sinds middernacht heeft verbruikt. Op een BEV of PHEV is dat elektrische energie door de hoogspanningsaccu, in kilowattuur. Op een HEV bevat diezelfde teller het brandstoftotaal van de boordcomputer en wordt die dus in liters getoond.",
       "efficiencyCharge": "Afstand gereden sinds de laatste laadsessie.",
-      "efficiencyRatio": "Hoeveel de auto verbruikte voor de afstand van vandaag. Op een BEV of PHEV is dat {energyPerDistance}, waarbij lager beter is, en dat vertaalt zich direct naar elektriciteitskosten per {distance}. Op een HEV is het brandstofverbruik in {fuelConsumption}, waarbij {fuelBetter}: snelwegrijden geeft een betere waarde dan korte ritjes vanuit koude start. Als er nog geen rijgegevens beschikbaar zijn, vallen HEV en PHEV terug op een geschat brandstofverbruik ({distancePerPercent}) afgeleid van de rangecalculator van de auto, waarbij hoger zuiniger is.",
+      "efficiencyRatio": "Hoeveel de auto verbruikte voor de afstand van vandaag. Op een BEV of PHEV is dat {energyPerDistance}, waarbij {energyBetter}, en dat vertaalt zich direct naar elektriciteitskosten per {distance}. Op een HEV is het brandstofverbruik in {fuelConsumption}, waarbij {fuelBetter}: snelwegrijden geeft een betere waarde dan korte ritjes vanuit koude start. Als er nog geen rijgegevens beschikbaar zijn, vallen HEV en PHEV terug op een geschat brandstofverbruik ({distancePerPercent}) afgeleid van de rangecalculator van de auto, waarbij hoger zuiniger is.",
       "speed": "Actuele rijsnelheid zoals gerapporteerd door de gateway.",
       "topSpeed": "Hoogste gemeten snelheid over alle GPS-punten van de meest recente rit.",
       "activeTrip": "Afstand afgelegd tijdens de huidige rit, of de afstand van de laatste afgesloten rit als de auto geparkeerd staat.",
@@ -586,6 +586,8 @@
       "pressure": "Bandenspanning",
       "fuelConsumption": "Brandstofverbruik",
       "fuelConsumptionDesc": "Verbruikte brandstof telt in dezelfde gallon",
+      "energyEfficiency": "Energieverbruik",
+      "energyEfficiencyDesc": "Geteld in de afstandseenheid hierboven",
       "options": {
         "km": "Kilometers (km, km/h)",
         "mi": "Mijlen (mi, mph)",
@@ -596,7 +598,9 @@
         "kpa": "kPa",
         "l100km": "L/100 km",
         "mpgUk": "mpg (Britse gallon)",
-        "mpgUs": "mpg (Amerikaanse gallon)"
+        "mpgUs": "mpg (Amerikaanse gallon)",
+        "whPerDistance": "Energie per afstand (Wh/km, Wh/mi)",
+        "distancePerKwh": "Afstand per kWh (km/kWh, mi/kWh)"
       }
     },
     "apiTokens": {
@@ -633,6 +637,8 @@
     "whPerMi": "Wh/mi",
     "kmPerPercent": "km/%",
     "miPerPercent": "mi/%",
+    "kmPerKwh": "km/kWh",
+    "miPerKwh": "mi/kWh",
     "bar": "bar",
     "psi": "psi",
     "kpa": "kPa",
@@ -730,7 +736,12 @@
       "averageSpeedHint": "Het gemiddelde van de snelheden die de auto tijdens het rijden doorgaf",
       "topSpeed": "Topsnelheid",
       "speed": "Snelheid",
-      "speedChart": "Snelheid tijdens de rit"
+      "speedChart": "Snelheid tijdens de rit",
+      "energy": "Energie",
+      "energyFromCar": "Zoals de auto het telde",
+      "energyFromSoc": "Geschat uit het accuniveau, {start}% tot {end}%",
+      "battery": "Accu {start}% tot {end}%",
+      "efficiency": "Verbruik"
     },
     "purposeLabel": "Doel",
     "purpose": {

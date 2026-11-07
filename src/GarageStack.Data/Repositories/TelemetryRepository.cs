@@ -372,6 +372,23 @@ public class TelemetryRepository(
             .Select(s => s.OdometerKm)
             .FirstOrDefaultAsync(ct);
 
+    public Task<TimedReading?> GetSocAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt <= at && s.EvSocPercent != null)
+            .OrderByDescending(s => s.RecordedAt)
+            .Select(s => new TimedReading(s.RecordedAt, s.EvSocPercent!.Value))
+            .FirstOrDefaultAsync(ct);
+
+    // Both counters arrive in the same poll, so the row that carries the energy carries the distance.
+    public Task<DayCounterReading?> GetDayCountersAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt <= at && s.PowerUsageOfDay != null)
+            .OrderByDescending(s => s.RecordedAt)
+            .Select(s => new DayCounterReading(s.RecordedAt, s.PowerUsageOfDay!.Value, s.MileageOfTheDay))
+            .FirstOrDefaultAsync(ct);
+
     public async Task<IReadOnlyList<StatusReading>> GetStatusReadingsAsync(int vehicleId, int count, CancellationToken ct = default)
     {
         // Twice the rows asked for: a delivered-again poll takes a row of its own, folded away below.

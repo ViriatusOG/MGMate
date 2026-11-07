@@ -7,8 +7,8 @@ namespace GarageStack.Worker.Services;
 /// <summary>
 /// Keeps the database from growing without end. Compacts each vehicle's old telemetry with
 /// <see cref="TelemetryCompactor"/>, and removes cached place names and snapped trips that have
-/// expired, and notifications the user deleted a while ago. Also works out the speed figures of
-/// trips saved before those were stored with the trip. Cached map POIs stay: the map shows an
+/// expired, and notifications the user deleted a while ago. Also works out the speed figures and the
+/// battery use of trips saved before those were stored with the trip. Cached map POIs stay: the map shows an
 /// expired tile's stations while it fetches the tile again.
 /// </summary>
 public class HousekeepingService(
@@ -25,6 +25,9 @@ public class HousekeepingService(
 
     // Trips per save while filling in speed figures: each one reads its fixes.
     internal const int SpeedFigureBatch = 200;
+
+    // Trips per save while reading their energy: each one takes four indexed lookups.
+    internal const int EnergyBatch = 200;
 
     protected override string Name => "Housekeeping";
 
@@ -60,9 +63,31 @@ public class HousekeepingService(
         if (totalFilled > 0)
             logger.LogInformation("Worked out speed figures for {Count} trip(s) saved before they were stored", totalFilled);
 
+        var energyRead = await FillEnergyAsync(trips, scope.ServiceProvider.GetRequiredService<ITelemetryRepository>(), ct);
+        if (energyRead > 0)
+            logger.LogInformation("Read the battery use of {Count} trip(s) saved before it was stored", energyRead);
+
         var expired = await housekeeping.RemoveExpiredCacheEntriesAsync(now - ExpiredCacheGrace, ct);
         var deleted = await housekeeping.RemoveDeletedNotificationsAsync(now - DeletedNotificationsKept, ct);
         if (expired > 0 || deleted > 0)
             logger.LogInformation("Housekeeping removed {Expired} expired cache entries and {Deleted} deleted notifications", expired, deleted);
+    }
+
+    internal static async Task<int> FillEnergyAsync(ITripRepository trips, ITelemetryRepository telemetry, CancellationToken ct)
+    {
+        var reader = new TripEnergyReader(telemetry);
+        var total = 0;
+        IReadOnlyList<Core.Models.TripEnergyPending> pending;
+        do
+        {
+            pending = await trips.GetEnergyPendingAsync(EnergyBatch, ct);
+            var read = new Dictionary<long, Core.Models.TripEnergy>(pending.Count);
+            foreach (var trip in pending)
+                read[trip.Id] = await reader.ReadAsync(trip.VehicleId, trip.StartedAt, trip.EndedAt, trip.DistanceKm, ct);
+            await trips.SaveEnergyAsync(read, ct);
+            total += pending.Count;
+        }
+        while (pending.Count == EnergyBatch);
+        return total;
     }
 }

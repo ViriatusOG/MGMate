@@ -9,7 +9,9 @@ import {
 } from '@/services/tripLogApi'
 import type { CommutePlace } from '@/services/commutePlacesApi'
 import type { TripPoint } from '@/services/vehicleApi'
-import { formatDate, formatTime } from '@/utils/format'
+import { formatDate, formatNumber, formatTime } from '@/utils/format'
+import { tripEnergy } from '@/utils/energy'
+import { useVehicleStore } from '@/stores/vehicle'
 import { formatTripDuration } from '@/utils/tripRows'
 import {
   loggedDistanceKm,
@@ -55,6 +57,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const units = useUnits()
+const vehicleStore = useVehicleStore()
 
 const { from, to } = useTripEnds({
   entry: toRef(props, 'entry'),
@@ -89,7 +92,68 @@ const odometerLabel = computed(() => {
   return start && finish ? `${start.value} - ${finish.value}` : null
 })
 
-const figures = computed(() => [
+interface Figure {
+  key: string
+  icon: string
+  label: string
+  measure: { value: string; unit: string } | null
+  title: string | undefined
+  note: string | null
+  /** What the note is, for its tooltip, and the icon in front of it. */
+  noteTitle?: string
+  noteIcon?: string
+}
+
+// What the trip took out of the battery: the car's own count, or failing that the drop in state
+// of charge scaled by the battery's capacity, configured or as the car reports it.
+const energy = computed(() =>
+  tripEnergy(
+    props.entry,
+    loggedDistanceKm(props.entry),
+    vehicleStore.effectiveVehicleType,
+    vehicleStore.hvBatteryCapacityKwh ?? vehicleStore.currentStatus?.hvTotalCapacityKwh ?? null,
+  ),
+)
+
+const batteryLabel = computed(() => {
+  const { socStartPercent: start, socEndPercent: end } = props.entry
+  return start != null && end != null
+    ? t('tripLog.detail.battery', { start: Math.round(start), end: Math.round(end) })
+    : null
+})
+
+const energyFigures = computed((): Figure[] => {
+  const figure = energy.value
+  if (!figure) return []
+  const { socStartPercent: start, socEndPercent: end } = props.entry
+  return [
+    {
+      key: 'energy',
+      icon: 'plug-circle-bolt',
+      label: t('tripLog.detail.energy'),
+      measure: { value: formatNumber(figure.kwh, figure.kwh < 10 ? 2 : 1), unit: t('common.kwh') },
+      title:
+        figure.source === 'car'
+          ? t('tripLog.detail.energyFromCar')
+          : t('tripLog.detail.energyFromSoc', {
+              start: Math.round(start ?? 0),
+              end: Math.round(end ?? 0),
+            }),
+      note: batteryLabel.value,
+      noteIcon: 'battery-half',
+    },
+    {
+      key: 'efficiency',
+      icon: 'leaf',
+      label: t('tripLog.detail.efficiency'),
+      measure: units.value.measure('energyPerDistance', figure.whPerKm),
+      title: undefined,
+      note: null,
+    },
+  ]
+})
+
+const figures = computed((): Figure[] => [
   {
     key: 'distance',
     icon: 'road',
@@ -100,6 +164,8 @@ const figures = computed(() => [
         ? t('tripLog.distanceFromOdometer')
         : t('tripLog.distanceFromGps'),
     note: odometerLabel.value,
+    noteTitle: t('tripLog.odometer'),
+    noteIcon: 'gauge',
   },
   {
     key: 'duration',
@@ -125,6 +191,7 @@ const figures = computed(() => [
     title: undefined,
     note: null,
   },
+  ...energyFigures.value,
 ])
 
 const speedChart = useTripSpeedChart(toRef(props, 'routePoints'))
@@ -232,7 +299,10 @@ const notesId = computed(() => `trip-log-notes-${props.entry.id}`)
       {{ t('tripLog.detail.routeUnavailable') }}
     </p>
 
-    <dl class="trip-log-detail__figures">
+    <dl
+      class="trip-log-detail__figures"
+      :class="{ 'trip-log-detail__figures--six': figures.length === 6 }"
+    >
       <div
         v-for="figure in figures"
         :key="figure.key"
@@ -251,9 +321,10 @@ const notesId = computed(() => `trip-log-notes-${props.entry.id}`)
         <dd
           v-if="figure.note"
           class="trip-log-detail__figure-note text-xs text-muted"
-          :title="t('tripLog.odometer')"
+          :title="figure.noteTitle"
         >
-          <font-awesome-icon icon="gauge" aria-hidden="true" /> {{ figure.note }}
+          <font-awesome-icon :icon="figure.noteIcon ?? 'gauge'" aria-hidden="true" />
+          {{ figure.note }}
         </dd>
       </div>
     </dl>

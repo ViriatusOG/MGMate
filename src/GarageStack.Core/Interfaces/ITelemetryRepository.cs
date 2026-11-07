@@ -73,6 +73,18 @@ public interface ITelemetryRepository
     Task<double?> GetOdometerAtAsync(int vehicleId, DateTime at, CancellationToken ct = default);
 
     /// <summary>
+    /// The state of charge in percent as last reported at or before <paramref name="at"/>, with
+    /// when it was stored, or null when the vehicle had not reported one by then.
+    /// </summary>
+    Task<TimedReading?> GetSocAtAsync(int vehicleId, DateTime at, CancellationToken ct = default);
+
+    /// <summary>
+    /// The day counters (energy or fuel used today, distance driven today) as last reported at or
+    /// before <paramref name="at"/>, or null when the vehicle had not reported them by then.
+    /// </summary>
+    Task<DayCounterReading?> GetDayCountersAtAsync(int vehicleId, DateTime at, CancellationToken ct = default);
+
+    /// <summary>
     /// The car's last <paramref name="count"/> status polls (lock, doors, windows), newest first.
     /// A poll the broker delivers again, as it does with retained messages on a reconnect, is still
     /// one poll: it comes back once, at the time it first arrived.

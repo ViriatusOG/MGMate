@@ -21,6 +21,7 @@ import {
 import {
   AUTO_UNITS,
   DISTANCE_UNITS,
+  ENERGY_EFFICIENCY_UNITS,
   FUEL_CONSUMPTION_UNITS,
   PRESSURE_UNITS,
   resolveUnits,
@@ -135,6 +136,11 @@ function parseUnits(raw: unknown, fallback: UnitSettings): UnitSettings {
       units.fuelConsumption,
       orAuto(FUEL_CONSUMPTION_UNITS),
       fallback.fuelConsumption,
+    ),
+    energyEfficiency: oneOf(
+      units.energyEfficiency,
+      orAuto(ENERGY_EFFICIENCY_UNITS),
+      fallback.energyEfficiency,
     ),
   }
 }

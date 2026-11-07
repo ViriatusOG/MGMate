@@ -547,6 +547,11 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  /* With the trip's energy and efficiency, three across keeps the rows even. */
+  .trip-log-detail__figures--six {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .trip-route-map {
     height: 260px;
   }

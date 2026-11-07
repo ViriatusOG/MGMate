@@ -40,6 +40,13 @@ public sealed class DemoTripRepository : ITripRepository
     // Every demo trip carries its fixes, so there is nothing to fill in.
     public Task<int> FillSpeedFiguresAsync(int batchSize, CancellationToken ct = default) => Task.FromResult(0);
 
+    // The demo's trip log carries its energy from the start, and nothing is recorded to read it for.
+    public Task<IReadOnlyList<TripEnergyPending>> GetEnergyPendingAsync(int batchSize, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<TripEnergyPending>>([]);
+
+    public Task SaveEnergyAsync(IReadOnlyDictionary<long, TripEnergy> energy, CancellationToken ct = default) =>
+        Task.CompletedTask;
+
     // The demo's fixed timeline ends with the trip it is driving, whatever the clock says.
     public Task<TripDto?> GetLatestAsync(int vehicleId, DateTime now, CancellationToken ct = default) =>
         Task.FromResult<TripDto?>(DemoTrips.All.Count > 0 ? DemoTrips.All[^1] with { Index = 0 } : null);
@@ -150,6 +157,8 @@ public sealed class DemoTripRepository : ITripRepository
                 EndLatitude = second.EndLatitude,
                 EndLongitude = second.EndLongitude,
                 OdometerEndKm = second.OdometerEndKm,
+                SocEndPercent = second.SocEndPercent,
+                EnergyCounterUsed = first.EnergyCounterUsed + second.EnergyCounterUsed,
                 EndPlace = second.EndPlace,
                 IsHidden = first.IsHidden && second.IsHidden,
                 MaxSpeedKmh = joined.MaxSpeedKmh,
