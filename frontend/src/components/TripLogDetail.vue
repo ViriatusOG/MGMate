@@ -320,6 +320,7 @@ const telemetryChart = computed(() => {
   const hasPower = has((p) => p.powerKw)
   const hasSoc = has((p) => p.socPercent)
   const hasElevation = has((p) => p.elevation)
+  const hasRange = has((p) => p.rangeKm ?? null)
   if (!hasSpeed && !hasPower && !hasSoc) return null
 
   const shown = downsample([...all], MAX_TELEMETRY_CHART_POINTS)
@@ -367,6 +368,18 @@ const telemetryChart = computed(() => {
       data: shown.map((p) => p.socPercent),
       borderColor: '#22c55e',
       yAxisID: 'soc',
+    })
+  }
+  // The car's range estimate, in a band of its own above the battery level it follows.
+  if (hasRange) {
+    scales.range = band(0.8, '#a78bfa', units.value.symbol('distance'))
+    datasets.push({
+      label: t('tripLog.detail.range'),
+      data: shown.map((p) =>
+        p.rangeKm == null ? null : Math.round(units.value.convert('distance', p.rangeKm)),
+      ),
+      borderColor: '#a78bfa',
+      yAxisID: 'range',
     })
   }
   if (hasPower) {
@@ -435,6 +448,24 @@ const details = computed(() => {
   })
   if (odoStart && odoEnd) {
     rows.push({ key: 'odometer', label: t('tripLog.odometer'), value: `${odoStart} → ${odoEnd}` })
+  }
+  if (s.drivingMinutes !== null && s.stoppedMinutes !== null) {
+    rows.push({
+      key: 'drivingStopped',
+      label: t('tripLog.detail.drivingStopped'),
+      value: t('tripLog.detail.drivingStoppedValue', {
+        driving: Math.round(s.drivingMinutes),
+        stopped: Math.round(s.stoppedMinutes),
+      }),
+    })
+  }
+  const median = units.value.measure('speed', s.medianSpeedKmh, { decimals: 0 })
+  if (median) {
+    rows.push({
+      key: 'medianSpeed',
+      label: t('tripLog.detail.medianSpeed'),
+      value: `${median.value} ${median.unit}`,
+    })
   }
   const sign = drivingPowerSign(telemetry.value)
   const powers = telemetry.value

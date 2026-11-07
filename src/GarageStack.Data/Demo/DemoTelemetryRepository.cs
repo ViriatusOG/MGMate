@@ -110,12 +110,14 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
         {
             var share = (double)i / steps;
             var speed = Math.Max(0, 55 + 35 * Math.Sin(i / 9.0) + 10 * Math.Sin(i / 3.1)) * Math.Min(1, Math.Min(share, 1 - share) * 12);
+            // A red light now and then, so the detail has stopped time to show.
+            if (Math.Sin(i / 7.0) > 0.96) speed = 0;
             var accelerating = Math.Cos(i / 9.0) + 0.3 * Math.Cos(i / 3.1);
             var power = speed < 1 ? 0.4 : accelerating < -0.4 ? -12 * -accelerating : 6 + speed * 0.18 + accelerating * 8;
             points.Add(new TripTelemetryPoint(
                 from.AddSeconds((to - from).TotalSeconds * share), Math.Round(speed, 1), Math.Round(72 - 6 * share, 1),
                 Math.Round(power, 1), Math.Round(30 + 25 * Math.Sin(share * Math.PI * 2) + 8 * Math.Sin(i / 5.0), 1),
-                Math.Round(9 + 2 * share, 1), true));
+                Math.Round(9 + 2 * share, 1), true, ElectricRangeAt(72 - 6 * share)));
         }
         return Task.FromResult<IReadOnlyList<TripTelemetryPoint>>(points);
     }

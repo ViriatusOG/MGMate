@@ -10,6 +10,45 @@ public class ChargeSegmenterTests
     private static ChargeSample S(int minutes, bool? charging, double? soc = null, double? powerKw = null, string? type = null) =>
         new(T0.AddMinutes(minutes), charging, soc, powerKw, type, 51.7, -1.2, 5000, null, 80);
 
+    // An hour at 7 kW into the battery from 7.8 kW at the wall: about 90% efficient.
+    [Fact]
+    public void AnAcCharge_GetsTheEnergyTheOnBoardChargerDrewFromTheSupply()
+    {
+        var samples = Enumerable.Range(0, 13)
+            .Select(i => S(i * 5, true, 40 + i, -7) with { ObcPowerSinglePhaseW = 7800, ObcPowerThreePhaseW = 2600 })
+            .ToList();
+
+        var charge = Assert.Single(ChargeSegmenter.Segment(samples, T0.AddHours(3)).Closed);
+
+        Assert.Equal(7.0, charge.EnergyAddedKwh!.Value, 2);
+        Assert.Equal(7.8, charge.ChargerEnergyKwh!.Value, 2);
+    }
+
+    // The gateway cannot tell the phases apart; the single-phase figure on a three-phase supply
+    // would read three times too high, so the one the battery energy fits is taken.
+    [Fact]
+    public void TheChargerEnergy_ComesFromWhicheverPhaseFigureTheBatteryEnergyFits()
+    {
+        var samples = Enumerable.Range(0, 13)
+            .Select(i => S(i * 5, true, 40 + i, 10) with { ObcPowerSinglePhaseW = 33000, ObcPowerThreePhaseW = 11000 })
+            .ToList();
+
+        Assert.Equal(11.0, ChargeSegmenter.ChargerEnergy(samples, 10)!.Value, 2);
+        // Neither fits a battery figure the charger cannot have produced.
+        Assert.Null(ChargeSegmenter.ChargerEnergy(samples, 12));
+        Assert.Null(ChargeSegmenter.ChargerEnergy(samples, null));
+    }
+
+    [Fact]
+    public void ADcCharge_HasNoChargerEnergy()
+    {
+        var samples = Enumerable.Range(0, 7)
+            .Select(i => S(i * 5, true, 20 + i * 8, 80, "DC") with { ObcPowerSinglePhaseW = 300 })
+            .ToList();
+
+        Assert.Null(Assert.Single(ChargeSegmenter.Segment(samples, T0.AddHours(3)).Closed).ChargerEnergyKwh);
+    }
+
     [Fact]
     public void OneCharge_IsCutWithItsLevelsAndEnergy()
     {

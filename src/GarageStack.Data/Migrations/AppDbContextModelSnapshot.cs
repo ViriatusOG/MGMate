@@ -119,6 +119,9 @@ namespace GarageStack.Data.Migrations
                         .HasMaxLength(8)
                         .HasColumnType("character varying(8)");
 
+                    b.Property<double?>("ChargerEnergyKwh")
+                        .HasColumnType("double precision");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 

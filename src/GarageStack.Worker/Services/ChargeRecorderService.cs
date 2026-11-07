@@ -15,6 +15,10 @@ public class ChargeRecorderService(
 
     protected override TimeSpan Interval => TimeSpan.FromMinutes(5);
 
+    // Charges saved before the charger's energy was recorded get it once per start of the Worker:
+    // one without the readings for it would otherwise be read again every five minutes.
+    private bool _backfilled;
+
     protected override async Task RunOnceAsync(CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
@@ -29,6 +33,13 @@ public class ChargeRecorderService(
             var saved = await recorder.RecordAsync(vehicle.Id, DateTime.UtcNow, ct);
             if (saved > 0)
                 logger.LogInformation("Saved {Count} finished charge(s) for VIN={Vin}", saved, LogRedaction.Vin(vehicle.Vin));
+            if (!_backfilled)
+            {
+                var filled = await recorder.BackfillChargerEnergyAsync(vehicle.Id, ct);
+                if (filled > 0)
+                    logger.LogInformation("Worked out the charger's energy for {Count} earlier charge(s) for VIN={Vin}", filled, LogRedaction.Vin(vehicle.Vin));
+            }
         }
+        _backfilled = true;
     }
 }

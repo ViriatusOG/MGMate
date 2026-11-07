@@ -388,7 +388,8 @@ public class TelemetryRepository(
             .OrderBy(s => s.RecordedAt)
             .Select(s => new ChargeSample(
                 s.RecordedAt, s.IsCharging, s.EvSocPercent, s.HvPower, s.ChargingType,
-                s.Latitude, s.Longitude, s.OdometerKm, s.ChargingStopReason, s.SocTargetPercent, s.ExteriorTemperature))
+                s.Latitude, s.Longitude, s.OdometerKm, s.ChargingStopReason, s.SocTargetPercent, s.ExteriorTemperature,
+                s.ObcPowerSinglePhase, s.ObcPowerThreePhase))
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
@@ -396,10 +397,12 @@ public class TelemetryRepository(
             .AsNoTracking()
             .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt <= to
                         && (s.Speed != null || s.EvSocPercent != null || s.HvPower != null
-                            || s.Elevation != null || s.ExteriorTemperature != null || s.ClimateOn != null))
+                            || s.Elevation != null || s.ExteriorTemperature != null || s.ClimateOn != null
+                            || s.ElectricRangeKm != null))
             .OrderBy(s => s.RecordedAt)
             .Select(s => new TripTelemetryPoint(
-                s.RecordedAt, s.Speed, s.EvSocPercent, s.HvPower, s.Elevation, s.ExteriorTemperature, s.ClimateOn))
+                s.RecordedAt, s.Speed, s.EvSocPercent, s.HvPower, s.Elevation, s.ExteriorTemperature, s.ClimateOn,
+                s.ElectricRangeKm))
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<ActivitySample>> GetActivitySamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>

@@ -54,4 +54,35 @@ public class ChargeRecorderTests
         Assert.Equal(ChargeMergeOutcome.Merged, merged.Outcome);
         Assert.Single(await charges.GetLogAsync(vehicle.Id, T0.AddDays(-1), T0.AddDays(1), ct));
     }
+
+    // A charge saved before the charger's energy was recorded gets it from its own readings.
+    [Fact]
+    public async Task AnEarlierCharge_GetsItsChargerEnergyFilledIn()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+        var vehicle = new Vehicle { Vin = "FAKEVN00000000001" };
+        db.Vehicles.Add(vehicle);
+        await db.SaveChangesAsync(ct);
+        db.TelemetrySnapshots.AddRange(Enumerable.Range(0, 13).Select(i => new TelemetrySnapshot
+        {
+            VehicleId = vehicle.Id, RecordedAt = T0.AddMinutes(i * 5), IsCharging = true,
+            EvSocPercent = 40 + i, HvPower = -7, ObcPowerSinglePhase = 7700, ObcPowerThreePhase = 2567,
+        }));
+        db.ChargeSessions.Add(new ChargeSession
+        {
+            VehicleId = vehicle.Id, StartedAt = T0, EndedAt = T0.AddHours(1), EnergyAddedKwh = 7, ChargeType = "AC",
+        });
+        await db.SaveChangesAsync(ct);
+
+        var telemetry = new TelemetryRepository(db);
+        var charges = new ChargeRepository(db, telemetry);
+        var recorder = new ChargeRecorder(telemetry, charges, NullLogger.Instance);
+
+        Assert.Equal(1, await recorder.BackfillChargerEnergyAsync(vehicle.Id, ct));
+        var charge = Assert.Single(await charges.GetLogAsync(vehicle.Id, T0.AddDays(-1), T0.AddDays(1), ct));
+        Assert.Equal(7.7, charge.ChargerEnergyKwh!.Value, 2);
+        Assert.Equal(0, await recorder.BackfillChargerEnergyAsync(vehicle.Id, ct));
+    }
 }

@@ -56,4 +56,24 @@ public class ChargeRecorder(ITelemetryRepository telemetry, IChargeRepository ch
 
         return saved;
     }
+
+    /// <summary>
+    /// Works out the charger's energy for charges saved before it was recorded, from their readings.
+    /// A charge whose readings carry no plausible charger power stays without one.
+    /// </summary>
+    /// <returns>How many charges gained the figure.</returns>
+    public async Task<int> BackfillChargerEnergyAsync(int vehicleId, CancellationToken ct)
+    {
+        var filled = 0;
+        foreach (var session in await charges.GetWithoutChargerEnergyAsync(vehicleId, ct))
+        {
+            var samples = await telemetry.GetChargeSamplesAsync(
+                vehicleId, session.StartedAt, session.EndedAt.AddSeconds(1), ct);
+            var charging = samples.Where(s => s.IsCharging == true).ToList();
+            if (ChargeSegmenter.ChargerEnergy(charging, session.EnergyAddedKwh) is not { } kwh) continue;
+            await charges.SetChargerEnergyAsync(vehicleId, session.Id, kwh, ct);
+            filled++;
+        }
+        return filled;
+    }
 }

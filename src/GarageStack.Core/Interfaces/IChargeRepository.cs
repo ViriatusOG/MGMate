@@ -23,6 +23,11 @@ public interface IChargeRepository
 
     Task<ChargeSessionDto?> SetHiddenAsync(int vehicleId, long id, bool hidden, CancellationToken ct = default);
 
+    /// <summary>AC charges (or of unknown type) with a battery figure but no charger figure: those saved before it was recorded.</summary>
+    Task<IReadOnlyList<ChargeSessionDto>> GetWithoutChargerEnergyAsync(int vehicleId, CancellationToken ct = default);
+
+    Task SetChargerEnergyAsync(int vehicleId, long id, double chargerEnergyKwh, CancellationToken ct = default);
+
     /// <summary>Joins a charge with the next saved one: a plug-in the car reported as two.</summary>
     Task<ChargeMergeResult> MergeWithNextAsync(int vehicleId, long id, CancellationToken ct = default);
 }

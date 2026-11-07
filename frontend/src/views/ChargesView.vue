@@ -19,7 +19,14 @@ import {
   type ChargeChartPoint,
   type ChargeSession,
 } from '@/services/chargesApi'
-import { chargeEnergy, chargeMinutes, chargeTotals, monthStart } from '@/utils/charges'
+import {
+  billedKwh,
+  chargeEnergy,
+  chargeLoss,
+  chargeMinutes,
+  chargeTotals,
+  monthStart,
+} from '@/utils/charges'
 import { formatDate, formatNumber, formatTime, numberLocale } from '@/utils/format'
 import { formatDurationMs } from '@/utils/tripRows'
 import { useUnits } from '@/composables/useUnits'
@@ -97,7 +104,7 @@ const rows = computed(() => [...charges.value].reverse())
 const totals = computed(() => chargeTotals(charges.value, capacityKwh.value))
 
 function costOf(charge: ChargeSession): ChargeCost | null {
-  const kwh = chargeEnergy(charge, capacityKwh.value)?.kwh ?? null
+  const kwh = billedKwh(charge, capacityKwh.value)
   return chargeCost(charge, kwh, uiSettings.tariff, placesStore.places)
 }
 
@@ -117,8 +124,8 @@ const spend = computed(() => {
     if (chargePlace(c, placesStore.places) === 'home') home++
     else away++
     const cost = costOf(c)
-    const energy = chargeEnergy(c, capacityKwh.value)?.kwh
-    if (cost === null || energy === undefined) {
+    const energy = billedKwh(c, capacityKwh.value)
+    if (cost === null || energy === null) {
       unpriced++
       continue
     }
@@ -535,6 +542,24 @@ const monthStats = computed(() => {
       value: n > 0 ? `${formatNumber(totals.value.kwh / n, 1)} ${t('common.kwh')}` : '-',
     },
     { key: 'soc', label: t('charges.batteryAdded'), value: `${Math.round(socAdded)}%` },
+    ...(totals.value.supplyKwh > 0
+      ? [
+          {
+            key: 'supply',
+            label: t('charges.fromSupply'),
+            value: `${formatNumber(totals.value.supplyKwh, 1)} ${t('common.kwh')}`,
+          },
+          {
+            key: 'loss',
+            label: t('charges.loss'),
+            value: `${formatNumber(
+              ((totals.value.supplyKwh - totals.value.supplyBatteryKwh) / totals.value.supplyKwh) *
+                100,
+              1,
+            )}%`,
+          },
+        ]
+      : []),
     { key: 'days', label: t('charges.daysCharged'), value: String(daysCharged) },
     ...(spend.value.unpriced > 0 && uiSettings.tariff
       ? [{ key: 'unpriced', label: t('charges.unpriced', spend.value.unpriced), value: '' }]
@@ -723,6 +748,20 @@ const monthStats = computed(() => {
                             class="text-xs text-muted"
                           >
                             {{ t('charges.estimated') }}
+                          </dd>
+                        </div>
+                        <div v-if="chargeLoss(charge)">
+                          <dt>{{ t('charges.fromSupply') }}</dt>
+                          <dd>
+                            {{ formatNumber(charge.chargerEnergyKwh!, 1) }} {{ t('common.kwh') }}
+                          </dd>
+                          <dd class="text-xs text-muted">
+                            {{
+                              t('charges.lossNote', {
+                                kwh: formatNumber(chargeLoss(charge)!.kwh, 1),
+                                percent: formatNumber(chargeLoss(charge)!.percent, 0),
+                              })
+                            }}
                           </dd>
                         </div>
                         <div>

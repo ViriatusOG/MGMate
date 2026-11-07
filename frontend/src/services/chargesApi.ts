@@ -25,6 +25,11 @@ export interface ChargeSession {
   /** What the owner says it cost, in their currency; null prices it from the tariff. */
   paidAmount: number | null
   isHidden: boolean
+  /**
+   * What the on-board charger drew from the supply: what a meter bills. Null on a DC charge and
+   * when the car reported no usable charger power.
+   */
+  chargerEnergyKwh?: number | null
 }
 
 /** What can be changed on a charge, sent whole. */

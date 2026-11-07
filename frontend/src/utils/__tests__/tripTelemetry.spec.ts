@@ -36,6 +36,26 @@ describe('summarizeTripTelemetry', () => {
     expect(drivingPowerSign(points)).toBe(-1)
   })
 
+  it('splits the time driving from the time stopped, and takes the median of the moving speeds', () => {
+    // Moving until minute 10, standing at a light from 10 to 15, moving to 20; then a
+    // 30-minute hole that counts as neither.
+    const speeds = [30, 40, 50, 60, 50, 40, 30, 20, 30, 40, 0, 0, 0, 0, 0, 0, 20, 30, 40, 50, 60]
+    const points = [
+      ...speeds.map((speed, i) => at(i, { speed: i >= 11 && i <= 15 ? 0 : speed })),
+      at(50, { speed: 70 }),
+    ]
+    const summary = summarizeTripTelemetry(points)
+    expect(summary.drivingMinutes).toBe(15)
+    expect(summary.stoppedMinutes).toBe(5)
+    expect(summary.medianSpeedKmh).toBe(40)
+  })
+
+  it('has no motion figures without speeds', () => {
+    const summary = summarizeTripTelemetry([at(0, { socPercent: 50 }), at(5, { socPercent: 49 })])
+    expect(summary.drivingMinutes).toBeNull()
+    expect(summary.medianSpeedKmh).toBeNull()
+  })
+
   it('counts climb past GPS noise, outside temperature and climate time', () => {
     const elevations = [100, 101, 99, 100, 110, 120, 118, 119, 105, 100]
     const points = elevations.map((e, i) =>
@@ -58,6 +78,9 @@ describe('summarizeTripTelemetry', () => {
       outsideStart: null,
       outsideEnd: null,
       climateMinutes: null,
+      drivingMinutes: null,
+      stoppedMinutes: null,
+      medianSpeedKmh: null,
     })
   })
 })

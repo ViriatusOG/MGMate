@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { ChargeSession } from '@/services/chargesApi'
-import { chargeEnergy, chargeMinutes, chargeTotals, monthStart } from '@/utils/charges'
+import {
+  billedKwh,
+  chargeEnergy,
+  chargeLoss,
+  chargeMinutes,
+  chargeTotals,
+  monthStart,
+} from '@/utils/charges'
 
 function charge(overrides: Partial<ChargeSession> = {}): ChargeSession {
   return {
@@ -46,13 +53,30 @@ describe('chargeTotals', () => {
   it('adds up the charges that are not hidden', () => {
     const totals = chargeTotals(
       [
-        charge(),
+        charge({ chargerEnergyKwh: 29 }),
         charge({ id: 2, chargeType: 'DC', energyAddedKwh: 30 }),
         charge({ id: 3, isHidden: true }),
       ],
       64,
     )
-    expect(totals).toEqual({ sessions: 2, kwh: 56, minutes: 480, ac: 1, dc: 1 })
+    expect(totals).toEqual({
+      sessions: 2,
+      kwh: 56,
+      supplyKwh: 29,
+      supplyBatteryKwh: 26,
+      minutes: 480,
+      ac: 1,
+      dc: 1,
+    })
+  })
+
+  // A meter bills what the charger drew from the supply, which is more than reached the battery.
+  it('bills a charge on the supply figure and reads its loss', () => {
+    const c = charge({ energyAddedKwh: 27, chargerEnergyKwh: 30 })
+    expect(billedKwh(c, 64)).toBe(30)
+    expect(chargeLoss(c)).toEqual({ kwh: 3, percent: 10 })
+    expect(billedKwh(charge({ energyAddedKwh: 27 }), 64)).toBe(27)
+    expect(chargeLoss(charge({ energyAddedKwh: 27 }))).toBeNull()
   })
 })
 

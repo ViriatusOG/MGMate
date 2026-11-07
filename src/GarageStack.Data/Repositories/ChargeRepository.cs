@@ -34,6 +34,24 @@ public class ChargeRepository(AppDbContext db, ITelemetryRepository telemetry) :
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task<IReadOnlyList<ChargeSessionDto>> GetWithoutChargerEnergyAsync(int vehicleId, CancellationToken ct = default) =>
+        (await db.ChargeSessions
+            .AsNoTracking()
+            .Where(c => c.VehicleId == vehicleId && c.ChargerEnergyKwh == null && c.EnergyAddedKwh != null
+                        && (c.ChargeType == null || c.ChargeType == "AC"))
+            .OrderBy(c => c.StartedAt)
+            .ToListAsync(ct))
+        .Select(ChargeSessionDto.From)
+        .ToList();
+
+    public async Task SetChargerEnergyAsync(int vehicleId, long id, double chargerEnergyKwh, CancellationToken ct = default)
+    {
+        var session = await db.ChargeSessions.FirstOrDefaultAsync(c => c.VehicleId == vehicleId && c.Id == id, ct);
+        if (session is null) return;
+        session.ChargerEnergyKwh = chargerEnergyKwh;
+        await db.SaveChangesAsync(ct);
+    }
+
     public async Task<IReadOnlyList<ChargeSessionDto>> GetLogAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default)
     {
         var rows = await db.ChargeSessions
@@ -97,6 +115,8 @@ public class ChargeRepository(AppDbContext db, ITelemetryRepository telemetry) :
         first.EnergyAddedKwh = first.EnergyAddedKwh is null && second.EnergyAddedKwh is null
             ? null
             : (first.EnergyAddedKwh ?? 0) + (second.EnergyAddedKwh ?? 0);
+        // A loss is only meaningful over the whole charge, so both halves need the charger's figure.
+        first.ChargerEnergyKwh = first.ChargerEnergyKwh + second.ChargerEnergyKwh;
         first.MaxPowerKw = Max(first.MaxPowerKw, second.MaxPowerKw);
         first.ChargeType = first.ChargeType == "DC" || second.ChargeType == "DC" ? "DC" : first.ChargeType ?? second.ChargeType;
         first.OdometerKm = second.OdometerKm ?? first.OdometerKm;

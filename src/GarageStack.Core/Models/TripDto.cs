@@ -18,7 +18,8 @@ public record TripPoint(
 /// <summary>
 /// One reading taken while a trip was driven, for its detail: speed in km/h, charge level in
 /// percent, battery power in kW (either sign: which way is charging differs between cars),
-/// elevation in metres, outside temperature in °C and whether the climate was on.
+/// elevation in metres, outside temperature in °C, whether the climate was on and the electric
+/// range the car estimated, in km.
 /// </summary>
 public sealed record TripTelemetryPoint(
     DateTime RecordedAt,
@@ -27,7 +28,8 @@ public sealed record TripTelemetryPoint(
     double? PowerKw,
     double? Elevation,
     double? OutsideTemperature,
-    bool? ClimateOn)
+    bool? ClimateOn,
+    double? RangeKm = null)
 {
     /// <summary>The most points a trip's detail is sent; a longer trip is thinned evenly to this.</summary>
     public const int MaxPoints = 600;

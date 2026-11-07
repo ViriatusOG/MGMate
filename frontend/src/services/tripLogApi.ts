@@ -114,6 +114,8 @@ export interface TripTelemetryPoint {
   elevation: number | null
   outsideTemperature: number | null
   climateOn: boolean | null
+  /** The electric range the car estimated, in km. */
+  rangeKm?: number | null
 }
 
 export const tripLogApi = {

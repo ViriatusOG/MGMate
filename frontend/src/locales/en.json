@@ -799,7 +799,11 @@
       "maxPower": "Max power",
       "maxRegen": "Max regen",
       "ascentDescent": "Ascent / descent",
-      "gpsPoints": "GPS points"
+      "gpsPoints": "GPS points",
+      "drivingStopped": "Driving / stopped",
+      "drivingStoppedValue": "{driving} min driving · {stopped} min stopped",
+      "medianSpeed": "Median speed",
+      "range": "Range"
     },
     "purposeLabel": "Purpose",
     "purpose": {
@@ -1271,7 +1275,10 @@
     "target": "Target {n}%",
     "avgPower": "Average power",
     "outside": "Outside",
-    "noChart": "The car sent too few readings to draw this charge."
+    "noChart": "The car sent too few readings to draw this charge.",
+    "fromSupply": "From the supply",
+    "loss": "Charging loss",
+    "lossNote": "{kwh} kWh lost as heat ({percent}%)"
   },
   "tariff": {
     "button": "Prices",

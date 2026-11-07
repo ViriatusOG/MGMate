@@ -103,6 +103,7 @@ public static class ChargeSegmenter
             SocStartPercent = socStart,
             SocEndPercent = socEnd,
             EnergyAddedKwh = Integrate(charging),
+            ChargerEnergyKwh = chargeType == "DC" ? null : ChargerEnergy(charging, Integrate(charging)),
             MaxPowerKw = maxPower,
             ChargeType = chargeType,
             Latitude = where?.Latitude,
@@ -111,6 +112,32 @@ public static class ChargeSegmenter
             StopReason = tail.Select(s => s.StopReason).LastOrDefault(r => !string.IsNullOrWhiteSpace(r)),
             SocTargetPercent = run.Select(s => s.SocTargetPercent).LastOrDefault(v => v is not null),
         };
+    }
+
+    // An on-board charger turns at least this share of its input into battery energy, and never all
+    // of it: a figure outside the range is the wrong phase guess or a broken reading.
+    internal const double MinChargerEfficiency = 0.7;
+    internal const double MaxChargerEfficiency = 0.995;
+
+    /// <summary>
+    /// The energy the on-board charger drew from the supply, in kWh. The gateway works the input
+    /// power out both as a single-phase and as a three-phase supply without knowing which it is, so
+    /// the one whose total the battery energy can have come from is taken; null when neither fits,
+    /// or without battery energy to check against.
+    /// </summary>
+    public static double? ChargerEnergy(IReadOnlyList<ChargeSample> charging, double? batteryKwh)
+    {
+        if (batteryKwh is not { } battery || battery <= 0) return null;
+        foreach (var pick in new Func<ChargeSample, double?>[] { s => s.ObcPowerSinglePhaseW, s => s.ObcPowerThreePhaseW })
+        {
+            var kwh = Integrate(charging
+                .Where(s => pick(s) is > 0)
+                .Select(s => s with { PowerKw = pick(s)! / 1000 })
+                .ToList());
+            if (kwh is { } total && battery / total is >= MinChargerEfficiency and <= MaxChargerEfficiency)
+                return total;
+        }
+        return null;
     }
 
     /// <summary>

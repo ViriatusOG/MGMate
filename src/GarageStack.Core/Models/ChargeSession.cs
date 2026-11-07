@@ -30,6 +30,14 @@ public class ChargeSession
     /// </summary>
     public double? EnergyAddedKwh { get; set; }
 
+    /// <summary>
+    /// The energy the on-board charger drew from the AC supply, from its input power integrated over
+    /// the session: what a meter would bill. Against <see cref="EnergyAddedKwh"/> it gives the
+    /// charging loss. Null on a DC charge, which bypasses the on-board charger, and when the car
+    /// reported no plausible input power.
+    /// </summary>
+    public double? ChargerEnergyKwh { get; set; }
+
     /// <summary>The highest charging power reported, in kW.</summary>
     public double? MaxPowerKw { get; set; }
 
@@ -81,17 +89,20 @@ public sealed record ChargeSessionDto(
     string? Notes,
     string? Place,
     decimal? PaidAmount,
-    bool IsHidden)
+    bool IsHidden,
+    double? ChargerEnergyKwh = null)
 {
     public static ChargeSessionDto From(ChargeSession s) => new(
         s.Id, s.StartedAt, s.EndedAt, s.SocStartPercent, s.SocEndPercent, s.EnergyAddedKwh, s.MaxPowerKw,
         s.ChargeType, s.Latitude, s.Longitude, s.OdometerKm, s.StopReason, s.SocTargetPercent, s.Notes,
-        s.Place, s.PaidAmount, s.IsHidden);
+        s.Place, s.PaidAmount, s.IsHidden, s.ChargerEnergyKwh);
 }
 
 /// <summary>
 /// One telemetry reading as far as charging goes. Power is the battery's, in kW, of either sign:
-/// the gateway reports charging as negative current on some cars.
+/// the gateway reports charging as negative current on some cars. The on-board charger's AC input
+/// power is in watts, worked out by the gateway for a single-phase and for a three-phase supply:
+/// which one the car is on, it does not say.
 /// </summary>
 public sealed record ChargeSample(
     DateTime RecordedAt,
@@ -104,7 +115,9 @@ public sealed record ChargeSample(
     double? OdometerKm,
     string? StopReason,
     int? SocTargetPercent,
-    double? OutsideTemperature = null);
+    double? OutsideTemperature = null,
+    double? ObcPowerSinglePhaseW = null,
+    double? ObcPowerThreePhaseW = null);
 
 /// <summary>The places a charge can be set to.</summary>
 public static class ChargePlaces

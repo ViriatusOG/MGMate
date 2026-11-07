@@ -799,7 +799,11 @@
       "maxPower": "Max. vermogen",
       "maxRegen": "Max. terugwinning",
       "ascentDescent": "Stijgen / dalen",
-      "gpsPoints": "GPS-punten"
+      "gpsPoints": "GPS-punten",
+      "drivingStopped": "Rijden / stilstaan",
+      "drivingStoppedValue": "{driving} min rijden · {stopped} min stil",
+      "medianSpeed": "Mediane snelheid",
+      "range": "Actieradius"
     },
     "purposeLabel": "Doel",
     "purpose": {
@@ -1271,7 +1275,10 @@
     "target": "Doel {n}%",
     "avgPower": "Gemiddeld vermogen",
     "outside": "Buiten",
-    "noChart": "De auto stuurde te weinig metingen om deze laadbeurt te tekenen."
+    "noChart": "De auto stuurde te weinig metingen om deze laadbeurt te tekenen.",
+    "fromSupply": "Uit het net",
+    "loss": "Laadverlies",
+    "lossNote": "{kwh} kWh verloren als warmte ({percent}%)"
   },
   "tariff": {
     "button": "Prijzen",

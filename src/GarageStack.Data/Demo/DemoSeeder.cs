@@ -197,6 +197,8 @@ public static class DemoSeeder
                 SocEndPercent = endSoc,
                 // 64 kWh usable, give or take what a real reading wanders by.
                 EnergyAddedKwh = Math.Round((endSoc - startSoc) / 100 * (64 + Math.Sin(daysAgo) * 0.8), 2),
+                // An on-board charger loses around a tenth as heat; a DC charge bypasses it.
+                ChargerEnergyKwh = rapid ? null : Math.Round((endSoc - startSoc) / 100 * (64 + Math.Sin(daysAgo) * 0.8) / (0.89 + (daysAgo % 5) * 0.005), 2),
                 MaxPowerKw = rapid ? 96.4 : 7.2,
                 ChargeType = rapid ? "DC" : "AC",
                 Latitude = rapid ? 52.0907 : 52.3676,

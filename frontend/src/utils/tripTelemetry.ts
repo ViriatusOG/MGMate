@@ -16,7 +16,15 @@ export interface TripTelemetrySummary {
   outsideStart: number | null
   outsideEnd: number | null
   climateMinutes: number | null
+  /** Minutes moving and standing still inside the trip; a gap in the readings counts as neither. */
+  drivingMinutes: number | null
+  stoppedMinutes: number | null
+  /** The speed half the moving readings stayed below: a town drive's usual pace, unlike the mean. */
+  medianSpeedKmh: number | null
 }
+
+/** Below this a reading is standing still: a crawl in a queue still counts as moving. */
+const STOPPED_KMH = 2
 
 function time(p: TripTelemetryPoint): number {
   return Date.parse(p.recordedAt)
@@ -79,12 +87,39 @@ function climateMinutes(points: readonly TripTelemetryPoint[]): number | null {
   return ms / 60_000
 }
 
+function motion(points: readonly TripTelemetryPoint[]) {
+  const known = points.filter((p) => p.speed !== null)
+  if (known.length < 2) return { driving: null, stopped: null, median: null }
+  let driving = 0
+  let stopped = 0
+  for (let i = 1; i < known.length; i++) {
+    const gap = time(known[i]!) - time(known[i - 1]!)
+    if (gap <= 0 || gap > MAX_GAP_MS) continue
+    // A step is moving when either end of it was: the car pulls away or comes to rest within it.
+    if (known[i - 1]!.speed! >= STOPPED_KMH || known[i]!.speed! >= STOPPED_KMH) driving += gap
+    else stopped += gap
+  }
+  const moving = known
+    .map((p) => p.speed!)
+    .filter((s) => s >= STOPPED_KMH)
+    .sort((a, b) => a - b)
+  const mid = moving.length >> 1
+  const median =
+    moving.length === 0
+      ? null
+      : moving.length % 2
+        ? moving[mid]!
+        : (moving[mid - 1]! + moving[mid]!) / 2
+  return { driving: driving / 60_000, stopped: stopped / 60_000, median }
+}
+
 export function summarizeTripTelemetry(
   points: readonly TripTelemetryPoint[],
 ): TripTelemetrySummary {
   const { used, regen } = powerTotals(points)
   const { up, down } = climb(points)
   const temps = points.map((p) => p.outsideTemperature).filter((v): v is number => v !== null)
+  const { driving, stopped, median } = motion(points)
   return {
     usedKwh: used,
     regenKwh: regen,
@@ -93,6 +128,9 @@ export function summarizeTripTelemetry(
     outsideStart: temps[0] ?? null,
     outsideEnd: temps[temps.length - 1] ?? null,
     climateMinutes: climateMinutes(points),
+    drivingMinutes: driving,
+    stoppedMinutes: stopped,
+    medianSpeedKmh: median,
   }
 }
 
