@@ -106,7 +106,10 @@
 
 .charges__row {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) 3rem minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.6fr) 3rem minmax(0, 1.2fr) minmax(0, 1fr) minmax(
+      0,
+      1fr
+    ) minmax(0, 1fr);
   gap: 0.75rem;
   align-items: center;
   width: 100%;
@@ -197,6 +200,21 @@
   resize: vertical;
 }
 
+.charges__cost {
+  font-weight: 600;
+}
+
+.charges__edit {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.charges__set-prices {
+  align-self: flex-start;
+  padding: 0;
+}
+
 .charges__actions {
   display: flex;
   flex-wrap: wrap;
@@ -205,11 +223,15 @@
 
 @media (width < 640px) {
   .charges__row {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
   }
 
   .charges__soc,
-  .charges__num:last-child {
+  .charges__num.text-muted {
     display: none;
+  }
+
+  .charges__edit {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

@@ -19,7 +19,7 @@ public interface IChargeRepository
     /// <summary>The power and charge level over the session, for its chart; empty when there is no such charge.</summary>
     Task<IReadOnlyList<ChargeChartPoint>> GetChartAsync(int vehicleId, long id, CancellationToken ct = default);
 
-    Task<ChargeSessionDto?> SetNotesAsync(int vehicleId, long id, string? notes, CancellationToken ct = default);
+    Task<ChargeSessionDto?> UpdateAsync(int vehicleId, long id, ChargeEdit edit, CancellationToken ct = default);
 
     Task<ChargeSessionDto?> SetHiddenAsync(int vehicleId, long id, bool hidden, CancellationToken ct = default);
 

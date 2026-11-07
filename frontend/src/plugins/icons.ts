@@ -40,6 +40,7 @@ export {
   faClipboardCheck,
   faClock,
   faClockRotateLeft,
+  faCoins,
   faCopy,
   faCouch,
   faDatabase,

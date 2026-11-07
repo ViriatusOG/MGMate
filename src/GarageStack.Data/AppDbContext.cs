@@ -106,6 +106,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(c => new { c.VehicleId, c.StartedAt }).IsUnique();
             e.Property(c => c.Notes).HasMaxLength(ChargeSession.NotesMaxLength);
             e.Property(c => c.ChargeType).HasMaxLength(8);
+            e.Property(c => c.Place).HasMaxLength(8);
+            e.Property(c => c.PaidAmount).HasPrecision(10, 2);
             e.Property(c => c.StopReason).HasMaxLength(64);
             e.HasOne(c => c.Vehicle)
              .WithMany()

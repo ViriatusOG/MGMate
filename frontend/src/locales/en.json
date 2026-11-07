@@ -1172,6 +1172,50 @@
     "hide": "Hide",
     "show": "Show again",
     "joinNext": "Join with next",
-    "joinConfirm": "Join this charge with the next one? This cannot be undone."
+    "joinConfirm": "Join this charge with the next one? This cannot be undone.",
+    "cost": "Cost",
+    "homeAwaySplit": "{home} home · {away} elsewhere",
+    "perKwhAverage": "{rate} per kWh on average",
+    "unpriced": "{n} charge without a price | {n} charges without a price",
+    "costPaid": "As you typed it in",
+    "costWork": "At work: free unless you type a price in",
+    "costHome": "Home tariff, {rate} per kWh",
+    "costPublic": "Public price, {rate} per kWh",
+    "place": "Where",
+    "placeAuto": "Automatic ({place})",
+    "places": {
+      "home": "Home",
+      "work": "Work",
+      "public": "Public"
+    },
+    "paid": "What you paid ({currency}, optional)",
+    "paidPlaceholder": "Leave empty to use your prices",
+    "paidInvalid": "What you paid must be a number of 0 or more"
+  },
+  "tariff": {
+    "button": "Prices",
+    "setUp": "Set your electricity prices",
+    "title": "Electricity prices",
+    "intro": "Used to work out what each charge cost. Charges at your home place use the home prices, split across the bands they span; everywhere else uses the public price.",
+    "currency": "Currency",
+    "home": "Home tariff",
+    "bandsHint": "One band from 00:00 to 00:00 is a flat rate. A band ending before it starts runs past midnight.",
+    "from": "From",
+    "to": "To",
+    "pricePerKwh": "{currency} per kWh",
+    "days": "Days",
+    "dayOptions": {
+      "all": "Every day",
+      "weekdays": "Weekdays",
+      "weekends": "Weekends"
+    },
+    "removeBand": "Remove this band",
+    "addBand": "Add a band",
+    "public": "Public charging, per kWh, when no price is typed in",
+    "publicPlaceholder": "For example 0.79",
+    "placesHint": "Your home place is set on the trip log, under “Home and work”.",
+    "invalid": "Check the times (HH:mm) and that every price is a number between 0 and 10.",
+    "clear": "Remove prices",
+    "save": "Save prices"
   }
 }

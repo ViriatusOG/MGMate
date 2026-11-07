@@ -18,6 +18,8 @@ function charge(overrides: Partial<ChargeSession> = {}): ChargeSession {
     stopReason: null,
     socTargetPercent: 80,
     notes: null,
+    place: null,
+    paidAmount: null,
     isHidden: false,
     ...overrides,
   }

@@ -4,6 +4,10 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { useVehicleStore } from '@/stores/vehicle'
+import { useUiSettingsStore } from '@/stores/settingsUi'
+import { useCommutePlacesStore } from '@/stores/commutePlaces'
+import { chargeCost, chargePlace, formatMoney, type ChargeCost } from '@/utils/tariff'
+import TariffModal from '@/components/TariffModal.vue'
 import {
   chargesApi,
   CHARGE_NOTES_MAX_LENGTH,
@@ -21,6 +25,9 @@ import StatsChartCard from '@/components/StatsChartCard.vue'
 
 const { t, locale } = useI18n()
 const vehicleStore = useVehicleStore()
+const uiSettings = useUiSettingsStore()
+const placesStore = useCommutePlacesStore()
+const tariffOpen = ref(false)
 const units = useUnits()
 const chartTheme = useChartTheme()
 const errorMessage = useErrorMessage()
@@ -37,6 +44,7 @@ const error = ref<string | null>(null)
 const selectedId = ref<number | null>(null)
 const chart = ref<ChargeChartPoint[] | null>(null)
 const notesDraft = ref('')
+const paidDraft = ref('')
 const saving = ref(false)
 
 const monthLabel = computed(() =>
@@ -49,6 +57,8 @@ async function load() {
   if (!vin.value) return
   loading.value = true
   error.value = null
+  // Home charges are told apart by the home place; without it every charge is priced as public.
+  if (placesStore.places.length === 0) placesStore.fetchPlaces(vin.value)
   try {
     charges.value = await chargesApi.log(
       vin.value,
@@ -74,6 +84,38 @@ function stepMonth(offset: number) {
 // Newest first, as the trip log lists a month.
 const rows = computed(() => [...charges.value].reverse())
 const totals = computed(() => chargeTotals(charges.value, capacityKwh.value))
+
+function costOf(charge: ChargeSession): ChargeCost | null {
+  const kwh = chargeEnergy(charge, capacityKwh.value)?.kwh ?? null
+  return chargeCost(charge, kwh, uiSettings.tariff, placesStore.places)
+}
+
+function money(amount: number): string {
+  return formatMoney(amount, uiSettings.tariff?.currency ?? 'GBP')
+}
+
+// The month's spend over the charges whose cost is known, and the price per kWh that works out to.
+const spend = computed(() => {
+  let amount = 0
+  let kwh = 0
+  let unpriced = 0
+  let home = 0
+  let away = 0
+  for (const c of charges.value) {
+    if (c.isHidden) continue
+    if (chargePlace(c, placesStore.places) === 'home') home++
+    else away++
+    const cost = costOf(c)
+    const energy = chargeEnergy(c, capacityKwh.value)?.kwh
+    if (cost === null || energy === undefined) {
+      unpriced++
+      continue
+    }
+    amount += cost.amount
+    kwh += energy
+  }
+  return { amount, perKwh: kwh > 0 ? amount / kwh : null, unpriced, home, away }
+})
 
 // One bar per day of the month: the kWh added, split AC and DC.
 const daily = computed(() => {
@@ -129,6 +171,7 @@ async function select(charge: ChargeSession) {
   }
   selectedId.value = charge.id
   notesDraft.value = charge.notes ?? ''
+  paidDraft.value = charge.paidAmount === null ? '' : String(charge.paidAmount)
   chart.value = null
   if (!vin.value) return
   try {
@@ -218,13 +261,40 @@ async function act(action: () => Promise<void>) {
   }
 }
 
-function saveNotes() {
+function readPaid(): number | null | undefined {
+  const text = paidDraft.value.trim().replace(',', '.')
+  if (text === '') return null
+  const value = Number(text)
+  return Number.isFinite(value) && value >= 0 ? Math.round(value * 100) / 100 : undefined
+}
+
+// Notes, place and price go together: the API replaces all three at once.
+function saveEdit(place: ChargeSession['place'] = selected.value?.place ?? null) {
   const charge = selected.value
   if (!charge || !vin.value) return
   const notes = notesDraft.value.trim() === '' ? null : notesDraft.value.trim()
-  if (notes === charge.notes) return
+  const paidAmount = readPaid()
+  if (paidAmount === undefined) {
+    error.value = t('charges.paidInvalid')
+    return
+  }
+  if (notes === charge.notes && place === charge.place && paidAmount === charge.paidAmount) return
   const v = vin.value
-  act(async () => replace(await chargesApi.setNotes(v, charge.id, notes)))
+  act(async () => replace(await chargesApi.update(v, charge.id, { notes, place, paidAmount })))
+}
+
+function onPlaceChange(event: Event) {
+  const value = (event.target as HTMLSelectElement).value
+  saveEdit(value === '' ? null : (value as ChargeSession['place']))
+}
+
+function costNote(charge: ChargeSession, cost: ChargeCost): string {
+  if (cost.source === 'paid') return t('charges.costPaid')
+  if (cost.source === 'work') return t('charges.costWork')
+  const energy = chargeEnergy(charge, capacityKwh.value)
+  const perKwh = energy && energy.kwh > 0 ? cost.amount / energy.kwh : null
+  const rate = perKwh === null ? '' : formatMoney(perKwh, uiSettings.tariff!.currency, 3)
+  return t(cost.source === 'home' ? 'charges.costHome' : 'charges.costPublic', { rate })
 }
 
 function toggleHidden() {
@@ -254,6 +324,9 @@ const hasNext = computed(() => {
   <div class="view-container charges">
     <ViewHeader :title="t('charges.title')" :subtitle="t('charges.subtitle')">
       <template #actions>
+        <button class="btn btn-sm btn-outline-secondary" @click="tariffOpen = true">
+          <font-awesome-icon icon="coins" />{{ t('tariff.button') }}
+        </button>
         <div class="charges__month">
           <button
             class="btn btn-sm"
@@ -294,6 +367,26 @@ const hasNext = computed(() => {
       <div class="charges__tile">
         <span class="charges__tile-label">{{ t('charges.timeCharging') }}</span>
         <span class="charges__tile-value">{{ formatDurationMs(totals.minutes * 60_000, t) }}</span>
+        <span class="charges__tile-note">{{
+          t('charges.homeAwaySplit', { home: spend.home, away: spend.away })
+        }}</span>
+      </div>
+      <div class="charges__tile">
+        <span class="charges__tile-label">{{ t('charges.cost') }}</span>
+        <template v-if="uiSettings.tariff || spend.amount > 0">
+          <span class="charges__tile-value">{{ money(spend.amount) }}</span>
+          <span v-if="spend.perKwh !== null" class="charges__tile-note">{{
+            t('charges.perKwhAverage', {
+              rate: formatMoney(spend.perKwh, uiSettings.tariff?.currency ?? 'GBP', 3),
+            })
+          }}</span>
+          <span v-if="spend.unpriced > 0" class="charges__tile-note">{{
+            t('charges.unpriced', spend.unpriced)
+          }}</span>
+        </template>
+        <button v-else class="btn btn-sm btn-link charges__set-prices" @click="tariffOpen = true">
+          {{ t('tariff.setUp') }}
+        </button>
       </div>
     </div>
 
@@ -350,6 +443,9 @@ const hasNext = computed(() => {
             {{ charge.maxPowerKw !== null ? formatNumber(charge.maxPowerKw, 1) : '-' }}
             <small>kW</small>
           </span>
+          <span class="charges__num charges__cost">{{
+            costOf(charge) ? money(costOf(charge)!.amount) : '-'
+          }}</span>
         </button>
 
         <div v-if="selectedId === charge.id" class="charges__detail">
@@ -378,6 +474,11 @@ const hasNext = computed(() => {
                 {{ charge.maxPowerKw !== null ? `${formatNumber(charge.maxPowerKw, 1)} kW` : '-' }}
               </dd>
             </div>
+            <div v-if="costOf(charge)">
+              <dt>{{ t('charges.cost') }}</dt>
+              <dd>{{ money(costOf(charge)!.amount) }}</dd>
+              <dd class="text-xs text-muted">{{ costNote(charge, costOf(charge)!) }}</dd>
+            </div>
             <div v-if="charge.odometerKm !== null">
               <dt>{{ t('vehicle.odometer') }}</dt>
               <dd>
@@ -400,6 +501,38 @@ const hasNext = computed(() => {
             :show-info="false"
           />
 
+          <div class="charges__edit">
+            <label>
+              <span class="charges__notes-label">{{ t('charges.place') }}</span>
+              <select class="form-select" :value="charge.place ?? ''" @change="onPlaceChange">
+                <option value="">
+                  {{
+                    t('charges.placeAuto', {
+                      place: t(
+                        `charges.places.${chargePlace({ ...charge, place: null }, placesStore.places)}`,
+                      ),
+                    })
+                  }}
+                </option>
+                <option value="home">{{ t('charges.places.home') }}</option>
+                <option value="work">{{ t('charges.places.work') }}</option>
+                <option value="public">{{ t('charges.places.public') }}</option>
+              </select>
+            </label>
+            <label>
+              <span class="charges__notes-label">{{
+                t('charges.paid', { currency: uiSettings.tariff?.currency ?? 'GBP' })
+              }}</span>
+              <input
+                v-model="paidDraft"
+                class="form-control"
+                inputmode="decimal"
+                :placeholder="t('charges.paidPlaceholder')"
+                @blur="saveEdit()"
+              />
+            </label>
+          </div>
+
           <label :for="`charge-notes-${charge.id}`" class="charges__notes-label">{{
             t('charges.notes')
           }}</label>
@@ -409,7 +542,7 @@ const hasNext = computed(() => {
             class="charges__notes"
             rows="2"
             :maxlength="CHARGE_NOTES_MAX_LENGTH"
-            @blur="saveNotes"
+            @blur="saveEdit()"
           ></textarea>
 
           <div class="charges__actions">
@@ -433,5 +566,7 @@ const hasNext = computed(() => {
         </div>
       </li>
     </ul>
+
+    <TariffModal :open="tariffOpen" @close="tariffOpen = false" />
   </div>
 </template>

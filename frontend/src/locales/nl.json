@@ -1172,6 +1172,50 @@
     "hide": "Verbergen",
     "show": "Weer tonen",
     "joinNext": "Samenvoegen met volgende",
-    "joinConfirm": "Deze laadbeurt samenvoegen met de volgende? Dit kan niet ongedaan worden gemaakt."
+    "joinConfirm": "Deze laadbeurt samenvoegen met de volgende? Dit kan niet ongedaan worden gemaakt.",
+    "cost": "Kosten",
+    "homeAwaySplit": "{home} thuis · {away} elders",
+    "perKwhAverage": "gemiddeld {rate} per kWh",
+    "unpriced": "{n} laadbeurt zonder prijs | {n} laadbeurten zonder prijs",
+    "costPaid": "Zoals je het hebt ingevuld",
+    "costWork": "Op het werk: gratis tenzij je een prijs invult",
+    "costHome": "Thuistarief, {rate} per kWh",
+    "costPublic": "Publieke prijs, {rate} per kWh",
+    "place": "Waar",
+    "placeAuto": "Automatisch ({place})",
+    "places": {
+      "home": "Thuis",
+      "work": "Werk",
+      "public": "Publiek"
+    },
+    "paid": "Wat je betaalde ({currency}, optioneel)",
+    "paidPlaceholder": "Leeg laten om je prijzen te gebruiken",
+    "paidInvalid": "Wat je betaalde moet een getal van 0 of meer zijn"
+  },
+  "tariff": {
+    "button": "Prijzen",
+    "setUp": "Stel je stroomprijzen in",
+    "title": "Stroomprijzen",
+    "intro": "Hiermee wordt berekend wat elke laadbeurt kostte. Laden bij je thuislocatie gebruikt de thuisprijzen, verdeeld over de blokken waarin het viel; elders geldt de publieke prijs.",
+    "currency": "Valuta",
+    "home": "Thuistarief",
+    "bandsHint": "Eén blok van 00:00 tot 00:00 is een vast tarief. Een blok dat eindigt voor het begint, loopt over middernacht.",
+    "from": "Van",
+    "to": "Tot",
+    "pricePerKwh": "{currency} per kWh",
+    "days": "Dagen",
+    "dayOptions": {
+      "all": "Elke dag",
+      "weekdays": "Doordeweeks",
+      "weekends": "Weekend"
+    },
+    "removeBand": "Dit blok verwijderen",
+    "addBand": "Blok toevoegen",
+    "public": "Publiek laden, per kWh, als er geen prijs is ingevuld",
+    "publicPlaceholder": "Bijvoorbeeld 0,79",
+    "placesHint": "Je thuislocatie stel je in bij het rittenlogboek, onder “Thuis en werk”.",
+    "invalid": "Controleer de tijden (UU:mm) en dat elke prijs een getal tussen 0 en 10 is.",
+    "clear": "Prijzen verwijderen",
+    "save": "Prijzen opslaan"
   }
 }

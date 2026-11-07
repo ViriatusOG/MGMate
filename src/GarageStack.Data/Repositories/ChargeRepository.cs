@@ -64,10 +64,12 @@ public class ChargeRepository(AppDbContext db, ITelemetryRepository telemetry) :
         return [.. Enumerable.Range(0, MaxChartPoints).Select(i => points[(int)(i * step)])];
     }
 
-    public async Task<ChargeSessionDto?> SetNotesAsync(int vehicleId, long id, string? notes, CancellationToken ct = default)
+    public async Task<ChargeSessionDto?> UpdateAsync(int vehicleId, long id, ChargeEdit edit, CancellationToken ct = default)
     {
         if (await FindAsync(vehicleId, id, tracked: true, ct) is not { } session) return null;
-        session.Notes = notes;
+        session.Notes = edit.Notes;
+        session.Place = edit.Place;
+        session.PaidAmount = edit.PaidAmount;
         await db.SaveChangesAsync(ct);
         return ChargeSessionDto.From(session);
     }

@@ -28,6 +28,7 @@ import {
   TEMPERATURE_UNITS,
   type UnitSettings,
 } from '@/utils/units'
+import { parseTariff, type Tariff } from '@/utils/tariff'
 
 export type { Theme, Locale, VehicleTypeOverride, CarColorScheme } from './settingsShared'
 export { CAR_COLOR_SCHEMES }
@@ -61,6 +62,8 @@ interface UiSettings {
   region: RegionSetting
   clock: ClockSetting
   units: UnitSettings
+  /** Electricity prices, for what charges and trips cost; null until set. */
+  tariff: Tariff | null
 }
 
 function defaultsFor(): UiSettings {
@@ -80,6 +83,7 @@ function defaultsFor(): UiSettings {
     region: 'auto',
     clock: 'auto',
     units: { ...AUTO_UNITS },
+    tariff: null,
   }
 }
 
@@ -172,6 +176,7 @@ function parseUiFields(parsed: Record<string, unknown>, fallback: UiSettings): U
     region: parseRegion(parsed.region, fallback.region),
     clock: oneOf(parsed.clock, CLOCK_SETTINGS, fallback.clock),
     units: parseUnits(parsed.units, fallback.units),
+    tariff: parseTariff(parsed.tariff),
   }
 }
 

@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GarageStack.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261107184636_AddChargeSessions")]
+    [Migration("20261107185443_AddChargeSessions")]
     partial class AddChargeSessions
     {
         /// <inheritdoc />
@@ -149,6 +149,14 @@ namespace GarageStack.Data.Migrations
 
                     b.Property<double?>("OdometerKm")
                         .HasColumnType("double precision");
+
+                    b.Property<decimal?>("PaidAmount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("Place")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
 
                     b.Property<double?>("SocEndPercent")
                         .HasColumnType("double precision");

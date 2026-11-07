@@ -147,6 +147,14 @@ namespace GarageStack.Data.Migrations
                     b.Property<double?>("OdometerKm")
                         .HasColumnType("double precision");
 
+                    b.Property<decimal?>("PaidAmount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("Place")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
                     b.Property<double?>("SocEndPercent")
                         .HasColumnType("double precision");
 

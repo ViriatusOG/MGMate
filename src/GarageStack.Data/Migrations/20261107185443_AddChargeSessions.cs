@@ -38,6 +38,8 @@ namespace GarageStack.Data.Migrations
                     StopReason = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     SocTargetPercent = table.Column<int>(type: "integer", nullable: true),
                     Notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    Place = table.Column<string>(type: "character varying(8)", maxLength: 8, nullable: true),
+                    PaidAmount = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: true),
                     IsHidden = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },

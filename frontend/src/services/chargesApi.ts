@@ -20,7 +20,18 @@ export interface ChargeSession {
   stopReason: string | null
   socTargetPercent: number | null
   notes: string | null
+  /** Where the owner says it was; null leaves it to the home place. */
+  place: 'home' | 'work' | 'public' | null
+  /** What the owner says it cost, in their currency; null prices it from the tariff. */
+  paidAmount: number | null
   isHidden: boolean
+}
+
+/** What can be changed on a charge, sent whole. */
+export interface ChargeEdit {
+  notes: string | null
+  place: ChargeSession['place']
+  paidAmount: number | null
 }
 
 export interface ChargeChartPoint {
@@ -34,8 +45,8 @@ export const chargesApi = {
     request<ChargeSession[]>(`/api/vehicles/${vin}/charges${buildQuery({ from, to })}`),
   chart: (vin: string, id: number) =>
     request<ChargeChartPoint[]>(`/api/vehicles/${vin}/charges/${id}/chart`),
-  setNotes: (vin: string, id: number, notes: string | null) =>
-    requestJson<ChargeSession>(`/api/vehicles/${vin}/charges/${id}`, 'PUT', { notes }),
+  update: (vin: string, id: number, edit: ChargeEdit) =>
+    requestJson<ChargeSession>(`/api/vehicles/${vin}/charges/${id}`, 'PUT', edit),
   setHidden: (vin: string, id: number, hidden: boolean) =>
     requestJson<ChargeSession>(`/api/vehicles/${vin}/charges/${id}/hidden`, 'PUT', { hidden }),
   mergeWithNext: (vin: string, id: number) =>

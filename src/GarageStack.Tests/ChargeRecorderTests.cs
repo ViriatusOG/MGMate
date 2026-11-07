@@ -42,7 +42,10 @@ public class ChargeRecorderTests
         Assert.Equal((50.0, 53.0), (charge.SocStartPercent!.Value, charge.SocEndPercent!.Value));
 
         Assert.NotEmpty(await charges.GetChartAsync(vehicle.Id, charge.Id, ct));
-        Assert.Equal("Wallbox", (await charges.SetNotesAsync(vehicle.Id, charge.Id, "Wallbox", ct))!.Notes);
+        var edited = (await charges.UpdateAsync(vehicle.Id, charge.Id, new ChargeEdit("Supermarket", "public", 12.5m), ct))!;
+        Assert.Equal("Supermarket", edited.Notes);
+        Assert.Equal("public", edited.Place);
+        Assert.Equal(12.5m, edited.PaidAmount);
         Assert.True((await charges.SetHiddenAsync(vehicle.Id, charge.Id, true, ct))!.IsHidden);
 
         // Once the second charge has stopped for long enough, it is saved too and can be joined.

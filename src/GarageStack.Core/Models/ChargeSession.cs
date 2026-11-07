@@ -8,6 +8,9 @@ public class ChargeSession
 {
     public const int NotesMaxLength = 500;
 
+    /// <summary>The most a typed-in price may be: well past any real charge, short of a typo's millions.</summary>
+    public const decimal PaidAmountMax = 10_000m;
+
     public long Id { get; set; }
     public int VehicleId { get; set; }
     public Vehicle Vehicle { get; set; } = null!;
@@ -45,6 +48,15 @@ public class ChargeSession
 
     public string? Notes { get; set; }
 
+    /// <summary>
+    /// Where the charge was, as the owner set it: "home", "work" or "public". Null leaves it to the
+    /// client, which calls a charge at the home place home and anywhere else public.
+    /// </summary>
+    public string? Place { get; set; }
+
+    /// <summary>What the owner says the charge cost, in their currency; null prices it from the tariff.</summary>
+    public decimal? PaidAmount { get; set; }
+
     /// <summary>Kept out of the totals; shown again on request, never deleted.</summary>
     public bool IsHidden { get; set; }
 
@@ -67,11 +79,14 @@ public sealed record ChargeSessionDto(
     string? StopReason,
     int? SocTargetPercent,
     string? Notes,
+    string? Place,
+    decimal? PaidAmount,
     bool IsHidden)
 {
     public static ChargeSessionDto From(ChargeSession s) => new(
         s.Id, s.StartedAt, s.EndedAt, s.SocStartPercent, s.SocEndPercent, s.EnergyAddedKwh, s.MaxPowerKw,
-        s.ChargeType, s.Latitude, s.Longitude, s.OdometerKm, s.StopReason, s.SocTargetPercent, s.Notes, s.IsHidden);
+        s.ChargeType, s.Latitude, s.Longitude, s.OdometerKm, s.StopReason, s.SocTargetPercent, s.Notes,
+        s.Place, s.PaidAmount, s.IsHidden);
 }
 
 /// <summary>
@@ -89,6 +104,15 @@ public sealed record ChargeSample(
     double? OdometerKm,
     string? StopReason,
     int? SocTargetPercent);
+
+/// <summary>The places a charge can be set to.</summary>
+public static class ChargePlaces
+{
+    public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal) { "home", "work", "public" };
+}
+
+/// <summary>What the owner can change on a charge: replaced as a whole.</summary>
+public sealed record ChargeEdit(string? Notes, string? Place, decimal? PaidAmount);
 
 /// <summary>One point of a charge's chart: when, the power in kW and the state of charge.</summary>
 public sealed record ChargeChartPoint(DateTime RecordedAt, double? PowerKw, double? SocPercent);
