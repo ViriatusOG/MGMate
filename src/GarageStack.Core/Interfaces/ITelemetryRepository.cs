@@ -90,6 +90,13 @@ public interface ITelemetryRepository
     /// </summary>
     Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
 
+    /// <summary>
+    /// What the car reported while a trip was driven, from <paramref name="from"/> to
+    /// <paramref name="to"/> (both inclusive), oldest first: speed, charge level, battery power,
+    /// elevation, outside temperature and climate.
+    /// </summary>
+    Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
     /// <summary>When the vehicle first reported that it was charging, or null when it never has.</summary>
     Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default);
 

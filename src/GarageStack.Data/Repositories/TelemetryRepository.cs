@@ -391,6 +391,17 @@ public class TelemetryRepository(
                 s.Latitude, s.Longitude, s.OdometerKm, s.ChargingStopReason, s.SocTargetPercent))
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt <= to
+                        && (s.Speed != null || s.EvSocPercent != null || s.HvPower != null
+                            || s.Elevation != null || s.ExteriorTemperature != null || s.ClimateOn != null))
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => new TripTelemetryPoint(
+                s.RecordedAt, s.Speed, s.EvSocPercent, s.HvPower, s.Elevation, s.ExteriorTemperature, s.ClimateOn))
+            .ToListAsync(ct);
+
     public Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default) =>
         db.TelemetrySnapshots
             .AsNoTracking()

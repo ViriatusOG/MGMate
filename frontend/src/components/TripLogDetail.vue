@@ -2,14 +2,27 @@
 import { computed, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
+  tripLogApi,
   TRIP_NOTES_MAX_LENGTH,
   TRIP_PURPOSES,
   type TripLogEntry,
   type TripPurpose,
+  type TripTelemetryPoint,
 } from '@/services/tripLogApi'
+import type { ChartData, ChartOptions } from 'chart.js'
 import type { CommutePlace } from '@/services/commutePlacesApi'
 import type { TripPoint } from '@/services/vehicleApi'
-import { formatDate, formatNumber, formatTime } from '@/utils/format'
+import { formatDate, formatNumber, formatTime, numberLocale } from '@/utils/format'
+import { useUiSettingsStore } from '@/stores/settingsUi'
+import { cheapestHomePrice, formatMoney } from '@/utils/tariff'
+import {
+  buildGpx,
+  downloadText,
+  drivingPowerSign,
+  summarizeTripTelemetry,
+} from '@/utils/tripTelemetry'
+import { downsample } from '@/utils/downsample'
+import { useChartTheme } from '@/composables/useChartTheme'
 import { tripEnergy } from '@/utils/energy'
 import { useVehicleStore } from '@/stores/vehicle'
 import { formatTripDuration } from '@/utils/tripRows'
@@ -58,6 +71,27 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const units = useUnits()
 const vehicleStore = useVehicleStore()
+const uiSettings = useUiSettingsStore()
+const chartTheme = useChartTheme()
+
+// What the car reported while driving: regen, climb, outside temperature, climate and the chart.
+const telemetry = ref<TripTelemetryPoint[]>([])
+watch(
+  () => props.entry.id,
+  async (id) => {
+    telemetry.value = []
+    const vin = vehicleStore.activeVin
+    if (!vin) return
+    try {
+      const points = await tripLogApi.telemetry(vin, id)
+      if (props.entry.id === id) telemetry.value = points
+    } catch {
+      // The extra figures are left out; the rest of the detail stands on its own.
+    }
+  },
+  { immediate: true },
+)
+const telemetrySummary = computed(() => summarizeTripTelemetry(telemetry.value))
 
 const { from, to } = useTripEnds({
   entry: toRef(props, 'entry'),
@@ -153,6 +187,84 @@ const energyFigures = computed((): Figure[] => {
   ]
 })
 
+function climbLabel(metres: number): string {
+  const feet = uiSettings.effectiveUnits.distance === 'mi'
+  return formatNumber(feet ? metres * 3.28084 : metres, 0)
+}
+
+const telemetryFigures = computed((): Figure[] => {
+  const s = telemetrySummary.value
+  const list: Figure[] = []
+  if (s.regenKwh !== null && s.usedKwh !== null) {
+    list.push({
+      key: 'regen',
+      icon: 'rotate-left',
+      label: t('tripLog.detail.regen'),
+      measure: { value: formatNumber(s.regenKwh, 2), unit: t('common.kwh') },
+      title: t('tripLog.detail.regenHint'),
+      note: t('tripLog.detail.regenShare', {
+        percent: Math.round((s.regenKwh / s.usedKwh) * 100),
+      }),
+      noteIcon: 'leaf',
+    })
+  }
+  const tariff = uiSettings.tariff
+  const price = tariff ? cheapestHomePrice(tariff) : null
+  if (energy.value && tariff && price !== null) {
+    list.push({
+      key: 'cost',
+      icon: 'coins',
+      label: t('tripLog.detail.cost'),
+      measure: { value: formatMoney(energy.value.kwh * price, tariff.currency), unit: '' },
+      title: undefined,
+      note: t('tripLog.detail.costAt', { rate: formatMoney(price, tariff.currency, 3) }),
+      noteIcon: 'plug-circle-bolt',
+    })
+  }
+  if (s.climbM !== null && s.descentM !== null) {
+    list.push({
+      key: 'climb',
+      icon: 'mountain',
+      label: t('tripLog.detail.climb'),
+      measure: {
+        value: `↑ ${climbLabel(s.climbM)} ↓ ${climbLabel(s.descentM)}`,
+        unit: uiSettings.effectiveUnits.distance === 'mi' ? 'ft' : 'm',
+      },
+      title: undefined,
+      note: null,
+    })
+  }
+  if (s.outsideStart !== null && s.outsideEnd !== null) {
+    const start = units.value.measure('temperature', s.outsideStart, { decimals: 0 })
+    const end = units.value.measure('temperature', s.outsideEnd, { decimals: 0 })
+    list.push({
+      key: 'outside',
+      icon: 'temperature-half',
+      label: t('tripLog.detail.outside'),
+      measure: start && end ? { value: `${start.value} → ${end.value}`, unit: end.unit } : null,
+      title: undefined,
+      note: null,
+    })
+  }
+  if (s.climateMinutes !== null) {
+    list.push({
+      key: 'climate',
+      icon: 'fan',
+      label: t('tripLog.detail.climate'),
+      measure: {
+        value:
+          s.climateMinutes < 1
+            ? t('tripLog.detail.climateOff')
+            : t('tripLog.detail.climateOn', { minutes: Math.round(s.climateMinutes) }),
+        unit: '',
+      },
+      title: undefined,
+      note: null,
+    })
+  }
+  return list
+})
+
 const figures = computed((): Figure[] => [
   {
     key: 'distance',
@@ -192,7 +304,90 @@ const figures = computed((): Figure[] => [
     note: null,
   },
   ...energyFigures.value,
+  ...telemetryFigures.value,
 ])
+
+const MAX_TELEMETRY_CHART_POINTS = 200
+
+// Battery level, power and elevation over the trip, each on an axis of its own.
+const telemetryChart = computed(() => {
+  const all = telemetry.value
+  const hasPower = all.some((p) => p.powerKw !== null)
+  const hasSoc = all.some((p) => p.socPercent !== null)
+  const hasElevation = all.some((p) => p.elevation !== null)
+  if (all.length < 3 || !(hasPower || hasSoc)) return null
+  const shown = downsample([...all], MAX_TELEMETRY_CHART_POINTS)
+  const sign = drivingPowerSign(all)
+  const { text, grid } = chartTheme.value
+  const axis = { grid: { color: grid }, border: { color: grid } }
+  const datasets: ChartData<'line'>['datasets'] = []
+  if (hasSoc) {
+    datasets.push({
+      label: `${t('tripLog.detail.batteryLevel')} (%)`,
+      data: shown.map((p) => p.socPercent),
+      borderColor: '#22c55e',
+      spanGaps: true,
+      pointRadius: 0,
+      yAxisID: 'soc',
+    })
+  }
+  if (hasPower) {
+    datasets.push({
+      label: `${t('tripLog.detail.power')} (kW)`,
+      data: shown.map((p) => (p.powerKw === null ? null : p.powerKw * sign)),
+      borderColor: '#f59e0b',
+      spanGaps: true,
+      pointRadius: 0,
+      yAxisID: 'power',
+    })
+  }
+  if (hasElevation) {
+    datasets.push({
+      label: `${t('tripLog.detail.elevation')} (m)`,
+      data: shown.map((p) => p.elevation),
+      borderColor: 'rgba(148,163,184,0.6)',
+      backgroundColor: 'rgba(148,163,184,0.18)',
+      fill: true,
+      spanGaps: true,
+      pointRadius: 0,
+      yAxisID: 'elevation',
+    })
+  }
+  const data: ChartData<'line'> = { labels: shown.map((p) => formatTime(p.recordedAt)), datasets }
+  const options: ChartOptions<'line'> = {
+    locale: numberLocale(),
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: 2.4,
+    animation: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { labels: { color: text } } },
+    scales: {
+      x: { ...axis, ticks: { color: text, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } },
+      soc: { display: hasSoc, position: 'left', min: 0, max: 100, ...axis, ticks: { color: text } },
+      power: {
+        display: hasPower,
+        position: 'right',
+        grid: { drawOnChartArea: false },
+        ticks: { color: text },
+      },
+      elevation: { display: false },
+    },
+  }
+  return { data, options }
+})
+
+function downloadGpx() {
+  const points = props.routePoints
+  if (!points || points.length === 0) return
+  const name = `${dateLabel.value} ${timeLabel.value}`
+  const stamp = props.entry.startedAt.slice(0, 16).replace(/[:T]/g, '-')
+  downloadText(
+    `garagestack-trip-${stamp}.gpx`,
+    buildGpx(name, points, telemetry.value),
+    'application/gpx+xml',
+  )
+}
 
 const speedChart = useTripSpeedChart(toRef(props, 'routePoints'))
 
@@ -301,7 +496,7 @@ const notesId = computed(() => `trip-log-notes-${props.entry.id}`)
 
     <dl
       class="trip-log-detail__figures"
-      :class="{ 'trip-log-detail__figures--six': figures.length === 6 }"
+      :class="{ 'trip-log-detail__figures--six': figures.length > 4 }"
     >
       <div
         v-for="figure in figures"
@@ -337,6 +532,17 @@ const notesId = computed(() => `trip-log-notes-${props.entry.id}`)
       type="line"
       :data="speedChart.data"
       :options="speedChart.options"
+      :show-info="false"
+    />
+
+    <StatsChartCard
+      v-if="telemetryChart"
+      class="trip-log-detail__chart"
+      :title="t('tripLog.detail.duringTrip')"
+      icon="chart-line"
+      type="line"
+      :data="telemetryChart.data"
+      :options="telemetryChart.options"
       :show-info="false"
     />
 
@@ -380,6 +586,14 @@ const notesId = computed(() => `trip-log-notes-${props.entry.id}`)
       >
         <font-awesome-icon icon="pen-to-square" />{{ t('tripLog.editRoute') }}
       </RouterLink>
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm"
+        :disabled="!routePoints || routePoints.length === 0"
+        @click="downloadGpx"
+      >
+        <font-awesome-icon icon="download" />{{ t('tripLog.downloadGpx') }}
+      </button>
       <button
         v-if="canJoinNext"
         type="button"

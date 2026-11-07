@@ -104,6 +104,18 @@ export interface TripPlacesResult {
   hasMore: boolean
 }
 
+/** One reading taken while a trip was driven (`GET .../trips/{id}/telemetry`). */
+export interface TripTelemetryPoint {
+  recordedAt: string
+  speed: number | null
+  socPercent: number | null
+  /** Battery power in kW, of either sign: which way is charging differs between cars. */
+  powerKw: number | null
+  elevation: number | null
+  outsideTemperature: number | null
+  climateOn: boolean | null
+}
+
 export const tripLogApi = {
   log: (vin: string, from: string, to: string) =>
     request<TripLogEntry[]>(`/api/vehicles/${vin}/trips/log${buildQuery({ from, to })}`),
@@ -119,6 +131,8 @@ export const tripLogApi = {
       ids,
       purpose,
     }),
+  telemetry: (vin: string, id: number) =>
+    request<TripTelemetryPoint[]>(`/api/vehicles/${vin}/trips/${id}/telemetry`),
   editor: (vin: string, id: number) =>
     request<TripEditor>(`/api/vehicles/${vin}/trips/${id}/editor`),
   // The whole route at once; the answer is the editor as the trip now is.

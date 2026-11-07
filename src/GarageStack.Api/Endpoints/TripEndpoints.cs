@@ -146,6 +146,22 @@ public static class TripEndpoints
         })
         .WithSummary("Join a trip with the saved trip after it, such as two trips a fuel stop split");
 
+        group.MapGet("/{id:long}/telemetry", async (
+            HttpContext httpContext,
+            long id,
+            ITripRepository trips,
+            ITelemetryRepository telemetry,
+            CancellationToken ct) =>
+        {
+            var vehicle = httpContext.ResolvedVehicle();
+            var entries = await trips.GetLogEntriesAsync(vehicle.Id, [id], ct);
+            if (entries.Count == 0) return Results.NotFound();
+            var trip = entries[0];
+            var points = await telemetry.GetTripTelemetryAsync(vehicle.Id, trip.StartedAt, trip.EndedAt, ct);
+            return Results.Ok(TripTelemetryPoint.Thin(points));
+        })
+        .WithSummary("Get what the car reported while a saved trip was driven: speed, charge level, battery power, elevation, outside temperature and climate");
+
         group.MapGet("/{id:long}/editor", async (
             HttpContext httpContext,
             long id,

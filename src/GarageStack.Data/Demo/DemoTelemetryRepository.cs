@@ -82,6 +82,10 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
     public Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<ChargeSample>>([]);
 
+    // Demo trips carry their route only; the trip detail leaves out what this would add.
+    public Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<TripTelemetryPoint>>([]);
+
     public Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default) =>
         Task.FromResult<DateTime?>(null);
 

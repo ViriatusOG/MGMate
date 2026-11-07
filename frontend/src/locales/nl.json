@@ -742,7 +742,21 @@
       "energyFromCar": "Zoals de auto het telde",
       "energyFromSoc": "Geschat uit het accuniveau, {start}% tot {end}%",
       "battery": "Accu {start}% tot {end}%",
-      "efficiency": "Verbruik"
+      "efficiency": "Verbruik",
+      "regen": "Terugwinning",
+      "regenHint": "Energie die door remmen terug in de accu ging, uit het accuvermogen dat de auto meldde",
+      "regenShare": "{percent}% van wat het rijden verbruikte",
+      "cost": "Kosten",
+      "costAt": "Tegen het thuistarief van {rate} per kWh",
+      "climb": "Hoogteverschil",
+      "outside": "Buiten",
+      "climate": "Klimaat",
+      "climateOn": "{minutes} min aan",
+      "climateOff": "Uit",
+      "duringTrip": "Tijdens de rit",
+      "batteryLevel": "Accu",
+      "power": "Vermogen, onder 0 is terugwinning",
+      "elevation": "Hoogte"
     },
     "purposeLabel": "Doel",
     "purpose": {
@@ -821,7 +835,8 @@
     "showHidden": "Verborgen rit tonen | {n} verborgen ritten tonen",
     "editRoute": "Route bewerken",
     "edited": "Bewerkt",
-    "editedHint": "De route is met de hand bewerkt. De afstand komt nog steeds van de kilometerteller."
+    "editedHint": "De route is met de hand bewerkt. De afstand komt nog steeds van de kilometerteller.",
+    "downloadGpx": "GPX downloaden"
   },
   "tripEdit": {
     "title": "Route bewerken",

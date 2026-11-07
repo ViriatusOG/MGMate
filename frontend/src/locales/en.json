@@ -742,7 +742,21 @@
       "energyFromCar": "As counted by the car",
       "energyFromSoc": "Estimated from the battery level, {start}% to {end}%",
       "battery": "Battery {start}% to {end}%",
-      "efficiency": "Efficiency"
+      "efficiency": "Efficiency",
+      "regen": "Regen",
+      "regenHint": "Energy put back into the battery by braking, from the battery power the car reported",
+      "regenShare": "{percent}% of what driving used",
+      "cost": "Cost",
+      "costAt": "At the {rate} per kWh home rate",
+      "climb": "Climb",
+      "outside": "Outside",
+      "climate": "Climate",
+      "climateOn": "On {minutes} min",
+      "climateOff": "Off",
+      "duringTrip": "During the trip",
+      "batteryLevel": "Battery",
+      "power": "Power, below 0 is regen",
+      "elevation": "Elevation"
     },
     "purposeLabel": "Purpose",
     "purpose": {
@@ -821,7 +835,8 @@
     "showHidden": "Show hidden trip | Show {n} hidden trips",
     "editRoute": "Edit route",
     "edited": "Edited",
-    "editedHint": "The route was edited by hand. The distance still comes from the odometer."
+    "editedHint": "The route was edited by hand. The distance still comes from the odometer.",
+    "downloadGpx": "Download GPX"
   },
   "tripEdit": {
     "title": "Edit route",
