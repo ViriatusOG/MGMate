@@ -72,6 +72,7 @@ export {
   faLocationDot,
   faLock,
   faLockOpen,
+  faMagnifyingGlass,
   faMap,
   faMessage,
   faMobileScreen,

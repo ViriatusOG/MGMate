@@ -896,7 +896,9 @@
       "cost": "Cost"
     },
     "tripCount": "{n} trip | {n} trips",
-    "showWholeYear": "Whole of {year}"
+    "showWholeYear": "Whole of {year}",
+    "searchPlaceholder": "Place, note or purpose",
+    "searchResults": "No trips found | 1 trip found | {n} trips found"
   },
   "tripEdit": {
     "title": "Edit route",
@@ -1282,7 +1284,9 @@
     "noChart": "The car sent too few readings to draw this charge.",
     "fromSupply": "From the supply",
     "loss": "Charging loss",
-    "lossNote": "{kwh} kWh lost as heat ({percent}%)"
+    "lossNote": "{kwh} kWh lost as heat ({percent}%)",
+    "searchPlaceholder": "Note, place, AC or DC",
+    "searchResults": "No charges found | 1 charge found | {n} charges found"
   },
   "tariff": {
     "button": "Prices",
@@ -1362,5 +1366,18 @@
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
     "jumpToToday": "Jump to today"
+  },
+  "logSearch": {
+    "label": "Search",
+    "from": "From",
+    "to": "To",
+    "search": "Search",
+    "clear": "Clear",
+    "range": "{from} – {to}",
+    "invalid": {
+      "missing": "Pick both days.",
+      "backwards": "The last day comes before the first.",
+      "tooLong": "Search at most a year at a time."
+    }
   }
 }

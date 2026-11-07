@@ -200,6 +200,31 @@
   font-weight: 600;
 }
 
+/* What a search of the log found, above the days it lists. */
+.log-search-results {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+  padding: 0.75rem 1rem;
+  border-color: var(--color-primary);
+}
+
+.log-search-results__icon {
+  color: var(--color-primary);
+}
+
+.log-search-results__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.log-search-results .ll-day__figures {
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
 .ll-day--selected .ll-day__title {
   color: var(--color-primary);
 }

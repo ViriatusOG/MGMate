@@ -34,6 +34,8 @@ import { useChartTheme } from '@/composables/useChartTheme'
 import { useErrorMessage } from '@/composables/useErrorMessage'
 import ViewHeader from '@/components/ViewHeader.vue'
 import StatsChartCard from '@/components/StatsChartCard.vue'
+import LogSearch from '@/components/LogSearch.vue'
+import { matchesText, searchRange, type LogSearchQuery } from '@/utils/logSearch'
 
 const { t } = useI18n()
 const vehicleStore = useVehicleStore()
@@ -59,6 +61,9 @@ const notesDraft = ref('')
 const paidDraft = ref('')
 const saving = ref(false)
 
+// A search lists the charges over its own days that match its words, in place of the month.
+const search = ref<LogSearchQuery | null>(null)
+
 const isCurrentMonth = computed(() => month.value.getTime() >= monthStart(new Date()).getTime())
 
 async function load() {
@@ -68,12 +73,11 @@ async function load() {
   error.value = null
   // Home charges are told apart by the home place; without it every charge is priced as public.
   if (placesStore.places.length === 0) placesStore.fetchPlaces(vin.value)
+  const range = search.value ? searchRange(search.value) : null
+  const from = range?.ok ? range.from : month.value
+  const to = range?.ok ? range.to : monthStart(month.value, 1)
   try {
-    charges.value = await chargesApi.log(
-      vin.value,
-      month.value.toISOString(),
-      monthStart(month.value, 1).toISOString(),
-    )
+    charges.value = await chargesApi.log(vin.value, from.toISOString(), to.toISOString())
   } catch (e) {
     error.value = errorMessage(e)
   } finally {
@@ -85,6 +89,7 @@ onMounted(load)
 watch(vin, load)
 
 function stepMonth(offset: number) {
+  search.value = null
   month.value = monthStart(month.value, offset)
   selectedId.value = null
   selectedDay.value = null
@@ -92,16 +97,65 @@ function stepMonth(offset: number) {
 }
 
 function jumpToToday() {
-  if (isCurrentMonth.value) return
+  if (isCurrentMonth.value && !search.value) return
+  search.value = null
   month.value = monthStart(new Date())
   selectedId.value = null
   selectedDay.value = null
   load()
 }
 
+function searchTexts(charge: ChargeSession): (string | null)[] {
+  return [
+    charge.notes,
+    charge.chargeType,
+    charge.stopReason,
+    t(`charges.places.${chargePlace(charge, placesStore.places)}`),
+  ]
+}
+
+// What the page adds up and lists: the month, or what a search found.
+const listedCharges = computed(() => {
+  const words = search.value?.text ?? ''
+  return words ? charges.value.filter((c) => matchesText(searchTexts(c), words)) : charges.value
+})
+
+function runSearch(query: LogSearchQuery) {
+  search.value = query
+  selectedId.value = null
+  selectedDay.value = null
+  load()
+}
+
+function clearSearch() {
+  search.value = null
+  selectedId.value = null
+  selectedDay.value = null
+  load()
+}
+
 // Newest first, as the trip log lists a month.
-const rows = computed(() => [...charges.value].reverse())
-const totals = computed(() => chargeTotals(charges.value, capacityKwh.value))
+const rows = computed(() => [...listedCharges.value].reverse())
+const totals = computed(() => chargeTotals(listedCharges.value, capacityKwh.value))
+
+const searchSummary = computed(() => {
+  const query = search.value
+  if (!query) return null
+  const range = searchRange(query)
+  const day = (d: Date) => formatDate(d, { day: 'numeric', month: 'short', year: 'numeric' })
+  const priced = uiSettings.tariff !== null || spend.value.amount > 0
+  return {
+    found: t('charges.searchResults', totals.value.sessions),
+    range: range.ok
+      ? t('logSearch.range', { from: day(range.from), to: day(new Date(range.to.getTime() - 1)) })
+      : '',
+    figures: [
+      totals.value.kwh > 0 ? `${formatNumber(totals.value.kwh, 1)} ${t('common.kwh')}` : null,
+      totals.value.minutes > 0 ? formatDurationMs(totals.value.minutes * 60_000, t) : null,
+      priced && spend.value.amount > 0 ? money(spend.value.amount) : null,
+    ].filter((f): f is string => !!f),
+  }
+})
 
 function costOf(charge: ChargeSession): ChargeCost | null {
   const kwh = billedKwh(charge, capacityKwh.value)
@@ -119,7 +173,7 @@ const spend = computed(() => {
   let unpriced = 0
   let home = 0
   let away = 0
-  for (const c of charges.value) {
+  for (const c of listedCharges.value) {
     if (c.isHidden) continue
     if (chargePlace(c, placesStore.places) === 'home') home++
     else away++
@@ -338,7 +392,7 @@ const hasNext = computed(() => {
   return charge !== null && charges.value.some((c) => c.startedAt > charge.startedAt)
 })
 
-const visible = computed(() => charges.value.filter((c) => !c.isHidden))
+const visible = computed(() => listedCharges.value.filter((c) => !c.isHidden))
 const days = computed(() => groupByDay(rows.value, (c) => c.startedAt))
 
 function kwhOf(charge: ChargeSession): number | null {
@@ -610,6 +664,12 @@ const monthStats = computed(() => {
 
     <div class="ll-layout">
       <aside class="ll-side">
+        <LogSearch
+          :active="search !== null"
+          :placeholder="t('charges.searchPlaceholder')"
+          @search="runSearch"
+          @clear="clearSearch"
+        />
         <MonthCalendar
           :month="month"
           :days="calendarDays"
@@ -640,7 +700,22 @@ const monthStats = computed(() => {
       </aside>
 
       <div class="ll-days">
-        <p v-if="!loading && rows.length === 0" class="empty-state">{{ t('charges.none') }}</p>
+        <div v-if="searchSummary" class="ll-card log-search-results" role="status">
+          <font-awesome-icon icon="magnifying-glass" class="log-search-results__icon" />
+          <div class="log-search-results__text">
+            <strong>{{ searchSummary.found }}</strong>
+            <span class="text-sm text-muted">{{ searchSummary.range }}</span>
+          </div>
+          <span class="ll-day__figures">
+            <span v-for="figure in searchSummary.figures" :key="figure">{{ figure }}</span>
+          </span>
+          <button type="button" class="btn btn-outline-secondary btn-sm" @click="clearSearch">
+            {{ t('logSearch.clear') }}
+          </button>
+        </div>
+        <p v-if="!loading && rows.length === 0 && !search" class="empty-state">
+          {{ t('charges.none') }}
+        </p>
         <section
           v-for="day in days"
           :id="`charge-day-${day.key}`"

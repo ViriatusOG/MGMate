@@ -33,6 +33,11 @@ import { groupByDay } from '@/utils/dayGroups'
 import { loggedDistanceKm } from '@/utils/tripLog'
 import { tripEnergy } from '@/utils/energy'
 import { cheapestHomePrice, formatMoney } from '@/utils/tariff'
+import LogSearch from '@/components/LogSearch.vue'
+import { matchesText, searchRange, type LogSearchQuery } from '@/utils/logSearch'
+import { cityName, postalAddressLabel } from '@/utils/places'
+import { commutePlaceAt } from '@/utils/commutePlaces'
+import type { TripLogEntry } from '@/services/tripLogApi'
 
 const { t } = useI18n()
 const vehicleStore = useVehicleStore()
@@ -58,6 +63,7 @@ const canNextMonth = computed(
 )
 
 function stepMonth(offset: number) {
+  search.value = null
   shownMonth.value = new Date(
     shownMonth.value.getFullYear(),
     shownMonth.value.getMonth() + offset,
@@ -66,12 +72,76 @@ function stepMonth(offset: number) {
 }
 
 function jumpToToday() {
+  search.value = null
   shownMonth.value = new Date(today.getFullYear(), today.getMonth(), 1)
 }
 
+// ── Search ────────────────────────────────────────────────
+
+// A search lists the trips over its own days that match its words, in place of the month; the
+// tiles and day totals then add up what it found.
+const search = ref<LogSearchQuery | null>(null)
+
+function searchTexts(entry: TripLogEntry): (string | null)[] {
+  const ends: [TripLogEntry['startPlace'], number, number][] = [
+    [entry.startPlace, entry.startLatitude, entry.startLongitude],
+    [entry.endPlace, entry.endLatitude, entry.endLongitude],
+  ]
+  const texts: (string | null)[] = [
+    entry.notes,
+    t(`tripLog.purpose.${entry.purpose ?? 'unclassified'}`),
+  ]
+  for (const [place, lat, lng] of ends) {
+    texts.push(postalAddressLabel(place), cityName(place), place?.displayName ?? null)
+    const commute = commutePlaceAt(commutePlaces.places, lat, lng)
+    if (commute) texts.push(commute.label, t(`tripLog.places.kind.${commute.kind}`))
+  }
+  return texts
+}
+
+function runSearch(query: LogSearchQuery) {
+  search.value = query
+  reload()
+}
+
+function clearSearch() {
+  search.value = null
+  reload()
+}
+
+const searchSummary = computed(() => {
+  const query = search.value
+  if (!query) return null
+  const m = monthTotals.value
+  const rate = homeRate.value
+  const range = searchRange(query)
+  return {
+    found: t('tripLog.searchResults', m.trips),
+    range: range.ok
+      ? t('logSearch.range', {
+          from: formatDate(range.from, { day: 'numeric', month: 'short', year: 'numeric' }),
+          to: formatDate(new Date(range.to.getTime() - 1), {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          }),
+        })
+      : '',
+    figures: [
+      m.km > 0 ? units.value.format('distance', m.km, { decimals: 0 }) : null,
+      m.kwh > 0 ? `${formatNumber(m.kwh, 1)} ${t('common.kwh')}` : null,
+      rate !== null && m.kwh > 0 ? money(m.kwh * rate) : null,
+    ].filter((f): f is string => !!f),
+  }
+})
+
 // Hidden trips stay out of the list unless asked for, as they stay out of the totals and export.
 const showHidden = ref(false)
-const listed = computed(() => (showHidden.value ? store.entries : store.visibleEntries))
+const listed = computed(() => {
+  const all = showHidden.value ? store.entries : store.visibleEntries
+  const words = search.value?.text ?? ''
+  return words ? all.filter((entry) => matchesText(searchTexts(entry), words)) : all
+})
 
 // Newest first on screen, where the trips still to classify are; the export stays in date order.
 const newestFirst = computed(() => [...listed.value].reverse())
@@ -353,8 +423,14 @@ async function load() {
   await vehicleStore.fetchVehicles()
   if (!vin.value) return
   void commutePlaces.fetchPlaces(vin.value)
-  await store.fetchLog(vin.value, period.value)
+  await fetchEntries(vin.value)
   lookUpPlaces()
+}
+
+async function fetchEntries(v: string) {
+  const range = search.value ? searchRange(search.value) : null
+  if (range?.ok) await store.fetchRange(v, range.from, range.to)
+  else await store.fetchLog(v, period.value)
 }
 
 // Another period or car shows other trips: the newest of those, not one picked before.
@@ -384,7 +460,7 @@ function openPlaces(latitude?: number, longitude?: number) {
 // A place changed, so trips may have been labelled or unlabelled: show the log as it is now.
 async function reloadLog() {
   if (!vin.value) return
-  await store.fetchLog(vin.value, period.value)
+  await fetchEntries(vin.value)
   lookUpPlaces()
 }
 
@@ -504,6 +580,12 @@ function exportCsv() {
 
     <div class="ll-layout">
       <aside class="ll-side">
+        <LogSearch
+          :active="search !== null"
+          :placeholder="t('tripLog.searchPlaceholder')"
+          @search="runSearch"
+          @clear="clearSearch"
+        />
         <MonthCalendar
           :month="shownMonth"
           :days="calendarDays"
@@ -547,10 +629,23 @@ function exportCsv() {
       </aside>
 
       <div class="ll-days">
+        <div v-if="searchSummary" class="ll-card log-search-results" role="status">
+          <font-awesome-icon icon="magnifying-glass" class="log-search-results__icon" />
+          <div class="log-search-results__text">
+            <strong>{{ searchSummary.found }}</strong>
+            <span class="text-sm text-muted">{{ searchSummary.range }}</span>
+          </div>
+          <span class="ll-day__figures">
+            <span v-for="figure in searchSummary.figures" :key="figure">{{ figure }}</span>
+          </span>
+          <button type="button" class="btn btn-outline-secondary btn-sm" @click="clearSearch">
+            {{ t('logSearch.clear') }}
+          </button>
+        </div>
         <div v-if="store.loadError" class="empty-state text-danger" role="alert">
           {{ errorMessage(store.loadError) }}
         </div>
-        <div v-else-if="!store.loading && listed.length === 0" class="empty-state">
+        <div v-else-if="!store.loading && listed.length === 0 && !search" class="empty-state">
           {{ t('tripLog.empty') }}
         </div>
         <section

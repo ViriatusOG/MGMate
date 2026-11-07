@@ -896,7 +896,9 @@
       "cost": "Kosten"
     },
     "tripCount": "{n} rit | {n} ritten",
-    "showWholeYear": "Heel {year}"
+    "showWholeYear": "Heel {year}",
+    "searchPlaceholder": "Plaats, notitie of doel",
+    "searchResults": "Geen ritten gevonden | 1 rit gevonden | {n} ritten gevonden"
   },
   "tripEdit": {
     "title": "Route bewerken",
@@ -1282,7 +1284,9 @@
     "noChart": "De auto stuurde te weinig metingen om deze laadbeurt te tekenen.",
     "fromSupply": "Uit het net",
     "loss": "Laadverlies",
-    "lossNote": "{kwh} kWh verloren als warmte ({percent}%)"
+    "lossNote": "{kwh} kWh verloren als warmte ({percent}%)",
+    "searchPlaceholder": "Notitie, plaats, AC of DC",
+    "searchResults": "Geen laadsessies gevonden | 1 laadsessie gevonden | {n} laadsessies gevonden"
   },
   "tariff": {
     "button": "Prijzen",
@@ -1362,5 +1366,18 @@
     "previousMonth": "Vorige maand",
     "nextMonth": "Volgende maand",
     "jumpToToday": "Naar vandaag"
+  },
+  "logSearch": {
+    "label": "Zoeken",
+    "from": "Van",
+    "to": "Tot en met",
+    "search": "Zoeken",
+    "clear": "Wissen",
+    "range": "{from} – {to}",
+    "invalid": {
+      "missing": "Kies beide dagen.",
+      "backwards": "De laatste dag ligt voor de eerste.",
+      "tooLong": "Zoek hooguit een jaar tegelijk."
+    }
   }
 }
