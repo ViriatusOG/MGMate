@@ -549,7 +549,7 @@ function exportCsv() {
       </div>
     </section>
 
-    <div v-if="unclassified > 0 && !store.loading" class="trip-log-bulk">
+    <div v-if="unclassified > 0 && !store.loading && !search" class="trip-log-bulk">
       <span class="text-sm">
         <font-awesome-icon icon="circle-exclamation" class="trip-log-bulk__icon" />{{
           t(

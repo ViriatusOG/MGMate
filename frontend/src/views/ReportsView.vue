@@ -150,6 +150,12 @@ function figure(month: MonthReport | null, pick: (m: MonthReport) => number | nu
   return month ? pick(month) : null
 }
 
+// True when consumption reads as distance per kWh, where a bigger number is the better one.
+const perDistance = computed(
+  () =>
+    units.value.convert('energyPerDistance', 100) > units.value.convert('energyPerDistance', 200),
+)
+
 const tiles = computed<Tile[]>(() => {
   const m = current.value
   if (!m) return []
@@ -162,6 +168,8 @@ const tiles = computed<Tile[]>(() => {
     show: (v: number) => { value: string; unit?: string },
     better: Better = null,
     note?: string,
+    // What the change is worked out on, when that is not what the tile holds in metric.
+    compare: (r: MonthReport) => number | null = pick,
   ): Tile => {
     const value = pick(m)
     const shown = value === null ? { value: '-' } : show(value)
@@ -170,7 +178,7 @@ const tiles = computed<Tile[]>(() => {
       icon,
       label: t(`reports.tiles.${key}`),
       ...shown,
-      change: monthChange(value, figure(before, pick)),
+      change: monthChange(compare(m), figure(before, compare)),
       better,
       note,
     }
@@ -208,9 +216,16 @@ const tiles = computed<Tile[]>(() => {
         const e = units.value.measure('energyPerDistance', v)
         return { value: e?.value ?? '-', unit: e?.unit }
       },
-      'down',
+      // The arrow follows the number shown: mi/kWh going up is good news, Wh/km going up is not.
+      perDistance.value ? 'up' : 'down',
+      undefined,
+      (r) => {
+        const e = reportEfficiency(r)
+        return e === null ? null : units.value.convert('energyPerDistance', e)
+      },
     ),
-    make('energyUsed', 'plug-circle-bolt', (r) => (r.kwhUsed > 0 ? r.kwhUsed : null), kwh, 'down'),
+    // Less energy is mostly less driving, so it is neither good nor bad news.
+    make('energyUsed', 'plug-circle-bolt', (r) => (r.kwhUsed > 0 ? r.kwhUsed : null), kwh),
     make(
       'charges',
       'plug',
@@ -224,7 +239,8 @@ const tiles = computed<Tile[]>(() => {
       make(
         'chargingCost',
         'coins',
-        (r) => r.chargingCost,
+        // Nothing priced is no price at all, rather than free.
+        (r) => (r.chargingCost > 0 ? r.chargingCost : null),
         (v) => ({ value: money(v) }),
         'down',
         m.unpricedCharges > 0 ? t('reports.unpriced', m.unpricedCharges) : undefined,
@@ -241,7 +257,8 @@ const tiles = computed<Tile[]>(() => {
       ),
     )
   }
-  return list
+  // The price per distance only means something once a month has a price.
+  return list.filter((tile) => tile.key !== 'costPer100' || tile.value !== '-')
 })
 
 function changeText(change: number): string {
