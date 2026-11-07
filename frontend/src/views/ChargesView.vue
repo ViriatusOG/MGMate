@@ -590,6 +590,8 @@ const monthStats = computed(() => {
           :days="calendarDays"
           :selected="selectedDay"
           :can-next="!isCurrentMonth"
+          count-icon="plug"
+          :count-label="(n: number) => t('charges.count', n)"
           @prev="stepMonth(-1)"
           @next="stepMonth(1)"
           @today="jumpToToday"

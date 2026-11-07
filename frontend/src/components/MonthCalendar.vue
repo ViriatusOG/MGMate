@@ -19,6 +19,10 @@ const props = defineProps<{
   days: Record<string, CalendarDay>
   selected: string | null
   canNext: boolean
+  /** The icon beside each day's number of trips or charges, such as "car" or "plug". */
+  countIcon: string
+  /** The number of trips or charges in words, for the tooltip and screen readers. */
+  countLabel: (count: number) => string
 }>()
 
 const emit = defineEmits<{
@@ -95,12 +99,19 @@ const cells = computed(() =>
           }"
           :style="cell.info ? { '--level': String(0.25 + cell.info.level * 0.75) } : undefined"
           :disabled="!cell.info"
-          :title="cell.info ? `${cell.info.value} · ${cell.info.count}` : undefined"
-          :aria-label="cell.info ? `${cell.day}: ${cell.info.value}` : String(cell.day)"
+          :title="cell.info ? `${cell.info.value} · ${countLabel(cell.info.count)}` : undefined"
+          :aria-label="
+            cell.info
+              ? `${cell.day}: ${cell.info.value}, ${countLabel(cell.info.count)}`
+              : String(cell.day)
+          "
           @click="emit('select', cell.key)"
         >
           <span class="month-cal__num">{{ cell.day }}</span>
           <span v-if="cell.info" class="month-cal__value">{{ cell.info.value }}</span>
+          <span v-if="cell.info" class="month-cal__count" aria-hidden="true">
+            <font-awesome-icon :icon="countIcon" />{{ cell.info.count }}
+          </span>
         </button>
       </template>
     </div>

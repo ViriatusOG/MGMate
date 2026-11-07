@@ -486,6 +486,15 @@
   white-space: nowrap;
 }
 
+.month-cal__count {
+  display: inline-flex;
+  gap: 0.2rem;
+  align-items: center;
+  font-size: 0.58rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
 /* ── Battery gauge ──────────────────────────────────────── */
 
 .soc-bar {

@@ -509,6 +509,8 @@ function exportCsv() {
           :days="calendarDays"
           :selected="selectedDay"
           :can-next="canNextMonth"
+          count-icon="car"
+          :count-label="(n: number) => t('tripLog.tripCount', n)"
           @prev="stepMonth(-1)"
           @next="stepMonth(1)"
           @today="jumpToToday"
