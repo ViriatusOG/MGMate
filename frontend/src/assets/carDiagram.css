@@ -70,6 +70,10 @@
 
 .tyre-diagram {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -545,8 +549,10 @@
 
 .car-photo {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 0.75rem;
+  min-height: 0;
 }
 
 .car-photo__chips {
@@ -583,10 +589,11 @@
 
 .car-photo__img {
   display: block;
+  flex: 1 1 auto;
   width: 100%;
-  max-height: 16rem;
+  min-height: 10rem;
+  max-height: 24rem;
   object-fit: contain;
-  border-radius: 10px;
 }
 
 .car-photo__levels {
