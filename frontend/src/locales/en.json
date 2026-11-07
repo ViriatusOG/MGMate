@@ -125,7 +125,7 @@
       "total": "Total"
     },
     "voltage12vChart": "12V Battery (V)",
-    "temperatureChart": "Temperature",
+    "temperatureChart": "Temperature ({unit})",
     "rangeChart": "Electric Range ({unit})",
     "distanceChart": {
       "day": "Distance per Day ({unit})",
@@ -137,8 +137,8 @@
       "average": "Average",
       "high": "Highest",
       "outside": "Outside",
-      "outsideLow": "Outside low",
-      "outsideHigh": "Outside high",
+      "outsideLow": "Low",
+      "outsideHigh": "High",
       "inside": "Inside"
     }
   },

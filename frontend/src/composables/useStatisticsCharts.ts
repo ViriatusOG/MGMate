@@ -163,7 +163,8 @@ function useChartFrame(buckets: Ref<StatsBucket[]>, grouping: Ref<StatsGrouping>
       maintainAspectRatio: true,
       aspectRatio,
       animation: false as const,
-      plugins: { legend: { display: legend, labels: { color: text } } },
+      // Short swatches leave a phone room for more legend entries on one line.
+      plugins: { legend: { display: legend, labels: { color: text, boxWidth: 20 } } },
       scales: {
         x: {
           ...axis,
@@ -301,20 +302,20 @@ export function useStatisticsCharts(
       inside: inUnit(bucketAverages(buckets.value, (d) => d.interiorTemperature ?? null)),
     }
   })
+  // The unit is in the title, so the legend stays short enough for a phone.
   const temperatureChartData = computed(() => {
-    const unit = units.value.symbol('temperature')
     const { low, outside, high, inside } = temperature.value
     return {
       labels: labels.value,
       datasets: [
-        extremeDataset(`${t('statistics.series.outsideLow')} (${unit})`, low, '#3b82f6'),
-        lineDataset(`${t('statistics.series.outside')} (${unit})`, outside, '#0ea5e9'),
-        extremeDataset(`${t('statistics.series.outsideHigh')} (${unit})`, high, '#ef4444'),
-        lineDataset(`${t('statistics.series.inside')} (${unit})`, inside, '#8b5cf6'),
+        extremeDataset(t('statistics.series.outsideLow'), low, '#3b82f6'),
+        lineDataset(t('statistics.series.outside'), outside, '#0ea5e9'),
+        extremeDataset(t('statistics.series.outsideHigh'), high, '#ef4444'),
+        lineDataset(t('statistics.series.inside'), inside, '#8b5cf6'),
       ],
     }
   })
-  const temperatureOptions = computed(() => chartOptions(2.6, true, {}))
+  const temperatureOptions = computed(() => chartOptions(2.2, true, {}))
 
   const range = computed(() =>
     bucketAverages(buckets.value, (d) => d.electricRangeKm ?? null).map((v) =>
@@ -448,7 +449,7 @@ export function useStatisticsCharts(
     {
       id: 'temperatureChart',
       icon: CHART_ICONS.temperatureChart,
-      title: t('statistics.temperatureChart'),
+      title: t('statistics.temperatureChart', { unit: units.value.symbol('temperature') }),
       description: t('statistics.chartDesc.temperatureChart'),
       vehicleApplicable: true,
       applicable: hasAny(temperature.value.outside) || hasAny(temperature.value.inside),

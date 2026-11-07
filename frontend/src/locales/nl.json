@@ -125,7 +125,7 @@
       "total": "Totaal"
     },
     "voltage12vChart": "12V-accu (V)",
-    "temperatureChart": "Temperatuur",
+    "temperatureChart": "Temperatuur ({unit})",
     "rangeChart": "Elektrische actieradius ({unit})",
     "distanceChart": {
       "day": "Afstand per dag ({unit})",
@@ -137,8 +137,8 @@
       "average": "Gemiddeld",
       "high": "Hoogste",
       "outside": "Buiten",
-      "outsideLow": "Buiten laagste",
-      "outsideHigh": "Buiten hoogste",
+      "outsideLow": "Laag",
+      "outsideHigh": "Hoog",
       "inside": "Binnen"
     }
   },
