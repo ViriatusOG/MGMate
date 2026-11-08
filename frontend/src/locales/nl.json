@@ -119,6 +119,7 @@
       "label": "Periode",
       "desc": "De dagen die de statistieken beslaan. Langere periodes worden per week getoond, en per maand vanaf een jaar.",
       "preset": {
+        "last24h": "Laatste 24 uur",
         "last7": "Laatste 7 dagen",
         "last30": "Laatste 30 dagen",
         "last90": "Laatste 90 dagen",
@@ -129,8 +130,10 @@
         "custom": "Eigen datums"
       },
       "from": "Van",
+      "now": "nu",
       "to": "Tot en met",
       "chip": {
+        "last24h": "24 u",
         "last7": "7 d",
         "last30": "30 d",
         "last90": "90 d",

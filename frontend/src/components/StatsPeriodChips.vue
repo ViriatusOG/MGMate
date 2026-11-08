@@ -6,7 +6,7 @@ import type { StatsPreset } from '@/utils/statsPeriod'
 
 // The common periods, always in sight beside the page title; the rest, and dates of one's own,
 // stay in the Filters panel.
-const CHIPS: readonly StatsPreset[] = ['last7', 'last30', 'last90', 'thisYear']
+const CHIPS: readonly StatsPreset[] = ['last24h', 'last7', 'last30', 'last90', 'thisYear']
 
 const { t } = useI18n()
 const { statsPeriod } = storeToRefs(useUiSettingsStore())

@@ -6,6 +6,7 @@ import { localDateKey, MS_PER_DAY, startOfLocalDay } from '@/utils/dates'
  * draw.
  */
 export const STATS_PRESETS = [
+  'last24h',
   'last7',
   'last30',
   'last90',
@@ -36,6 +37,11 @@ export interface ResolvedStatsPeriod {
   last: Date
   days: number
   grouping: StatsGrouping
+  /**
+   * For a rolling period of hours (the last 24 hours): the instant it starts. The trips and
+   * figures start here; the daily readings, which come per day, cover `first` to `last`.
+   */
+  since?: Date
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -62,7 +68,13 @@ export function groupingFor(days: number): StatsGrouping {
   return 'month'
 }
 
-function presetRange(preset: Exclude<StatsPreset, 'custom'>, today: Date): [Date, Date] {
+/** How far back the rolling presets of hours reach. */
+const HOURS_BACK: Partial<Record<StatsPreset, number>> = { last24h: 24 }
+
+function presetRange(
+  preset: Exclude<StatsPreset, 'custom' | 'last24h'>,
+  today: Date,
+): [Date, Date] {
   const y = today.getFullYear()
   const m = today.getMonth()
   switch (preset) {
@@ -95,13 +107,21 @@ export function resolveStatsPeriod(
   let first: Date
   let last: Date
 
+  const hoursBack = HOURS_BACK[period.preset]
+  if (hoursBack !== undefined) {
+    const since = new Date(now.getTime() - hoursBack * 3_600_000)
+    first = startOfLocalDay(since)
+    const days = daysBetween(first, today)
+    return { first, last: today, days, grouping: 'day', since }
+  }
+
   if (period.preset === 'custom') {
     const from = parseLocalDate(period.from)
     const to = parseLocalDate(period.to)
     if (from && to) [first, last] = from <= to ? [from, to] : [to, from]
     else [first, last] = presetRange('last30', today)
   } else {
-    ;[first, last] = presetRange(period.preset, today)
+    ;[first, last] = presetRange(period.preset as Exclude<StatsPreset, 'custom' | 'last24h'>, today)
   }
 
   if (last > today) last = today
@@ -126,7 +146,7 @@ export function statsQuery(period: ResolvedStatsPeriod, now: Date = new Date()) 
   return {
     fromDate: localDateKey(period.first),
     toDate: localDateKey(period.last),
-    fromIso: period.first.toISOString(),
+    fromIso: (period.since ?? period.first).toISOString(),
     toIso: endsToday ? undefined : after.toISOString(),
   }
 }
