@@ -150,7 +150,7 @@ router.beforeEach(async (to) => {
     preloadRouteComponents(to)
     preconnectRouteOrigins(to)
   }
-  if (auth.isAuthenticated) void settingsSync.start()
+  if (auth.isAuthenticated) void settingsSync.start(auth.username)
   await auth.ensureVerified()
 
   // Signed out, or the stored session turned out to be stale: nothing more goes to the account.
@@ -173,7 +173,7 @@ router.beforeEach(async (to) => {
   // Views read the settings as they mount, and some write them back (the dashboard arranges its
   // cards on a first visit), so none may mount before the account's copy has been taken in.
   // Right after signing in, this is where it is first asked for.
-  await settingsSync.start()
+  await settingsSync.start(auth.username)
   return true
 })
 

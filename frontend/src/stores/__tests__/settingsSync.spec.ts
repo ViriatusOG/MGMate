@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { settingsApi, type AccountSettings } from '@/services/settingsApi'
-import { PULL_INTERVAL_MS, useSettingsSyncStore } from '@/stores/settingsSync'
+import { PULL_INTERVAL_MS, SETTINGS_ACCOUNT_KEY, useSettingsSyncStore } from '@/stores/settingsSync'
 import { useUiSettingsStore } from '@/stores/settingsUi'
 import { useMapSettingsStore } from '@/stores/settingsMap'
 import { useDashboardSettingsStore } from '@/stores/settingsDashboard'
@@ -77,6 +77,28 @@ describe('settings kept on the account', () => {
     expect(ui.theme).toBe('light')
     expect(ui.locale).toBe('nl')
     await vi.waitFor(() => expect(save).toHaveBeenCalledExactlyOnceWith('ui', { locale: 'nl' }))
+  })
+
+  it("does not fill another account from the previous account's copy", async () => {
+    localStorage.setItem(MAP_KEY, JSON.stringify({ heatmapEnabled: false }))
+    localStorage.setItem(SETTINGS_ACCOUNT_KEY, 'alice')
+    useMapSettingsStore()
+
+    await useSettingsSyncStore().start('bob')
+    await settle()
+
+    expect(save).not.toHaveBeenCalled()
+    expect(localStorage.getItem(SETTINGS_ACCOUNT_KEY)).toBe('bob')
+  })
+
+  it('fills the same account again from its own copy', async () => {
+    localStorage.setItem(MAP_KEY, JSON.stringify({ heatmapEnabled: false }))
+    localStorage.setItem(SETTINGS_ACCOUNT_KEY, 'alice')
+    useMapSettingsStore()
+
+    await useSettingsSyncStore().start('alice')
+
+    await vi.waitFor(() => expect(save).toHaveBeenCalledOnce())
   })
 
   it("fills an account that has none yet from this browser's own copy", async () => {
