@@ -33,3 +33,50 @@ export function formatIntervalSummary(
     parts.push(t('maintenance.everyMonths', { months: item.intervalMonths }))
   return parts.join(` ${t('maintenance.or')} `)
 }
+
+const DAYS_PER_MONTH = 365.25 / 12
+
+export interface DueProgress {
+  /** Share of the interval used up, 0 to 1 (held at 1 once overdue). */
+  used: number
+  /** What is left before it is due; negative once overdue. Kilometres or days. */
+  remaining: number
+}
+
+/**
+ * How far through each interval an item is, for the due bars. Only intervals with both an
+ * interval and a remaining figure from the server get a bar.
+ */
+export function dueProgress(
+  item: Pick<MaintenanceItem, 'intervalKm' | 'intervalMonths' | 'kmRemaining' | 'daysRemaining'>,
+): { distance: DueProgress | null; time: DueProgress | null } {
+  const bar = (interval: number | null, remaining: number | null): DueProgress | null =>
+    interval != null && interval > 0 && remaining != null
+      ? { used: Math.max(0, Math.min(1, 1 - remaining / interval)), remaining }
+      : null
+  return {
+    distance: bar(item.intervalKm, item.kmRemaining),
+    time: bar(
+      item.intervalMonths != null ? item.intervalMonths * DAYS_PER_MONTH : null,
+      item.daysRemaining,
+    ),
+  }
+}
+
+export interface MaintenanceSuggestion {
+  key: string
+  intervalKm: number | null
+  intervalMonths: number | null
+}
+
+/** Common items for an electric car, offered as a starting point in the add form. */
+export const EV_MAINTENANCE_SUGGESTIONS: readonly MaintenanceSuggestion[] = [
+  { key: 'service', intervalKm: 24000, intervalMonths: 12 },
+  { key: 'mot', intervalKm: null, intervalMonths: 12 },
+  { key: 'cabinFilter', intervalKm: 20000, intervalMonths: 12 },
+  { key: 'brakeFluid', intervalKm: null, intervalMonths: 24 },
+  { key: 'tyreRotation', intervalKm: 10000, intervalMonths: null },
+  { key: 'coolant', intervalKm: null, intervalMonths: 48 },
+  { key: 'wipers', intervalKm: null, intervalMonths: 12 },
+  { key: 'battery12v', intervalKm: null, intervalMonths: 24 },
+]

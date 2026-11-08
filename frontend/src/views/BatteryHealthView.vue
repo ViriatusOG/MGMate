@@ -257,7 +257,7 @@ const chart = computed(() => {
       {{ t('batteryHealth.none', { percent: MIN_SOC_SPAN }) }}
     </p>
 
-    <p class="text-muted text-sm">{{ t('batteryHealth.disclaimer') }}</p>
+    <p class="text-muted text-sm bh-disclaimer">{{ t('batteryHealth.disclaimer') }}</p>
   </div>
 </template>
 
@@ -364,5 +364,9 @@ const chart = computed(() => {
   .bh-pack {
     justify-content: center;
   }
+}
+
+.bh-disclaimer {
+  margin-top: 0.75rem;
 }
 </style>

@@ -582,7 +582,7 @@ const yearTotals = computed(() => {
   text-align: center;
 }
 
-.reports__row--gap td {
+.reports__table .reports__row--gap td {
   color: var(--color-text-muted);
   font-style: italic;
   text-align: left;

@@ -992,7 +992,8 @@
       "lastServiceHint": "Optional. Leave empty if this hasn't been serviced yet.",
       "save": "Save",
       "validationNameRequired": "Name is required",
-      "validationIntervalRequired": "Set at least one interval (distance or time)"
+      "validationIntervalRequired": "Set at least one interval (distance or time)",
+      "suggestions": "Common for an electric car"
     },
     "logForm": {
       "performedAt": "Service date",
@@ -1009,6 +1010,24 @@
     "dashboard": {
       "allOk": "All maintenance items are up to date",
       "moreCount": "+{count} more"
+    },
+    "left": "{amount} left",
+    "over": "{amount} over",
+    "leftDays": "due today | {n} day left | {n} days left",
+    "overDays": "due today | {n} day over | {n} days over",
+    "dueOn": "Due {when}",
+    "atOdometer": "at {distance}",
+    "lastDone": "Last done {when}",
+    "neverDone": "Not done yet",
+    "suggestions": {
+      "service": "Annual service",
+      "mot": "MOT",
+      "cabinFilter": "Cabin air filter",
+      "brakeFluid": "Brake fluid",
+      "tyreRotation": "Tyre rotation",
+      "coolant": "Battery coolant",
+      "wipers": "Wiper blades",
+      "battery12v": "12V battery check"
     }
   },
   "climateSchedules": {
@@ -1375,7 +1394,7 @@
     "events": "Events",
     "reporting": "Reporting",
     "gaps": "no gaps | {n} gap | {n} gaps",
-    "longestGap": "Longest gap",
+    "longestGap": "Longest silence",
     "readings": "Readings",
     "perHour": "Readings per hour",
     "none": "Nothing recorded on this day.",
@@ -1394,7 +1413,16 @@
       "climateOff": "Climate off",
       "driveStarted": "Drive started",
       "driveEnded": "Parked"
-    }
+    },
+    "driving": "Driving",
+    "charging": "Charging",
+    "drives": "{n} drive | {n} drives",
+    "sessions": "{n} session | {n} sessions",
+    "woken": "Times woken",
+    "readingsNote": "no readings | {n} reading | {n} readings",
+    "dayStrip": "The day at a glance",
+    "quiet": "No data",
+    "otherEvents": "Doors, locks, climate"
   },
   "calendar": {
     "previousMonth": "Previous month",

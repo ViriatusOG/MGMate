@@ -992,7 +992,8 @@
       "lastServiceHint": "Optioneel. Laat leeg als dit nog niet onderhouden is.",
       "save": "Opslaan",
       "validationNameRequired": "Naam is verplicht",
-      "validationIntervalRequired": "Stel minstens één interval in (afstand of tijd)"
+      "validationIntervalRequired": "Stel minstens één interval in (afstand of tijd)",
+      "suggestions": "Gebruikelijk voor een elektrische auto"
     },
     "logForm": {
       "performedAt": "Servicedatum",
@@ -1009,6 +1010,24 @@
     "dashboard": {
       "allOk": "Alle onderhoudsitems zijn up-to-date",
       "moreCount": "+{count} meer"
+    },
+    "left": "nog {amount}",
+    "over": "{amount} over tijd",
+    "leftDays": "vandaag | nog {n} dag | nog {n} dagen",
+    "overDays": "vandaag | {n} dag over tijd | {n} dagen over tijd",
+    "dueOn": "Gepland {when}",
+    "atOdometer": "bij {distance}",
+    "lastDone": "Laatst gedaan {when}",
+    "neverDone": "Nog niet gedaan",
+    "suggestions": {
+      "service": "Jaarlijkse beurt",
+      "mot": "APK",
+      "cabinFilter": "Interieurfilter",
+      "brakeFluid": "Remvloeistof",
+      "tyreRotation": "Banden wisselen",
+      "coolant": "Accukoelvloeistof",
+      "wipers": "Ruitenwissers",
+      "battery12v": "12V-accu controleren"
     }
   },
   "climateSchedules": {
@@ -1375,7 +1394,7 @@
     "events": "Gebeurtenissen",
     "reporting": "Bereikbaar",
     "gaps": "geen gaten | {n} gat | {n} gaten",
-    "longestGap": "Langste gat",
+    "longestGap": "Langste stilte",
     "readings": "Metingen",
     "perHour": "Metingen per uur",
     "none": "Niets vastgelegd op deze dag.",
@@ -1394,7 +1413,16 @@
       "climateOff": "Klimaat uit",
       "driveStarted": "Rit gestart",
       "driveEnded": "Geparkeerd"
-    }
+    },
+    "driving": "Rijden",
+    "charging": "Laden",
+    "drives": "{n} rit | {n} ritten",
+    "sessions": "{n} sessie | {n} sessies",
+    "woken": "Keer gewekt",
+    "readingsNote": "geen metingen | {n} meting | {n} metingen",
+    "dayStrip": "De dag in één oogopslag",
+    "quiet": "Geen data",
+    "otherEvents": "Deuren, sloten, klimaat"
   },
   "calendar": {
     "previousMonth": "Vorige maand",

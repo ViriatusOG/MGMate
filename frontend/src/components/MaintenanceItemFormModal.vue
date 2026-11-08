@@ -7,6 +7,7 @@ import type { MaintenanceItem } from '@/services/maintenanceApi'
 import { useUnits } from '@/composables/useUnits'
 import { useStoreAction } from '@/composables/useStoreAction'
 import { useMeasureField } from '@/composables/useMeasureField'
+import { EV_MAINTENANCE_SUGGESTIONS, type MaintenanceSuggestion } from '@/utils/maintenance'
 
 const props = defineProps<{
   open: boolean
@@ -55,6 +56,21 @@ function close() {
   emit('close')
 }
 
+// Starting points for a new item, leaving out the ones the car already tracks by that name.
+const suggestions = computed(() => {
+  if (isEdit.value) return []
+  const taken = new Set(store.items.map((i) => i.name.trim().toLowerCase()))
+  return EV_MAINTENANCE_SUGGESTIONS.filter(
+    (s) => !taken.has(t(`maintenance.suggestions.${s.key}`).toLowerCase()),
+  )
+})
+
+function applySuggestion(s: MaintenanceSuggestion) {
+  name.value = t(`maintenance.suggestions.${s.key}`)
+  interval.load(s.intervalKm)
+  intervalMonths.value = s.intervalMonths
+}
+
 async function submit() {
   validationError.value = null
   if (!name.value.trim()) {
@@ -90,6 +106,21 @@ async function submit() {
 <template>
   <DetailModal :open="open" :title="title" @close="close">
     <form class="form-stack" @submit.prevent="submit">
+      <div v-if="suggestions.length" class="form-group">
+        <span class="text-muted text-sm">{{ t('maintenance.form.suggestions') }}</span>
+        <div class="maintenance-suggestions">
+          <button
+            v-for="s in suggestions"
+            :key="s.key"
+            type="button"
+            class="btn btn-sm btn-outline-secondary"
+            @click="applySuggestion(s)"
+          >
+            {{ t(`maintenance.suggestions.${s.key}`) }}
+          </button>
+        </div>
+      </div>
+
       <div class="form-group">
         <label for="maintenance-name">{{ t('maintenance.form.name') }}</label>
         <input
