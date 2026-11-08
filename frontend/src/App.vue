@@ -6,6 +6,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useVehicleStore } from '@/stores/vehicle'
+import { useUiSettingsStore } from '@/stores/settingsUi'
 import AppFooter from '@/components/AppFooter.vue'
 import MobileTabBar from '@/components/MobileTabBar.vue'
 import NotificationPanel from '@/components/NotificationPanel.vue'
@@ -30,6 +31,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const vehicleStore = useVehicleStore()
+const uiSettings = useUiSettingsStore()
 const vehicleStatus = computed(() => vehicleStore.currentStatus)
 
 // Demo mode has no gateway to ask about.
@@ -283,9 +285,9 @@ watch(
       >
         <font-awesome-icon icon="rotate" :spin="vehicleStore.loading" />
       </button>
-      <button class="topbar-btn" :aria-label="t('settings.title')" @click="footer?.openSettings()">
+      <RouterLink to="/settings" class="topbar-btn" :aria-label="t('settings.title')">
         <font-awesome-icon icon="gear" />
-      </button>
+      </RouterLink>
       <button class="notif-bell" :aria-label="notificationsLabel" @click="togglePanel">
         <font-awesome-icon icon="bell" />
         <span v-if="unreadCount > 0" class="notif-bell__badge" aria-hidden="true">{{
@@ -376,6 +378,23 @@ watch(
             <font-awesome-icon icon="user" aria-hidden="true" />
             <span class="sidebar-user__email" :title="auth.username">{{ auth.username }}</span>
           </div>
+          <RouterLink
+            to="/settings"
+            class="sidebar-action sidebar-logs-link"
+            active-class="is-active"
+          >
+            <font-awesome-icon icon="gear" />
+            <span>{{ t('settings.title') }}</span>
+          </RouterLink>
+          <RouterLink
+            v-if="uiSettings.showDebugPage"
+            to="/debug"
+            class="sidebar-action sidebar-logs-link"
+            active-class="is-active"
+          >
+            <font-awesome-icon icon="bug" />
+            <span>{{ t('debug.title') }}</span>
+          </RouterLink>
           <RouterLink to="/logs" class="sidebar-action sidebar-logs-link" active-class="is-active">
             <font-awesome-icon icon="file-lines" />
             <span>{{ t('nav.logs') }}</span>

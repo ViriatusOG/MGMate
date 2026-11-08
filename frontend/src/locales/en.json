@@ -696,6 +696,15 @@
       "title": "Your data",
       "desc": "Everything MGMate keeps, in one zip: per car its trips, maintenance, schedules, places and every telemetry reading, and your notifications and settings. Telemetry comes as a CSV file a spreadsheet opens, the rest as JSON. A big history takes a moment to gather.",
       "download": "Download everything"
+    },
+    "pageSubtitle": "Saved to your account and used on every device you sign in on.",
+    "sectionsLabel": "Settings sections",
+    "yourCar": "Your car",
+    "advanced": {
+      "title": "Advanced",
+      "showDebug": "Show Debug page",
+      "showDebugDesc": "Adds Debug to the menu. It lists every value the MG gateway reports and every control it accepts, with their raw names. Meant for checking what your car supports.",
+      "openDebug": "Open Debug page"
     }
   },
   "units": {
@@ -1538,5 +1547,101 @@
     "bannerBody": "No new car data arrives until it can. Check SAIC_USER (your MG account email) and SAIC_PASSWORD, and that the MG app is not signed in with the same account.",
     "lastSignIn": "Last good sign-in: {time}",
     "never": "No good sign-in seen yet"
+  },
+  "debug": {
+    "title": "Debug",
+    "subtitle": "Everything the MG gateway announces for this car: {total} entities, {withValue} with a value. Updates every 15 seconds.",
+    "subtitleLoading": "Everything the MG gateway announces for this car.",
+    "reload": "Reload",
+    "warning": "Controls act on the real car. Each one asks before it sends, and some wake the car, which uses 12 V battery.",
+    "notConnected": "MGMate cannot reach the message broker, so this list may be out of date.",
+    "cannotSend": "Controls are off until the car has reported in once: MGMate does not know its MG account yet.",
+    "search": "Search name or topic",
+    "filterLabel": "Show",
+    "filters": {
+      "all": "All",
+      "value": "Has a value",
+      "unavailable": "Unavailable",
+      "notKept": "Not saved"
+    },
+    "showHidden": "Show hidden ({n})",
+    "hidden": "Hidden",
+    "unavailable": "Unavailable",
+    "beforeStart": "before the app started",
+    "templateOnly": "Set elsewhere",
+    "templateOnlyHint": "This command needs other values filled in, which only the app's own pages do. Change it there.",
+    "climateMode": "mode",
+    "climateTemperature": "temperature",
+    "sent": "Sent. Waiting for the car to answer.",
+    "sendFailed": "Could not send the command.",
+    "groups": {
+      "controls": "Controls",
+      "sensors": "Sensors",
+      "configuration": "Configuration",
+      "diagnostic": "Diagnostic"
+    },
+    "kept": {
+      "history": "saved",
+      "latest": "latest saved",
+      "setting": "setting",
+      "notKept": "live only"
+    },
+    "state": {
+      "on": "On",
+      "off": "Off",
+      "open": "Open",
+      "closed": "Closed",
+      "locked": "Locked",
+      "unlocked": "Unlocked",
+      "pluggedIn": "Plugged in",
+      "unplugged": "Unplugged"
+    },
+    "action": {
+      "turnOn": "Turn on",
+      "turnOff": "Turn off",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "set": "Set to {value}",
+      "setShort": "Set",
+      "press": "Press"
+    },
+    "confirm": {
+      "body": "This sends a real command to your car through the MG gateway. It can take up to a minute to arrive.",
+      "send": "Send"
+    },
+    "device": {
+      "title": "Device info",
+      "model": "Model",
+      "make": "Make",
+      "hardware": "Hardware",
+      "gateway": "Gateway",
+      "broker": "Message broker",
+      "connected": "Connected",
+      "disconnected": "Not connected"
+    },
+    "coverage": {
+      "title": "Data coverage",
+      "history": "{n} saved on every poll",
+      "latest": "{n} newest value saved",
+      "setting": "{n} gateway settings",
+      "notKept": "{n} shown live only",
+      "note": "Values saved on every poll have a history, so a new chart or card can use them back to when MGMate started recording.",
+      "notKeptList": "Which values are live only ({n})"
+    },
+    "missing": {
+      "title": "Not available through MG",
+      "windows": "MG's API reports whether each window is open but cannot open or close them, so windows are read only.",
+      "sunroof": "Sunroof",
+      "heatedSeats": "Heated seats",
+      "targetSoc": "Charge limit (target SoC)",
+      "notAnnounced": "Not on this car"
+    },
+    "other": {
+      "title": "Other values",
+      "note": "Values the gateway publishes that no entity above reads.",
+      "topic": "Topic",
+      "value": "Value",
+      "kept": "Saved"
+    }
   }
 }

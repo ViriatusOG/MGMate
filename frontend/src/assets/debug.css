@@ -1,0 +1,489 @@
+/* The Debug page: device info and data coverage in the first column, the gateway's entities in
+   the other two, one row each with its name, raw topic and value, as a device page in Home
+   Assistant lays them out. One column on a phone. */
+
+.debug-banner {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--color-warning-text);
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 40%, transparent);
+}
+
+.debug-banner--error {
+  color: var(--color-danger-text);
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
+}
+
+.debug-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.debug-good {
+  color: var(--color-success-text);
+}
+
+.debug-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.debug-search {
+  flex: 1 1 14rem;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.7rem;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.debug-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.debug-hidden-toggle {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.debug-grid {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.debug-col {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  align-content: start;
+}
+
+.debug-card {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.debug-card__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.debug-card__count {
+  font-weight: 500;
+  padding: 0 0.4rem;
+  border-radius: 99px;
+  background: var(--color-surface-2);
+}
+
+.debug-card__note {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.debug-info {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.debug-info div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.debug-info dt {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.debug-info dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* What MGMate keeps of a value: a colour each, shared by the bar, the legend and the row badges. */
+.debug-kept--history {
+  --kept: var(--color-success);
+}
+
+.debug-kept--latest {
+  --kept: var(--color-primary-light);
+}
+
+.debug-kept--setting {
+  --kept: var(--color-info);
+}
+
+.debug-kept--notKept {
+  --kept: var(--color-warning);
+}
+
+.debug-coverage__bar {
+  display: flex;
+  height: 8px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--color-surface-2);
+}
+
+.debug-coverage__bar i {
+  display: block;
+  background: var(--kept);
+}
+
+.debug-coverage__legend {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+}
+
+.debug-coverage__legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.debug-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--kept);
+  flex: none;
+}
+
+.debug-kept {
+  font-size: 0.68rem;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--kept) 80%, var(--color-text));
+}
+
+.debug-kept::before {
+  content: '● ';
+}
+
+.debug-details summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--color-primary-light);
+  list-style-position: inside;
+}
+
+.debug-details summary .debug-card__title {
+  display: inline-flex;
+}
+
+.debug-topics {
+  margin: 0.4rem 0 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.75rem;
+}
+
+.debug-missing {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.debug-missing li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.debug-pill {
+  font-size: 0.68rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 99px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  font-weight: 400;
+}
+
+.debug-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.debug-row {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  gap: 0.2rem 0.65rem;
+  align-items: center;
+  padding: 0.45rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+}
+
+.debug-row:first-child {
+  border-top: none;
+}
+
+.debug-row__icon {
+  color: var(--color-text-muted);
+  justify-self: center;
+}
+
+.debug-row__name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.debug-row__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.debug-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.45rem;
+  align-items: baseline;
+}
+
+.debug-row__meta code {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.debug-row__status {
+  font-size: 0.75rem;
+}
+
+.debug-row__value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  text-align: right;
+  max-width: 14rem;
+  min-width: 0;
+}
+
+.debug-row--off .debug-row__label,
+.debug-value--na {
+  color: var(--color-text-muted);
+}
+
+.debug-value {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.debug-age,
+.debug-row__value small {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.debug-input {
+  width: auto;
+  max-width: 9rem;
+}
+
+.debug-inline-form {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.debug-inline-form .debug-input {
+  width: 5rem;
+}
+
+.debug-unit {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.debug-climate {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.debug-switch {
+  width: 38px;
+  height: 22px;
+  padding: 0;
+  border-radius: 99px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  position: relative;
+  cursor: pointer;
+}
+
+.debug-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  transition: left 0.15s;
+}
+
+.debug-switch[aria-checked='true'] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.debug-switch[aria-checked='true']::after {
+  left: 18px;
+  background: #fff;
+}
+
+.debug-switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.debug-switch:focus-visible {
+  outline: 2px solid var(--color-primary-light);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .debug-switch::after {
+    transition: none;
+  }
+}
+
+.debug-other {
+  margin-top: 1rem;
+}
+
+.debug-table-wrap {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.debug-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.debug-table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.debug-table td {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+  vertical-align: top;
+}
+
+.debug-table__value {
+  max-width: 24rem;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.debug-confirm__text {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.debug-confirm__topic {
+  display: block;
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  background: var(--color-surface-2);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+@media (width >= 900px) {
+  .debug-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .debug-col--info {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (width >= 1400px) {
+  .debug-grid {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.2fr) minmax(0, 1.2fr);
+  }
+
+  .debug-col--info {
+    grid-column: auto;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -17,6 +17,7 @@ export {
   faBook,
   faBoxArchive,
   faBriefcase,
+  faBug,
   faBuilding,
   faBullhorn,
   faCalendarCheck,

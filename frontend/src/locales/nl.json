@@ -696,6 +696,15 @@
       "title": "Je gegevens",
       "desc": "Alles wat MGMate bewaart, in één zip: per auto de ritten, het onderhoud, de schema’s, de plaatsen en elke meting, en je meldingen en instellingen. De metingen komen als CSV-bestand dat een spreadsheet opent, de rest als JSON. Een grote geschiedenis verzamelen duurt even.",
       "download": "Alles downloaden"
+    },
+    "pageSubtitle": "Opgeslagen in je account en gebruikt op elk apparaat waarop je inlogt.",
+    "sectionsLabel": "Onderdelen van de instellingen",
+    "yourCar": "Je auto",
+    "advanced": {
+      "title": "Geavanceerd",
+      "showDebug": "Debugpagina tonen",
+      "showDebugDesc": "Voegt Debug toe aan het menu. Daar staat elke waarde die de MG-gateway doorgeeft en elke opdracht die hij aanneemt, met de ruwe namen. Bedoeld om te zien wat je auto ondersteunt.",
+      "openDebug": "Debugpagina openen"
     }
   },
   "units": {
@@ -1538,5 +1547,101 @@
     "bannerBody": "Er komen geen nieuwe autogegevens binnen totdat dat weer lukt. Controleer SAIC_USER (het e-mailadres van je MG-account) en SAIC_PASSWORD, en of de MG-app niet met hetzelfde account is aangemeld.",
     "lastSignIn": "Laatste geslaagde aanmelding: {time}",
     "never": "Nog geen geslaagde aanmelding gezien"
+  },
+  "debug": {
+    "title": "Debug",
+    "subtitle": "Alles wat de MG-gateway voor deze auto aankondigt: {total} entiteiten, {withValue} met een waarde. Elke 15 seconden bijgewerkt.",
+    "subtitleLoading": "Alles wat de MG-gateway voor deze auto aankondigt.",
+    "reload": "Vernieuwen",
+    "warning": "Bedieningen werken op de echte auto. Elke bediening vraagt eerst om bevestiging, en sommige maken de auto wakker, wat de 12V-accu kost.",
+    "notConnected": "MGMate kan de berichtenbroker niet bereiken, dus deze lijst is misschien verouderd.",
+    "cannotSend": "Bedieningen staan uit tot de auto zich één keer heeft gemeld: MGMate kent het MG-account nog niet.",
+    "search": "Zoek op naam of topic",
+    "filterLabel": "Tonen",
+    "filters": {
+      "all": "Alles",
+      "value": "Met waarde",
+      "unavailable": "Niet beschikbaar",
+      "notKept": "Niet opgeslagen"
+    },
+    "showHidden": "Verborgen tonen ({n})",
+    "hidden": "Verborgen",
+    "unavailable": "Niet beschikbaar",
+    "beforeStart": "van voor de start van de app",
+    "templateOnly": "Elders instellen",
+    "templateOnlyHint": "Deze opdracht heeft andere waarden nodig, die alleen de eigen pagina's van de app invullen. Wijzig het daar.",
+    "climateMode": "stand",
+    "climateTemperature": "temperatuur",
+    "sent": "Verstuurd. Wachten op antwoord van de auto.",
+    "sendFailed": "De opdracht kon niet worden verstuurd.",
+    "groups": {
+      "controls": "Bediening",
+      "sensors": "Sensoren",
+      "configuration": "Configuratie",
+      "diagnostic": "Diagnose"
+    },
+    "kept": {
+      "history": "opgeslagen",
+      "latest": "laatste opgeslagen",
+      "setting": "instelling",
+      "notKept": "alleen live"
+    },
+    "state": {
+      "on": "Aan",
+      "off": "Uit",
+      "open": "Open",
+      "closed": "Dicht",
+      "locked": "Op slot",
+      "unlocked": "Van het slot",
+      "pluggedIn": "Aangesloten",
+      "unplugged": "Niet aangesloten"
+    },
+    "action": {
+      "turnOn": "Aanzetten",
+      "turnOff": "Uitzetten",
+      "lock": "Op slot",
+      "unlock": "Van het slot",
+      "set": "Instellen op {value}",
+      "setShort": "Instellen",
+      "press": "Indrukken"
+    },
+    "confirm": {
+      "body": "Dit stuurt een echte opdracht naar je auto via de MG-gateway. Het kan tot een minuut duren voor die aankomt.",
+      "send": "Versturen"
+    },
+    "device": {
+      "title": "Apparaatinfo",
+      "model": "Model",
+      "make": "Merk",
+      "hardware": "Hardware",
+      "gateway": "Gateway",
+      "broker": "Berichtenbroker",
+      "connected": "Verbonden",
+      "disconnected": "Niet verbonden"
+    },
+    "coverage": {
+      "title": "Gegevensdekking",
+      "history": "{n} bij elke poll opgeslagen",
+      "latest": "{n} alleen nieuwste waarde opgeslagen",
+      "setting": "{n} gateway-instellingen",
+      "notKept": "{n} alleen live getoond",
+      "note": "Waarden die bij elke poll worden opgeslagen hebben een geschiedenis, dus een nieuwe grafiek of kaart kan ze gebruiken vanaf het moment dat MGMate begon met opnemen.",
+      "notKeptList": "Welke waarden alleen live zijn ({n})"
+    },
+    "missing": {
+      "title": "Niet beschikbaar via MG",
+      "windows": "De API van MG meldt of een raam open staat, maar kan ramen niet openen of sluiten. Ramen zijn dus alleen te lezen.",
+      "sunroof": "Schuifdak",
+      "heatedSeats": "Stoelverwarming",
+      "targetSoc": "Laadlimiet (doel-SoC)",
+      "notAnnounced": "Niet op deze auto"
+    },
+    "other": {
+      "title": "Overige waarden",
+      "note": "Waarden die de gateway publiceert en die geen entiteit hierboven leest.",
+      "topic": "Topic",
+      "value": "Waarde",
+      "kept": "Opgeslagen"
+    }
   }
 }

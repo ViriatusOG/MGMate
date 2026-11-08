@@ -18,6 +18,10 @@ vi.mock('@/stores/vehicle', () => ({
   }),
 }))
 
+vi.mock('@/stores/settingsUi', () => ({
+  useUiSettingsStore: () => ({ showDebugPage: false }),
+}))
+
 vi.mock('@/composables/useNotifications', () => ({
   prependNotification: vi.fn<() => void>(),
   useNotifications: () => ({

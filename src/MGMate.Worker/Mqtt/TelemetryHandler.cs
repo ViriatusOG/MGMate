@@ -57,13 +57,12 @@ public sealed class TelemetryHandler(
     private readonly PlaceAlerts _placeAlerts = new(logger, pushSender, strings);
 
     // Topics the gateway publishes that are left out on purpose, so they are no news either:
-    // hybrid_electrical_range repeats drivetrain/range (see TelemetryMapper), nothing reads why
-    // battery heating stopped, and chargingDataAvailable only goes offline after charge status
-    // requests fail, which refresh/lastChargeState already dates.
+    // hybrid_electrical_range repeats drivetrain/range (see TelemetryMapper), and
+    // chargingDataAvailable only goes offline after charge status requests fail, which
+    // refresh/lastChargeState already dates.
     private static readonly HashSet<string> NotStoredSubtopics = new(StringComparer.Ordinal)
     {
         "drivetrain/hybrid_electrical_range",
-        "drivetrain/batteryHeatingStopReason",
         "drivetrain/chargingDataAvailable",
     };
 
