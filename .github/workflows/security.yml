@@ -79,10 +79,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # An image reference must be lower case, and the owner name may not be (ViriatusOG).
+      - name: Resolve image reference
+        id: image
+        env:
+          IMAGE_REF: ghcr.io/${{ github.repository_owner }}/${{ matrix.label }}:latest
+        run: echo "ref=${IMAGE_REF,,}" >> "$GITHUB_OUTPUT"
+
       - name: Run Trivy image scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.label }}:latest
+          image-ref: ${{ steps.image.outputs.ref }}
           format: sarif
           output: trivy-image.sarif
           severity: CRITICAL,HIGH
