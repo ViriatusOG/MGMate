@@ -763,7 +763,7 @@
     "speed": "Snelheid"
   },
   "tripLog": {
-    "title": "Rittenregistratie",
+    "title": "Ritten",
     "subtitle": "Leg per rit vast waarvoor die was en exporteer de registratie als spreadsheet, met de adressen en kilometerstanden die een rittenregistratie vraagt. Ritten verschijnen hier een paar minuten nadat de auto geparkeerd is.",
     "year": "Jaar",
     "month": "Maand",
@@ -1383,7 +1383,10 @@
   "calendar": {
     "previousMonth": "Vorige maand",
     "nextMonth": "Volgende maand",
-    "jumpToToday": "Naar vandaag"
+    "jumpToToday": "Naar vandaag",
+    "week": "Deze week",
+    "close": "Sluiten",
+    "monthAndSearch": "Maand en zoeken"
   },
   "logSearch": {
     "label": "Zoeken",

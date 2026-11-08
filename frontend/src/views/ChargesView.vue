@@ -9,6 +9,7 @@ import { useUiSettingsStore } from '@/stores/settingsUi'
 import { useCommutePlacesStore } from '@/stores/commutePlaces'
 import { chargeCost, chargePlace, formatMoney, type ChargeCost } from '@/utils/tariff'
 import TariffModal from '@/components/TariffModal.vue'
+import WeekStrip from '@/components/WeekStrip.vue'
 import MonthCalendar, { type CalendarDay } from '@/components/MonthCalendar.vue'
 import SplitCard, { type SplitSlice } from '@/components/SplitCard.vue'
 import StatTile from '@/components/StatTile.vue'
@@ -544,6 +545,8 @@ const calendarDays = computed(() => {
 })
 
 const selectedDay = ref<string | null>(null)
+// A phone shows a week strip; the month calendar and the search open from it.
+const pickerOpen = ref(false)
 
 async function selectDay(key: string) {
   selectedDay.value = key
@@ -630,7 +633,16 @@ const monthStats = computed(() => {
       </StatTile>
     </section>
 
-    <div class="ll-layout">
+    <WeekStrip
+      :month="month"
+      :days="calendarDays"
+      :selected="selectedDay"
+      :open="pickerOpen"
+      @select="selectDay"
+      @toggle="pickerOpen = !pickerOpen"
+    />
+
+    <div class="ll-layout" :class="{ 'll-layout--picker-open': pickerOpen }">
       <aside class="ll-side">
         <LogSearch
           :active="search !== null"

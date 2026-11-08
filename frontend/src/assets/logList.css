@@ -34,6 +34,79 @@
   }
 }
 
+/* ── Phone: the list first ────────────────────────────────── */
+
+/* On a phone a week strip stands in for the calendar, and the calendar and search open from it. */
+.week-strip {
+  display: none;
+}
+
+@media (width <= 767px) {
+  .week-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .ll-layout:not(.ll-layout--picker-open) .ll-side > .month-cal,
+  .ll-layout:not(.ll-layout--picker-open) .ll-side > .log-search {
+    display: none;
+  }
+}
+
+.week-strip__days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+.week-strip__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  padding: 0.35rem 0 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.week-strip__day small {
+  font-size: 0.65rem;
+}
+
+.week-strip__day b {
+  font-size: 0.95rem;
+}
+
+.week-strip__day.is-busy {
+  border-color: color-mix(in srgb, var(--color-primary) 60%, var(--color-border));
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.week-strip__day i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+}
+
+.week-strip__day.is-selected {
+  background: color-mix(in srgb, var(--color-primary) 25%, var(--color-surface));
+}
+
+.week-strip__day.is-outside {
+  opacity: 0.45;
+}
+
+.week-strip__more {
+  align-self: flex-start;
+}
+
 @media (width >= 1024px) {
   .ll-layout {
     grid-template-columns: 17.5rem minmax(0, 1fr);

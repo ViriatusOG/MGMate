@@ -1838,6 +1838,11 @@ textarea.form-control {
     display: grid;
   }
 
+  /* A page's line of explanation is for the wide screen; a phone gets to the content. */
+  .view-subtitle {
+    display: none;
+  }
+
   /* Push body below fixed topbar on mobile */
   .app-body {
     margin-top: var(--topbar-height);

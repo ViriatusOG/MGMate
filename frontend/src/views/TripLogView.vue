@@ -29,6 +29,7 @@ import { useErrorMessage } from '@/composables/useErrorMessage'
 import { useTripRoute } from '@/composables/useTripRoute'
 import ViewHeader from '@/components/ViewHeader.vue'
 import StatTile from '@/components/StatTile.vue'
+import WeekStrip from '@/components/WeekStrip.vue'
 import MonthCalendar, { type CalendarDay } from '@/components/MonthCalendar.vue'
 import { groupByDay } from '@/utils/dayGroups'
 import { loggedDistanceKm } from '@/utils/tripLog'
@@ -375,6 +376,8 @@ const calendarDays = computed(() => {
 })
 
 const selectedDay = ref<string | null>(null)
+// A phone shows a week strip; the month calendar and the search open from it.
+const pickerOpen = ref(false)
 
 async function selectDay(key: string) {
   selectedDay.value = key
@@ -571,7 +574,16 @@ function exportCsv() {
       {{ errorMessage(store.actionError) }}
     </p>
 
-    <div class="ll-layout">
+    <WeekStrip
+      :month="shownMonth"
+      :days="calendarDays"
+      :selected="selectedDay"
+      :open="pickerOpen"
+      @select="selectDay"
+      @toggle="pickerOpen = !pickerOpen"
+    />
+
+    <div class="ll-layout" :class="{ 'll-layout--picker-open': pickerOpen }">
       <aside class="ll-side">
         <LogSearch
           :active="search !== null"

@@ -763,7 +763,7 @@
     "speed": "Speed"
   },
   "tripLog": {
-    "title": "Trip log",
+    "title": "Trips",
     "subtitle": "Record what each trip was for and export the log as a spreadsheet, with the addresses and odometer readings a tax trip log asks for. Trips appear here a few minutes after the car parks.",
     "year": "Year",
     "month": "Month",
@@ -1383,7 +1383,10 @@
   "calendar": {
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
-    "jumpToToday": "Jump to today"
+    "jumpToToday": "Jump to today",
+    "week": "This week",
+    "close": "Close",
+    "monthAndSearch": "Month and search"
   },
   "logSearch": {
     "label": "Search",
