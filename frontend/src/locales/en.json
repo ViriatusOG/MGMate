@@ -1531,5 +1531,12 @@
       "lowTyre": "A tyre is low | {n} tyres are low"
     },
     "controls": "Controls"
+  },
+  "gatewaySignIn": {
+    "failed": "MG sign-in failed",
+    "bannerTitle": "MGMate cannot sign in to your MG account",
+    "bannerBody": "No new car data arrives until it can. Check SAIC_USER (your MG account email) and SAIC_PASSWORD, and that the MG app is not signed in with the same account.",
+    "lastSignIn": "Last good sign-in: {time}",
+    "never": "No good sign-in seen yet"
   }
 }

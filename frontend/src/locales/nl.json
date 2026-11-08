@@ -1531,5 +1531,12 @@
       "lowTyre": "Een band is zacht | {n} banden zijn zacht"
     },
     "controls": "Bediening"
+  },
+  "gatewaySignIn": {
+    "failed": "MG-aanmelding mislukt",
+    "bannerTitle": "MGMate kan zich niet aanmelden bij je MG-account",
+    "bannerBody": "Er komen geen nieuwe autogegevens binnen totdat dat weer lukt. Controleer SAIC_USER (het e-mailadres van je MG-account) en SAIC_PASSWORD, en of de MG-app niet met hetzelfde account is aangemeld.",
+    "lastSignIn": "Laatste geslaagde aanmelding: {time}",
+    "never": "Nog geen geslaagde aanmelding gezien"
   }
 }
