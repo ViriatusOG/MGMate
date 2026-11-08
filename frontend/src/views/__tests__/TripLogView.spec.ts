@@ -165,7 +165,7 @@ describe('TripLogView', () => {
     expect(csv).not.toContain('GPS glitch')
     expect(csv.trim().split('\n')).toHaveLength(3)
     expect(wrapper.find('.trip-log-side-stats').text()).toContain('Unclassified (0)')
-    expect(wrapper.find('.ll-tiles').text()).toContain('2')
+    expect(wrapper.find('.stat-tiles').text()).toContain('2')
   })
 
   it('joins a trip with the next one once confirmed, and offers none for the newest', async () => {

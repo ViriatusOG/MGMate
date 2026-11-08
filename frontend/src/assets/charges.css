@@ -14,47 +14,11 @@
   color: var(--color-danger-text);
 }
 
-.charges__tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.charges__tile {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
-}
-
-.charges__tile-label,
 .charges__figures dt {
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-
-.charges__tile-value {
-  font-size: 1.6rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.charges__tile-value small {
-  margin-left: 0.25em;
-  font-size: 0.85rem;
-  font-weight: 400;
-  color: var(--color-text-muted);
-}
-
-.charges__tile-note {
-  font-size: 0.78rem;
   color: var(--color-text-muted);
 }
 
@@ -122,10 +86,9 @@
 }
 
 .charges__splits {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .charges__lead--ac {

@@ -127,10 +127,10 @@ describe('ChargesView', () => {
   it('counts AC and DC, and home and public, without the hidden charge', async () => {
     const wrapper = await mountView()
 
-    const tiles = wrapper.find('.ll-tiles').text()
+    const tiles = wrapper.find('.stat-tiles').text()
     expect(tiles).toContain('55.0kWh')
-    expect(tiles).toContain('96.0kW')
-    const rings = wrapper.findAll('.donut-card').map((d) => d.text().replace(/\s+/g, ' '))
+    expect(tiles).toContain('96.0 kW')
+    const rings = wrapper.findAll('.split-card').map((d) => d.text().replace(/\s+/g, ' '))
     expect(rings[0]).toContain('1 AC')
     expect(rings[0]).toContain('1 DC')
     expect(rings[1]).toContain('1 Home')

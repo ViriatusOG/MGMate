@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import '@/assets/charges.css'
+import '@/assets/statTile.css'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ChartData, ChartOptions } from 'chart.js'
@@ -107,10 +108,10 @@ const chart = computed(() => {
 
     <p v-if="error" class="charges__error" role="alert">{{ error }}</p>
 
-    <div class="charges__tiles">
-      <div class="charges__tile">
-        <span class="charges__tile-label">{{ t('batteryHealth.usableNow') }}</span>
-        <span class="charges__tile-value">
+    <div class="stat-tiles">
+      <div class="stat-tile">
+        <span class="stat-tile__label">{{ t('batteryHealth.usableNow') }}</span>
+        <span class="stat-tile__value">
           <template v-if="estimate">
             {{ formatNumber(estimate.kwh, 1)
             }}<small>± {{ formatNumber(estimate.spread, 1) }} {{ t('common.kwh') }}</small>
@@ -118,38 +119,38 @@ const chart = computed(() => {
           <template v-else>-</template>
         </span>
       </div>
-      <div class="charges__tile">
-        <span class="charges__tile-label">{{ t('batteryHealth.againstNew') }}</span>
-        <span class="charges__tile-value">
+      <div class="stat-tile">
+        <span class="stat-tile__label">{{ t('batteryHealth.againstNew') }}</span>
+        <span class="stat-tile__value">
           <template v-if="health !== null">{{ formatNumber(health, 0) }}<small>%</small></template>
           <template v-else>-</template>
         </span>
-        <span class="charges__tile-note">{{
+        <span class="stat-tile__note">{{
           nominalKwh
             ? t('batteryHealth.nominal', { kwh: formatNumber(nominalKwh, 1) })
             : t('batteryHealth.noNominal')
         }}</span>
       </div>
-      <div class="charges__tile">
-        <span class="charges__tile-label">{{ t('batteryHealth.basedOn') }}</span>
-        <span class="charges__tile-value"
+      <div class="stat-tile">
+        <span class="stat-tile__label">{{ t('batteryHealth.basedOn') }}</span>
+        <span class="stat-tile__value"
           >{{ readings.length
           }}<small>{{ t('batteryHealth.charges', readings.length) }}</small></span
         >
-        <span class="charges__tile-note">{{
+        <span class="stat-tile__note">{{
           t('batteryHealth.minSpan', { percent: MIN_SOC_SPAN })
         }}</span>
       </div>
-      <div class="charges__tile">
-        <span class="charges__tile-label">{{ t('batteryHealth.trendLabel') }}</span>
-        <span class="charges__tile-value">
+      <div class="stat-tile">
+        <span class="stat-tile__label">{{ t('batteryHealth.trendLabel') }}</span>
+        <span class="stat-tile__value">
           <template v-if="estimate?.trendPerYear != null">
             {{ estimate.trendPerYear > 0 ? '+' : '' }}{{ formatNumber(estimate.trendPerYear, 1)
             }}<small>{{ t('batteryHealth.perYear') }}</small>
           </template>
           <template v-else>-</template>
         </span>
-        <span v-if="estimate?.trendPerYear == null" class="charges__tile-note">{{
+        <span v-if="estimate?.trendPerYear == null" class="stat-tile__note">{{
           t('batteryHealth.trendPending')
         }}</span>
       </div>

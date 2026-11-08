@@ -1,17 +1,31 @@
 {
   "nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "Overzicht",
     "statistics": "Statistieken",
     "map": "Kaart",
     "charges": "Laadbeurten",
-    "tripLog": "Rittenregistratie",
-    "climateSchedules": "Klimaatschema's",
+    "tripLog": "Ritten",
+    "climateSchedules": "Klimaat",
     "maintenance": "Onderhoud",
-    "logs": "Logboek",
+    "logs": "Systeemlogs",
     "menuLabel": "Menu",
     "batteryHealth": "Accugezondheid",
     "activity": "Activiteit",
-    "reports": "Rapporten"
+    "reports": "Rapporten",
+    "tabsLabel": "Hoofdpagina's",
+    "groups": {
+      "car": "Auto",
+      "logbook": "Logboek",
+      "insights": "Inzicht",
+      "upkeep": "Onderhoud"
+    },
+    "tabs": {
+      "overview": "Overzicht",
+      "trips": "Ritten",
+      "charges": "Laden",
+      "statistics": "Statistiek",
+      "more": "Meer"
+    }
   },
   "dashboard": {
     "title": "Dashboard",
@@ -894,7 +908,8 @@
       "trips": "Ritten",
       "efficiency": "Gem. verbruik",
       "energy": "Energie verbruikt",
-      "cost": "Kosten"
+      "cost": "Kosten",
+      "noPrice": "Geen prijs ingesteld"
     },
     "tripCount": "{n} rit | {n} ritten",
     "showWholeYear": "Heel {year}",
@@ -1287,7 +1302,9 @@
     "loss": "Laadverlies",
     "lossNote": "{kwh} kWh verloren als warmte ({percent}%)",
     "searchPlaceholder": "Notitie, plaats, AC of DC",
-    "searchResults": "Geen laadsessies gevonden | 1 laadsessie gevonden | {n} laadsessies gevonden"
+    "searchResults": "Geen laadsessies gevonden | 1 laadsessie gevonden | {n} laadsessies gevonden",
+    "peakNote": "piek {power}",
+    "totalsLabel": "Laadtotalen"
   },
   "tariff": {
     "button": "Prijzen",

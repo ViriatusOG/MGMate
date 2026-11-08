@@ -306,7 +306,7 @@ body,
   font-weight: 700;
   color: var(--color-primary);
   text-decoration: none;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 
   /* The nav links' own inline padding, so the logo sits in the same column as their icons. */
   padding-left: 0.75rem;
@@ -342,6 +342,129 @@ body,
 .sidebar-nav a.active {
   background: var(--nav-active-bg);
   color: var(--color-primary-light);
+}
+
+/* The car at a glance above the page list: which car, its charge, and whether it is reachable. */
+.sidebar-car {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--color-surface-2);
+  font-size: 0.85rem;
+}
+
+.sidebar-car__dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+
+.sidebar-car__dot--online {
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 25%, transparent);
+}
+
+.sidebar-car__dot--offline {
+  background: var(--color-danger);
+}
+
+.sidebar-car__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sidebar-car__name {
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-car__state {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-group {
+  padding: 0.75rem 0.75rem 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  opacity: 0.75;
+}
+
+/* ── Phone tab bar ────────────────────────────────────────── */
+
+/* Takes the footer's place on a phone (see the mobile breakpoint), so the pages people open most
+   are a thumb away instead of behind the menu. */
+.tab-bar {
+  display: none;
+  flex-shrink: 0;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 0.3rem 0.25rem calc(0.3rem + env(safe-area-inset-bottom, 0px));
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  z-index: var(--z-footer);
+}
+
+.tab-bar__tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.35rem 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tab-bar__tab svg {
+  font-size: 1.1rem;
+}
+
+.tab-bar__tab.is-active {
+  color: var(--color-primary-light);
+}
+
+.topbar-btn {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.topbar-btn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.topbar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ── Main content ─────────────────────────────────────────── */
@@ -1710,6 +1833,11 @@ textarea.form-control {
     display: flex;
   }
 
+  /* The tab bar takes the footer's place; Refresh and Settings move to the top bar. */
+  .tab-bar {
+    display: grid;
+  }
+
   /* Push body below fixed topbar on mobile */
   .app-body {
     margin-top: var(--topbar-height);
@@ -1764,8 +1892,9 @@ textarea.form-control {
     overflow-x: hidden;
   }
 
+  /* The tab bar takes the footer's place; Refresh and Settings move to the top bar. */
   .app-footer {
-    padding: 0 0.75rem;
+    display: none;
   }
 
   /* The buttons keep their labels on a phone, so the update link shrinks to its icon. */
@@ -1843,16 +1972,6 @@ textarea.form-control {
   gap: 0.5rem;
 }
 
-.sidebar-car-model {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  color: var(--color-text);
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
 .sidebar-online-status,
 .sidebar-user {
   display: flex;
@@ -1922,6 +2041,16 @@ textarea.form-control {
     background 0.15s,
     color 0.15s,
     border-color 0.15s;
+}
+
+.sidebar-logs-link {
+  text-decoration: none;
+}
+
+.sidebar-logs-link:hover,
+.sidebar-logs-link.is-active {
+  border-color: var(--color-primary);
+  color: var(--color-text);
 }
 
 .sidebar-demo-btn:hover,

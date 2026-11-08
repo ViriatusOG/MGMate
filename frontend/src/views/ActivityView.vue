@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import '@/assets/charges.css'
+import '@/assets/statTile.css'
 import '@/assets/logList.css'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -124,30 +125,30 @@ function gapLength(from: string, to: string): string {
 
     <p v-if="error" class="charges__error" role="alert">{{ error }}</p>
 
-    <div class="charges__tiles">
-      <div class="charges__tile">
-        <span class="charges__tile-label">{{ t('activity.events') }}</span>
-        <span class="charges__tile-value">{{ timeline?.events.length ?? '-' }}</span>
+    <div class="stat-tiles">
+      <div class="stat-tile">
+        <span class="stat-tile__label">{{ t('activity.events') }}</span>
+        <span class="stat-tile__value">{{ timeline?.events.length ?? '-' }}</span>
       </div>
-      <div class="charges__tile">
-        <span class="charges__tile-label">{{ t('activity.reporting') }}</span>
-        <span class="charges__tile-value">
+      <div class="stat-tile">
+        <span class="stat-tile__label">{{ t('activity.reporting') }}</span>
+        <span class="stat-tile__value">
           <template v-if="online !== null"
             >{{ formatNumber(online * 100, 0) }}<small>%</small></template
           >
           <template v-else>-</template>
         </span>
-        <span class="charges__tile-note">{{ t('activity.gaps', timeline?.gaps.length ?? 0) }}</span>
+        <span class="stat-tile__note">{{ t('activity.gaps', timeline?.gaps.length ?? 0) }}</span>
       </div>
-      <div class="charges__tile">
-        <span class="charges__tile-label">{{ t('activity.longestGap') }}</span>
-        <span class="charges__tile-value">{{
+      <div class="stat-tile">
+        <span class="stat-tile__label">{{ t('activity.longestGap') }}</span>
+        <span class="stat-tile__value">{{
           longestGapMs > 0 ? formatDurationMs(longestGapMs, t) : '-'
         }}</span>
       </div>
-      <div class="charges__tile">
-        <span class="charges__tile-label">{{ t('activity.readings') }}</span>
-        <span class="charges__tile-value">{{ timeline?.readings ?? '-' }}</span>
+      <div class="stat-tile">
+        <span class="stat-tile__label">{{ t('activity.readings') }}</span>
+        <span class="stat-tile__value">{{ timeline?.readings ?? '-' }}</span>
       </div>
     </div>
 

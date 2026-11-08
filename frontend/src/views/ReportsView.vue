@@ -23,6 +23,7 @@ import {
 import { useUnits } from '@/composables/useUnits'
 import { useErrorMessage } from '@/composables/useErrorMessage'
 import ViewHeader from '@/components/ViewHeader.vue'
+import StatTile from '@/components/StatTile.vue'
 
 // A month at a time, set against the month before, with the year up to it in a table: what was
 // driven, what it used, what was charged and what that cost.
@@ -358,18 +359,23 @@ const yearTotals = computed(() => {
       {{ t('reports.emptyMonth', { month: monthTitle }) }}
     </p>
 
-    <section class="ll-tiles reports__tiles" :aria-label="monthTitle">
-      <div v-for="tile in tiles" :key="tile.key" class="ll-tile reports__tile">
-        <span class="ll-tile__icon reports__icon"><font-awesome-icon :icon="tile.icon" /></span>
-        <span class="ll-tile__value"
-          >{{ tile.value }}<small v-if="tile.unit">{{ tile.unit }}</small></span
-        >
-        <span class="ll-tile__label">{{ tile.label }}</span>
-        <span v-if="tile.change !== null" class="reports__change" :class="changeClass(tile)">{{
-          changeText(tile.change)
-        }}</span>
-        <span v-if="tile.note" class="ll-tile__note">{{ tile.note }}</span>
-      </div>
+    <section class="stat-tiles" :aria-label="monthTitle">
+      <StatTile
+        v-for="(tile, i) in tiles"
+        :key="tile.key"
+        class="reports__tile"
+        :label="tile.label"
+        :value="tile.value"
+        :unit="tile.unit"
+        :highlight="i === 0"
+      >
+        <template v-if="tile.change !== null || tile.note" #note>
+          <span v-if="tile.change !== null" class="reports__change" :class="changeClass(tile)">{{
+            changeText(tile.change)
+          }}</span>
+          <template v-if="tile.note"> {{ tile.note }}</template>
+        </template>
+      </StatTile>
     </section>
 
     <section class="ll-card reports__year">
@@ -444,29 +450,16 @@ const yearTotals = computed(() => {
   text-transform: capitalize;
 }
 
-.reports__icon {
-  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
-  color: var(--color-primary);
-}
-
 .reports__change {
-  margin-top: 0.15rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  background: var(--color-surface-2);
-  color: var(--color-text-muted);
-  font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
 }
 
 .reports__change--good {
-  background: color-mix(in srgb, #22c55e 15%, transparent);
-  color: #16a34a;
+  color: var(--color-success-text);
 }
 
 .reports__change--bad {
-  background: color-mix(in srgb, #ef4444 15%, transparent);
-  color: #dc2626;
+  color: var(--color-danger-text);
 }
 
 .reports__year-title {

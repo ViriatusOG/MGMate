@@ -1,17 +1,31 @@
 {
   "nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "Overview",
     "statistics": "Statistics",
     "map": "Map",
-    "tripLog": "Trip log",
+    "tripLog": "Trips",
     "charges": "Charges",
-    "climateSchedules": "Climate schedules",
+    "climateSchedules": "Climate",
     "maintenance": "Maintenance",
-    "logs": "Logs",
+    "logs": "System logs",
     "menuLabel": "Menu",
     "batteryHealth": "Battery health",
     "activity": "Activity",
-    "reports": "Reports"
+    "reports": "Reports",
+    "tabsLabel": "Main pages",
+    "groups": {
+      "car": "Car",
+      "logbook": "Logbook",
+      "insights": "Insights",
+      "upkeep": "Upkeep"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "trips": "Trips",
+      "charges": "Charges",
+      "statistics": "Stats",
+      "more": "More"
+    }
   },
   "dashboard": {
     "title": "Dashboard",
@@ -894,7 +908,8 @@
       "trips": "Trips",
       "efficiency": "Avg consumption",
       "energy": "Energy used",
-      "cost": "Cost"
+      "cost": "Cost",
+      "noPrice": "No price set"
     },
     "tripCount": "{n} trip | {n} trips",
     "showWholeYear": "Whole of {year}",
@@ -1287,7 +1302,9 @@
     "loss": "Charging loss",
     "lossNote": "{kwh} kWh lost as heat ({percent}%)",
     "searchPlaceholder": "Note, place, AC or DC",
-    "searchResults": "No charges found | 1 charge found | {n} charges found"
+    "searchResults": "No charges found | 1 charge found | {n} charges found",
+    "peakNote": "peak {power}",
+    "totalsLabel": "Charging totals"
   },
   "tariff": {
     "button": "Prices",

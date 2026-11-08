@@ -10,7 +10,8 @@ import { useCommutePlacesStore } from '@/stores/commutePlaces'
 import { chargeCost, chargePlace, formatMoney, type ChargeCost } from '@/utils/tariff'
 import TariffModal from '@/components/TariffModal.vue'
 import MonthCalendar, { type CalendarDay } from '@/components/MonthCalendar.vue'
-import DonutCard, { type DonutSlice } from '@/components/DonutCard.vue'
+import SplitCard, { type SplitSlice } from '@/components/SplitCard.vue'
+import StatTile from '@/components/StatTile.vue'
 import SocBar from '@/components/SocBar.vue'
 import { dayKey, groupByDay } from '@/utils/dayGroups'
 import {
@@ -429,57 +430,36 @@ const peakPower = computed(() => {
 const tiles = computed(() => {
   const n = totals.value.sessions
   const priced = uiSettings.tariff !== null || spend.value.amount > 0
+  const perKwh =
+    spend.value.perKwh !== null
+      ? `${formatMoney(spend.value.perKwh, uiSettings.tariff?.currency ?? 'GBP', 3)}/${t('common.kwh')}`
+      : null
   return [
     {
-      key: 'sessions',
-      icon: 'plug',
-      label: t('charges.sessions'),
-      value: String(n),
-      unit: '',
-      variant: 'teal',
-    },
-    {
       key: 'energy',
-      icon: 'bolt',
       label: t('charges.energyAdded'),
       value: formatNumber(totals.value.kwh, 1),
       unit: t('common.kwh'),
-      variant: 'indigo',
+      note: t('charges.count', n),
     },
     {
       key: 'duration',
-      icon: 'clock',
       label: t('charges.avgDuration'),
       value: n > 0 ? formatDurationMs((totals.value.minutes / n) * 60_000, t) : '-',
       unit: '',
-      variant: '',
-    },
-    {
-      key: 'peak',
-      icon: 'gauge-high',
-      label: t('charges.peakPower'),
-      value: peakPower.value !== null ? formatNumber(peakPower.value, 1) : '-',
-      unit: peakPower.value !== null ? 'kW' : '',
-      variant: 'blue',
+      note:
+        peakPower.value !== null
+          ? t('charges.peakNote', { power: `${formatNumber(peakPower.value, 1)} kW` })
+          : null,
     },
     {
       key: 'cost',
-      icon: 'coins',
       label: t('charges.cost'),
       value: priced ? money(spend.value.amount) : '-',
       unit: '',
-      variant: 'green',
-    },
-    {
-      key: 'price',
-      icon: 'tag',
-      label: t('charges.avgPrice'),
-      value:
-        spend.value.perKwh !== null
-          ? formatMoney(spend.value.perKwh, uiSettings.tariff?.currency ?? 'GBP', 3)
-          : '-',
-      unit: spend.value.perKwh !== null ? `/${t('common.kwh')}` : '',
-      variant: 'amber',
+      // No price set: the tile offers to set one instead of showing a bare dash.
+      note: perKwh,
+      askPrice: !priced,
     },
   ]
 })
@@ -500,7 +480,7 @@ function splitNote(list: ChargeSession[]): string {
   return parts.join(' · ')
 }
 
-const typeSlices = computed<DonutSlice[]>(() => {
+const typeSlices = computed<SplitSlice[]>(() => {
   const ac = visible.value.filter((c) => c.chargeType !== 'DC')
   const dc = visible.value.filter((c) => c.chargeType === 'DC')
   return [
@@ -512,7 +492,7 @@ const typeSlices = computed<DonutSlice[]>(() => {
 const PLACE_COLORS = { home: '#22c55e', work: '#8b5cf6', public: '#ef4444' } as const
 const PLACE_ICONS = { home: 'house', work: 'building', public: 'charging-station' } as const
 
-const placeSlices = computed<DonutSlice[]>(() =>
+const placeSlices = computed<SplitSlice[]>(() =>
   (['home', 'work', 'public'] as const)
     .map((key) => {
       const list = visible.value.filter((c) => placeOf(c) === key)
@@ -634,33 +614,21 @@ const monthStats = computed(() => {
 
     <p v-if="error" class="charges__error" role="alert">{{ error }}</p>
 
-    <section class="ll-tiles">
-      <div
+    <section class="stat-tiles" :aria-label="t('charges.totalsLabel')">
+      <StatTile
         v-for="tile in tiles"
         :key="tile.key"
-        class="ll-tile"
-        :class="tile.variant ? `ll-tile--${tile.variant}` : ''"
+        :label="tile.label"
+        :value="tile.value"
+        :unit="tile.unit"
+        :note="tile.note"
+        :highlight="tile.key === 'energy'"
       >
-        <span class="ll-tile__icon"><font-awesome-icon :icon="tile.icon" /></span>
-        <span class="ll-tile__value"
-          >{{ tile.value }}<small v-if="tile.unit">{{ tile.unit }}</small></span
-        >
-        <span class="ll-tile__label">{{ tile.label }}</span>
-      </div>
+        <template v-if="tile.askPrice" #note>
+          <button type="button" @click="tariffOpen = true">{{ t('tariff.setUp') }}</button>
+        </template>
+      </StatTile>
     </section>
-
-    <div v-if="totals.sessions > 0" class="charges__splits">
-      <DonutCard
-        :title="t('charges.acVsDc')"
-        :centre="t('charges.sessions')"
-        :slices="typeSlices"
-      />
-      <DonutCard
-        :title="t('charges.homeVsPublic')"
-        :centre="t('charges.sessions')"
-        :slices="placeSlices"
-      />
-    </div>
 
     <div class="ll-layout">
       <aside class="ll-side">
@@ -682,6 +650,10 @@ const monthStats = computed(() => {
           @today="jumpToToday"
           @select="selectDay"
         />
+        <div v-if="totals.sessions > 0" class="ll-card charges__splits">
+          <SplitCard :title="t('charges.acVsDc')" :slices="typeSlices" />
+          <SplitCard :title="t('charges.homeVsPublic')" :slices="placeSlices" />
+        </div>
         <div class="ll-card">
           <dl class="ll-stats">
             <div v-for="stat in monthStats" :key="stat.key">
