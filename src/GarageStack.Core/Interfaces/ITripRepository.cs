@@ -29,6 +29,18 @@ public interface ITripRepository
     Task<int> FillSpeedFiguresAsync(int batchSize, CancellationToken ct = default);
 
     /// <summary>
+    /// Up to <paramref name="batchSize"/> saved trips whose energy has not been read yet, trips
+    /// saved before it was, oldest first.
+    /// </summary>
+    Task<IReadOnlyList<TripEnergyPending>> GetEnergyPendingAsync(int batchSize, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stores the energy read for each trip and marks it as read, whatever was found: a trip the car
+    /// reported nothing for is not read again.
+    /// </summary>
+    Task SaveEnergyAsync(IReadOnlyDictionary<long, TripEnergy> energy, CancellationToken ct = default);
+
+    /// <summary>
     /// The vehicle's newest trip at <paramref name="now"/>: the one being driven or finished but not
     /// saved yet when there is one, otherwise the newest saved trip. Null when it has none.
     /// </summary>

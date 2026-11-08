@@ -220,6 +220,7 @@ describe('useUiSettingsStore', () => {
       temperature: 'fahrenheit',
       pressure: 'psi',
       fuelConsumption: 'mpgUs',
+      energyEfficiency: 'distancePerKwh',
     })
 
     store.clock = 'h23'
@@ -269,6 +270,7 @@ describe('useUiSettingsStore', () => {
       temperature: 'auto',
       pressure: 'psi',
       fuelConsumption: 'auto',
+      energyEfficiency: 'auto',
     })
   })
 })

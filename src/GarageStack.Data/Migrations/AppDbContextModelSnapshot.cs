@@ -107,6 +107,84 @@ namespace GarageStack.Data.Migrations
                     b.ToTable("AppNotifications");
                 });
 
+            modelBuilder.Entity("GarageStack.Core.Models.ChargeSession", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ChargeType")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.Property<double?>("ChargerEnergyKwh")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EndedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double?>("EnergyAddedKwh")
+                        .HasColumnType("double precision");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("boolean");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("MaxPowerKw")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<double?>("OdometerKm")
+                        .HasColumnType("double precision");
+
+                    b.Property<decimal?>("PaidAmount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("Place")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.Property<double?>("SocEndPercent")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("SocStartPercent")
+                        .HasColumnType("double precision");
+
+                    b.Property<int?>("SocTargetPercent")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("StopReason")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VehicleId", "StartedAt")
+                        .IsUnique();
+
+                    b.ToTable("ChargeSessions");
+                });
+
             modelBuilder.Entity("GarageStack.Core.Models.ClimateSchedule", b =>
                 {
                     b.Property<int>("Id")
@@ -939,6 +1017,12 @@ namespace GarageStack.Data.Migrations
                     b.Property<DateTime>("EndedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<double?>("EnergyCounterUsed")
+                        .HasColumnType("double precision");
+
+                    b.Property<bool>("EnergyRead")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsHidden")
                         .HasColumnType("boolean");
 
@@ -961,6 +1045,9 @@ namespace GarageStack.Data.Migrations
                     b.Property<string>("OriginalPointsJson")
                         .HasColumnType("text");
 
+                    b.Property<double?>("OutsideTemperature")
+                        .HasColumnType("double precision");
+
                     b.Property<int>("PointCount")
                         .HasColumnType("integer");
 
@@ -974,6 +1061,12 @@ namespace GarageStack.Data.Migrations
 
                     b.Property<bool>("PurposeIsManual")
                         .HasColumnType("boolean");
+
+                    b.Property<double?>("SocEndPercent")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("SocStartPercent")
+                        .HasColumnType("double precision");
 
                     b.Property<double>("StartLatitude")
                         .HasColumnType("double precision");
@@ -1043,6 +1136,9 @@ namespace GarageStack.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("ChargesRecordedUntil")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("ConfigJson")
                         .HasColumnType("text");
 
@@ -1092,6 +1188,48 @@ namespace GarageStack.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Vehicles");
+                });
+
+            modelBuilder.Entity("GarageStack.Core.Models.VehiclePhoto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VehicleId")
+                        .IsUnique();
+
+                    b.ToTable("VehiclePhotos");
+                });
+
+            modelBuilder.Entity("GarageStack.Core.Models.ChargeSession", b =>
+                {
+                    b.HasOne("GarageStack.Core.Models.Vehicle", "Vehicle")
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
                 });
 
             modelBuilder.Entity("GarageStack.Core.Models.ClimateSchedule", b =>
@@ -1169,6 +1307,15 @@ namespace GarageStack.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("GarageStack.Core.Models.VehiclePhoto", b =>
+                {
+                    b.HasOne("GarageStack.Core.Models.Vehicle", null)
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("GarageStack.Core.Models.MaintenanceItem", b =>

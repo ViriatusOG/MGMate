@@ -86,6 +86,27 @@ public class TripRecorderTests
     }
 
     [Fact]
+    public async Task SavedTrip_CarriesTheBatteryItUsed()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var s = new Setup();
+        await s.AddFixesAsync(Drive(T0), ct);
+        s.Db.TelemetrySnapshots.AddRange(
+            new TelemetrySnapshot { VehicleId = s.Vehicle.Id, RecordedAt = T0.AddMinutes(-20), EvSocPercent = 82, PowerUsageOfDay = 1.5, MileageOfTheDay = 8 },
+            new TelemetrySnapshot { VehicleId = s.Vehicle.Id, RecordedAt = T0.AddMinutes(12), EvSocPercent = 79, PowerUsageOfDay = 3.4, MileageOfTheDay = 19.4 },
+            new TelemetrySnapshot { VehicleId = s.Vehicle.Id, RecordedAt = T0.AddHours(3), EvSocPercent = 60 }); // too late to count
+        await s.Db.SaveChangesAsync(ct);
+
+        await s.Recorder.RecordAsync(s.Vehicle.Id, T0.AddHours(4), ct);
+
+        var trip = Assert.Single(await s.SavedAsync(ct));
+        Assert.True(trip.EnergyRead);
+        Assert.Equal(82, trip.SocStartPercent);
+        Assert.Equal(79, trip.SocEndPercent);
+        Assert.Equal(1.9, trip.EnergyCounterUsed!.Value, 6);
+    }
+
+    [Fact]
     public async Task SavedTrip_WithoutAnyOdometerReport_HasNone()
     {
         var ct = TestContext.Current.CancellationToken;

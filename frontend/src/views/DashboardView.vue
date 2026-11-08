@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import '@/assets/dashboard.css'
+import '@/assets/overview.css'
 import { onMounted, onUnmounted, computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useVehicleStore } from '@/stores/vehicle'
@@ -20,6 +21,10 @@ import SkeletonLocationMap from '@/components/SkeletonLocationMap.vue'
 import { useUnits } from '@/composables/useUnits'
 import { mayBurnFuel } from '@/utils/vehicleType'
 import ViewHeader from '@/components/ViewHeader.vue'
+import BatteryOverviewCard from '@/components/overview/BatteryOverviewCard.vue'
+import LastChargeCard from '@/components/overview/LastChargeCard.vue'
+import RecentTripsCard from '@/components/overview/RecentTripsCard.vue'
+import NeedsAttention from '@/components/overview/NeedsAttention.vue'
 
 // Only edit mode drags cards around, and the drag-and-drop library is the size of every card on
 // this page together, so it loads when the layout editor opens rather than with the dashboard.
@@ -96,6 +101,9 @@ const cardDescriptionParams = computed(() => {
     fuelBetter: u.isReciprocal('fuelConsumption')
       ? t('units.higherIsBetter')
       : t('units.lowerIsBetter'),
+    energyBetter: u.isReciprocal('energyPerDistance')
+      ? t('units.higherIsBetter')
+      : t('units.lowerIsBetter'),
   }
 })
 
@@ -106,6 +114,9 @@ function toggleEditMode() {
 function hasData(id: CardId): boolean {
   return cardData.value !== null && cardHasData(id, cardData.value)
 }
+
+const CONTROL_CARDS: readonly CardId[] = ['doors', 'climate', 'windows', 'findMyCar']
+const controlCards = computed(() => CONTROL_CARDS.filter((id) => hasData(id)))
 
 function resetLayout() {
   settings.resetLayout(vehicleType.value, hasData)
@@ -229,6 +240,11 @@ onUnmounted(() => {
         </EditableCardSlot>
       </div>
 
+      <label class="ov-tiles-toggle">
+        <input v-model="settings.showStatusCards" type="checkbox" />
+        {{ t('overview.showTiles') }}
+      </label>
+
       <EditableCardGrid
         v-model="editableCards"
         class="status-grid status-grid--edit"
@@ -259,7 +275,7 @@ onUnmounted(() => {
           <SkeletonCarDiagram v-if="settings.showTyreDiagram" class="overview-row__car" />
           <SkeletonLocationMap v-if="settings.showLocationMap" class="overview-row__map" />
         </div>
-        <div class="status-grid">
+        <div v-if="settings.showStatusCards" class="status-grid">
           <SkeletonCard v-for="card in skeletonCards" :key="card.id" :icon="cardIcon(card.id)" />
         </div>
       </template>
@@ -274,16 +290,39 @@ onUnmounted(() => {
       </div>
 
       <template v-else>
-        <div v-if="settings.showTyreDiagram || settings.showLocationMap" class="overview-row mb-4">
+        <NeedsAttention />
+
+        <div class="ov-hero">
+          <BatteryOverviewCard class="ov-hero__battery" />
           <CarDiagram
             v-if="settings.showTyreDiagram"
             v-bind="carDiagramProps"
-            class="overview-row__car"
+            class="ov-hero__car"
           />
-          <LocationMapWidget v-if="settings.showLocationMap" class="overview-row__map" />
+          <LastChargeCard class="ov-hero__charge" />
         </div>
 
-        <div class="status-grid">
+        <div class="ov-row">
+          <LocationMapWidget v-if="settings.showLocationMap" class="ov-row__map" />
+          <RecentTripsCard class="ov-row__trips" />
+        </div>
+
+        <!-- Locks, climate and windows stay one tap away when the full tile wall is hidden. -->
+        <section v-if="!settings.showStatusCards && controlCards.length" class="ov-controls">
+          <h2 class="ov-controls__title">{{ t('overview.controls') }}</h2>
+          <div class="status-grid">
+            <CardInfoWrap
+              v-for="id in controlCards"
+              :key="id"
+              :title="t(`settings.cards.${id}`)"
+              :description="t(`dashboard.cardDesc.${id}`, cardDescriptionParams)"
+            >
+              <DashboardCardContent :card-id="id" />
+            </CardInfoWrap>
+          </div>
+        </section>
+
+        <div v-if="settings.showStatusCards" class="status-grid">
           <template v-for="card in settings.cards" :key="card.id">
             <template v-if="card.visible && hasData(card.id)">
               <CardInfoWrap

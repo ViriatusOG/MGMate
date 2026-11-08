@@ -36,7 +36,7 @@ public class DailyStatsBuilderTests
     private static readonly DateOnly Today = new(2026, 10, 12);
 
     private static TelemetryHistoryPoint Reading(DateTime utc, double? soc = null, double? volts = null, double? counter = null) =>
-        new(utc, null, soc, counter, volts, null, null, null, null, null, null, null, null, null, null, null);
+        new(utc, null, soc, counter, volts, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
     [Fact]
     public void AReadingBelongsToItsLocalDay()
@@ -65,6 +65,29 @@ public class DailyStatsBuilderTests
         Assert.Equal(60, day.EvSocPercent);
         Assert.Equal(12.5, day.BatteryVoltage!.Value, 3);
         Assert.Null(day.FuelLevelPercent);
+    }
+
+    // A tired 12V battery shows in how low it sags, so the day keeps its lowest and highest reading.
+    [Fact]
+    public void ADayKeepsTheRangeOfThe12VBatteryAndTheOutsideTemperature_AndTheDistanceDriven()
+    {
+        var builder = new DailyStatsBuilder(Amsterdam, Today.AddDays(-1), Today.AddDays(-1), Today);
+        var morning = new DateTime(2026, 10, 11, 6, 0, 0, DateTimeKind.Utc);
+
+        builder.Add(Reading(morning, volts: 12.2) with { ExteriorTemperature = 4, OdometerKm = 1000, ElectricRangeKm = 300 });
+        builder.Add(Reading(morning.AddHours(3), volts: 14.4) with { ExteriorTemperature = 9, OdometerKm = 1042.5, InteriorTemperature = 20 });
+        // A car that hasn't sent its odometer yet reports 0, which is no trip back to zero.
+        builder.Add(Reading(morning.AddHours(4), volts: 12.6) with { ExteriorTemperature = 11, OdometerKm = 0, ElectricRangeKm = 260 });
+
+        var day = Assert.Single(builder.Build());
+        Assert.Equal(12.2, day.BatteryVoltageMin);
+        Assert.Equal(14.4, day.BatteryVoltageMax);
+        Assert.Equal(4, day.ExteriorTemperatureMin);
+        Assert.Equal(11, day.ExteriorTemperatureMax);
+        Assert.Equal(8, day.ExteriorTemperature);
+        Assert.Equal(20, day.InteriorTemperature);
+        Assert.Equal(280, day.ElectricRangeKm);
+        Assert.Equal(42.5, day.DistanceKm);
     }
 
     // Every day of the period comes back, so a chart's axis spans it evenly; the future does not.

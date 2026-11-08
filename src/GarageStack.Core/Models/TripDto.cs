@@ -15,6 +15,33 @@ public record TripPoint(
     double? Speed,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] TripPointSource? Source = null);
 
+/// <summary>
+/// One reading taken while a trip was driven, for its detail: speed in km/h, charge level in
+/// percent, battery power in kW (either sign: which way is charging differs between cars),
+/// elevation in metres, outside temperature in °C, whether the climate was on and the electric
+/// range the car estimated, in km.
+/// </summary>
+public sealed record TripTelemetryPoint(
+    DateTime RecordedAt,
+    double? Speed,
+    double? SocPercent,
+    double? PowerKw,
+    double? Elevation,
+    double? OutsideTemperature,
+    bool? ClimateOn,
+    double? RangeKm = null)
+{
+    /// <summary>The most points a trip's detail is sent; a longer trip is thinned evenly to this.</summary>
+    public const int MaxPoints = 600;
+
+    public static IReadOnlyList<TripTelemetryPoint> Thin(IReadOnlyList<TripTelemetryPoint> points)
+    {
+        if (points.Count <= MaxPoints) return points;
+        var step = (double)(points.Count - 1) / (MaxPoints - 1);
+        return Enumerable.Range(0, MaxPoints).Select(i => points[(int)Math.Round(i * step)]).ToList();
+    }
+}
+
 /// <summary>Where a trip point came from, when the car did not report it while driving.</summary>
 [JsonConverter(typeof(TripPointSourceJsonConverter))]
 public enum TripPointSource

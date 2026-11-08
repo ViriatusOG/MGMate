@@ -33,10 +33,15 @@ const copyrightLabel = ['© 2026 GarageStack', APP_VERSION].filter(Boolean).join
 
 const vin = computed(() => vehicleStore.activeVin)
 
+// A forced refresh wakes the car, which costs 12V battery; the gateway already reads MG's cached
+// status on its own without waking it, so this asks first.
 function refresh() {
-  if (!vin.value) return
+  if (!vin.value || !window.confirm(t('control.refreshConfirm'))) return
   send(vin.value, 'refresh', 'force')
 }
+
+// On a phone the footer gives its place to the tab bar, and the top bar offers these two instead.
+defineExpose({ openSettings: openModal, refresh })
 </script>
 
 <template>
@@ -68,6 +73,7 @@ function refresh() {
       <button
         class="app-footer__btn"
         :aria-label="t('control.refresh')"
+        :title="t('control.refreshHint')"
         :disabled="vehicleStore.loading || sending === 'refresh' || !vin"
         @click="refresh"
       >

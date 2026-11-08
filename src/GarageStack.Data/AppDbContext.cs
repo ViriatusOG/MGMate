@@ -9,6 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<TelemetrySnapshot> TelemetrySnapshots => Set<TelemetrySnapshot>();
     public DbSet<Trip> Trips => Set<Trip>();
+    public DbSet<ChargeSession> ChargeSessions => Set<ChargeSession>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<AppNotification> AppNotifications => Set<AppNotification>();
     public DbSet<PoiItem> PoiItems => Set<PoiItem>();
@@ -23,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CommutePlace> CommutePlaces => Set<CommutePlace>();
     public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
     public DbSet<RdwVehicleInfo> RdwVehicleInfos => Set<RdwVehicleInfo>();
+    public DbSet<VehiclePhoto> VehiclePhotos => Set<VehiclePhoto>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,6 +35,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(v => v.Vin).HasMaxLength(17).IsRequired();
             e.Property(v => v.LastMessageId).HasMaxLength(VehicleLimits.MessageIdMaxLength);
             e.Property(v => v.LicensePlate).HasMaxLength(LicensePlate.MaxLength);
+        });
+
+        modelBuilder.Entity<VehiclePhoto>(e =>
+        {
+            e.HasKey(p => p.Id);
+            // One photo per vehicle, which is also how every read finds it.
+            e.HasIndex(p => p.VehicleId).IsUnique();
+            e.Property(p => p.ContentType).HasMaxLength(32).IsRequired();
+            e.Property(p => p.Data).IsRequired();
+            e.HasOne<Vehicle>().WithMany().HasForeignKey(p => p.VehicleId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<RdwVehicleInfo>(e =>
@@ -95,6 +107,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(t => t.Vehicle)
              .WithMany()
              .HasForeignKey(t => t.VehicleId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChargeSession>(e =>
+        {
+            e.HasKey(c => c.Id);
+            // One charge starts at a time; a slip in the recording line fails loudly.
+            e.HasIndex(c => new { c.VehicleId, c.StartedAt }).IsUnique();
+            e.Property(c => c.Notes).HasMaxLength(ChargeSession.NotesMaxLength);
+            e.Property(c => c.ChargeType).HasMaxLength(8);
+            e.Property(c => c.Place).HasMaxLength(8);
+            e.Property(c => c.PaidAmount).HasPrecision(10, 2);
+            e.Property(c => c.StopReason).HasMaxLength(64);
+            e.HasOne(c => c.Vehicle)
+             .WithMany()
+             .HasForeignKey(c => c.VehicleId)
              .OnDelete(DeleteBehavior.Cascade);
         });
 

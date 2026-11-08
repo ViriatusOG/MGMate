@@ -72,6 +72,11 @@ internal static class DemoTrips
     // ground than the straight lines through them.
     private const double RoadFactor = 1.08;
 
+    // What the demo car takes out of its battery per km driven, and how big that battery is: enough
+    // to give each trip a believable kWh and state of charge in the trip log.
+    private const double DemoKwhPerKm = 0.168;
+    private const double DemoBatteryKwh = 70.0;
+
     // The odometer is counted back from the live reading, so the readings run on from one trip to
     // the next and end where the car is now.
     private static List<TripLogEntry> BuildLog()
@@ -85,6 +90,10 @@ internal static class DemoTrips
             var trip = finished[i];
             var id = trip.Id!.Value;
             var start = odometer - trip.DistanceKm * RoadFactor;
+            // Colder days cost more, as they do in a real car: about 1.2% per degree below 15 °C.
+            var outside = Math.Round(2 + (i * 5.3) % 20, 1);
+            var usedKwh = Math.Round(trip.DistanceKm * RoadFactor * DemoKwhPerKm * (1 + Math.Max(0, 15 - outside) * 0.012), 2);
+            var socEnd = 60.0 + i * 1.5;
             entries[i] = new TripLogEntry(
                 id, trip.StartedAt, trip.EndedAt, trip.DistanceKm,
                 trip.Points[0].Latitude, trip.Points[0].Longitude,
@@ -93,7 +102,11 @@ internal static class DemoTrips
                 StartPlace: null, EndPlace: null,
                 Purposes.TryGetValue(id, out var purpose) ? purpose : null,
                 Notes.GetValueOrDefault(id),
-                MaxSpeedKmh: trip.MaxSpeedKmh, AvgMovingSpeedKmh: trip.AvgMovingSpeedKmh);
+                MaxSpeedKmh: trip.MaxSpeedKmh, AvgMovingSpeedKmh: trip.AvgMovingSpeedKmh,
+                SocStartPercent: Math.Round(socEnd + usedKwh / DemoBatteryKwh * 100, 1),
+                SocEndPercent: socEnd,
+                EnergyCounterUsed: usedKwh,
+                OutsideTemperature: outside);
             odometer = start;
         }
 

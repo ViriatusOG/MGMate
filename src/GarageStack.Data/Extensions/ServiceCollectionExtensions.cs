@@ -63,9 +63,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IClimateScheduleRepository, ClimateScheduleRepository>();
         services.AddScoped<ICommutePlaceRepository, CommutePlaceRepository>();
         services.AddScoped<IMaintenanceRepository, MaintenanceRepository>();
+        services.AddScoped<IChargeRepository, ChargeRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
         services.AddScoped<IApiTokenRepository, ApiTokenRepository>();
+        services.AddScoped<IVehiclePhotoRepository, VehiclePhotoRepository>();
         return services.AddGarageStackPoiClients();
     }
 

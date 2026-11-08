@@ -13,6 +13,11 @@ import type { LevelKind } from '@/composables/useStatisticsCharts'
 import { useTyrePressureThresholds } from '@/composables/useTyrePressureThresholds'
 import { useUnits } from '@/composables/useUnits'
 import { evLevelVariant, fuelLevelVariant, type LevelVariant } from '@/utils/levels'
+import { useVehicleStore } from '@/stores/vehicle'
+import { useVehiclePhoto } from '@/composables/useVehiclePhoto'
+import { useErrorMessage } from '@/composables/useErrorMessage'
+import { ApiError } from '@/services/apiCore'
+import { useTyreDisplay, type TyrePosition } from './carDiagram/useTyreDisplay'
 
 const { t } = useI18n()
 const tyreThresholds = useTyrePressureThresholds()
@@ -136,6 +141,68 @@ const batteryLevel = computed(() => level(props.evSocPercent, evLevelVariant))
 
 const isMoving = computed(() => (props.speed ?? 0) > 0)
 
+// The owner's own photo of the car, shown in place of the drawn top view when there is one.
+const vehicleStore = useVehicleStore()
+const photo = useVehiclePhoto(computed(() => vehicleStore.activeVin))
+const errorMessage = useErrorMessage()
+const photoInput = ref<HTMLInputElement | null>(null)
+const tyreDisplay = useTyreDisplay()
+
+// Why an upload failed, said plainly for the two reasons a picked file is refused.
+const photoError = computed(() => {
+  const e = photo.error.value
+  if (e instanceof ApiError && e.status === 413) return t('vehicle.photo.tooLarge')
+  if (e instanceof ApiError && e.code === 'vehiclePhoto.unsupported')
+    return t('vehicle.photo.unsupported')
+  return e ? errorMessage(e) : null
+})
+
+function pickPhoto() {
+  photoInput.value?.click()
+}
+
+async function onPhotoPicked(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (file) await photo.upload(file)
+}
+
+function removePhoto() {
+  if (window.confirm(t('vehicle.photo.removeConfirm'))) photo.remove()
+}
+
+// Parked, the photo; on the move, the drawing with its road and speed.
+const showPhoto = computed(() => photo.url.value !== null && !isMoving.value)
+
+const TYRE_TILES: TyrePosition[] = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight']
+
+// What the drawing shows by where it sits on the car, said in words beside the photo instead.
+const photoChips = computed(() => {
+  const chips: { key: string; icon: string; text: string; variant: string }[] = []
+  if (props.isCharging)
+    chips.push({ key: 'charging', icon: 'bolt', text: t('vehicle.chargingYes'), variant: 'good' })
+  else if (props.chargerConnected)
+    chips.push({
+      key: 'plugged',
+      icon: 'plug',
+      text: t('vehicle.hvBattery.pluggedIn'),
+      variant: 'info',
+    })
+  for (const badge of doorBadges.value) {
+    if (badge.open)
+      chips.push({ key: badge.key, icon: 'lock-open', text: t(badge.titleKey), variant: 'warn' })
+  }
+  if (hasLights.value)
+    chips.push({
+      key: 'lights',
+      icon: 'lightbulb',
+      text: t('vehicle.photo.lightsOn'),
+      variant: 'info',
+    })
+  return chips
+})
+
 const roadAnimDuration = computed(() => {
   const s = props.speed ?? 0
   if (s <= 0) return '2s'
@@ -195,12 +262,110 @@ const motionBlurAmount = computed(() => {
       </div>
     </template>
     <div class="tyre-diagram">
-      <p class="card-title">
-        <font-awesome-icon icon="car-side" />
-        {{ t('vehicle.overview') }}
+      <div class="car-photo__title-row">
+        <p class="card-title">
+          <font-awesome-icon icon="car-side" />
+          {{ t('vehicle.overview') }}
+        </p>
+        <span class="car-photo__actions">
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary car-photo__button"
+            :disabled="photo.busy.value"
+            :title="photo.url.value ? t('vehicle.photo.change') : t('vehicle.photo.add')"
+            :aria-label="photo.url.value ? t('vehicle.photo.change') : t('vehicle.photo.add')"
+            @click="pickPhoto"
+          >
+            <font-awesome-icon icon="camera" />
+          </button>
+          <button
+            v-if="photo.url.value"
+            type="button"
+            class="btn btn-sm btn-outline-secondary car-photo__button"
+            :disabled="photo.busy.value"
+            :title="t('vehicle.photo.remove')"
+            :aria-label="t('vehicle.photo.remove')"
+            @click="removePhoto"
+          >
+            <font-awesome-icon icon="trash" />
+          </button>
+          <input
+            ref="photoInput"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            class="car-photo__input"
+            @change="onPhotoPicked"
+          />
+        </span>
+      </div>
+      <p v-if="photo.error.value" class="text-xs text-danger" role="alert">
+        {{ photoError }}
       </p>
 
-      <div class="tyre-diagram__wrap">
+      <div v-if="showPhoto" class="car-photo">
+        <div class="car-photo__chips">
+          <span
+            v-for="chip in photoChips"
+            :key="chip.key"
+            class="car-photo__chip"
+            :class="`car-photo__chip--${chip.variant}`"
+          >
+            <font-awesome-icon :icon="chip.icon" />{{ chip.text }}
+          </span>
+        </div>
+        <img
+          :src="photo.url.value ?? undefined"
+          :alt="t('vehicle.photo.alt')"
+          class="car-photo__img"
+        />
+        <div class="car-photo__levels">
+          <LevelBadge
+            v-if="batteryLevel"
+            class="diagram-level--inline"
+            :class="{
+              'diagram-level--charging': isCharging,
+              'diagram-level--connected': chargerConnected && !isCharging,
+            }"
+            icon="bolt"
+            :label="t('vehicle.evSoc')"
+            :percent="batteryLevel.percent"
+            :variant="batteryLevel.variant"
+            @select="openLevelHistory('battery')"
+          />
+          <LevelBadge
+            v-if="fuelLevel"
+            class="diagram-level--inline"
+            icon="gas-pump"
+            :label="t('vehicle.fuel')"
+            :percent="fuelLevel.percent"
+            :variant="fuelLevel.variant"
+            @select="openLevelHistory('fuel')"
+          />
+        </div>
+        <div class="car-photo__tyres">
+          <button
+            v-for="position in TYRE_TILES"
+            :key="position"
+            type="button"
+            class="car-photo__tyre"
+            :class="`car-photo__tyre--${tyreDisplay.variant(tyrePressures[position])}`"
+            :aria-label="
+              t('tyreHistory.open', {
+                position: t(`vehicle.diagram.tyrePosition.${position}`),
+                reading: tyreDisplay.reading(tyrePressures[position]),
+              })
+            "
+            @click="openTyreHistory()"
+          >
+            <span class="car-photo__tyre-label">{{
+              t(`vehicle.diagram.tyrePosition.${position}`)
+            }}</span>
+            <strong>{{ tyreDisplay.reading(tyrePressures[position]) }}</strong>
+          </button>
+        </div>
+      </div>
+
+      <div v-else class="tyre-diagram__wrap">
         <div class="tyre-car-wrap">
           <!--
           ViewBox: -40 0 420 480  (widened by 40 px each side; car stays at x=170 = 50%)

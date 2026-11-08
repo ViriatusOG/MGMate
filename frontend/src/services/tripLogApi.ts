@@ -42,6 +42,16 @@ export interface TripLogEntry {
   /** The highest speed a fix reported, and the mean while moving; null when no fix carried one. */
   maxSpeedKmh: number | null
   avgMovingSpeedKmh: number | null
+  /** The state of charge at either end, in percent; null when the car reported none. */
+  socStartPercent?: number | null
+  socEndPercent?: number | null
+  /**
+   * What the car's own day counter says the trip used, in the counter's unit (utils/energy): kWh
+   * on a plug-in car. Null when the counters could not be matched to this trip.
+   */
+  energyCounterUsed?: number | null
+  /** The mean outside temperature while it was driven, in °C. */
+  outsideTemperature?: number | null
 }
 
 /**
@@ -96,6 +106,20 @@ export interface TripPlacesResult {
   hasMore: boolean
 }
 
+/** One reading taken while a trip was driven (`GET .../trips/{id}/telemetry`). */
+export interface TripTelemetryPoint {
+  recordedAt: string
+  speed: number | null
+  socPercent: number | null
+  /** Battery power in kW, of either sign: which way is charging differs between cars. */
+  powerKw: number | null
+  elevation: number | null
+  outsideTemperature: number | null
+  climateOn: boolean | null
+  /** The electric range the car estimated, in km. */
+  rangeKm?: number | null
+}
+
 export const tripLogApi = {
   log: (vin: string, from: string, to: string) =>
     request<TripLogEntry[]>(`/api/vehicles/${vin}/trips/log${buildQuery({ from, to })}`),
@@ -111,6 +135,8 @@ export const tripLogApi = {
       ids,
       purpose,
     }),
+  telemetry: (vin: string, id: number) =>
+    request<TripTelemetryPoint[]>(`/api/vehicles/${vin}/trips/${id}/telemetry`),
   editor: (vin: string, id: number) =>
     request<TripEditor>(`/api/vehicles/${vin}/trips/${id}/editor`),
   // The whole route at once; the answer is the editor as the trip now is.

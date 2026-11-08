@@ -12,6 +12,8 @@ namespace GarageStack.Worker.Services;
 /// </summary>
 public class TripRecorder(ITelemetryRepository telemetry, ITripRepository trips, ILogger logger)
 {
+    private readonly TripEnergyReader energy = new(telemetry);
+
     // Bounds the fixes held in memory while a long history is saved: a week of fixes is a few
     // thousand rows, where a year at once could be far more.
     internal static readonly TimeSpan Chunk = TimeSpan.FromDays(7);
@@ -66,7 +68,7 @@ public class TripRecorder(ITelemetryRepository telemetry, ITripRepository trips,
     }
 
     // Each closed trip, started where the car was parked when that checks out, with its odometer
-    // readings. The start reading is the last one before the car moved off, so it is taken at the
+    // and energy readings. The start reading is the last one before the car moved off, so it is taken at the
     // corrected start. The end reading is taken once the car has been parked for as long as it takes
     // to end a trip: the car reports its final mileage a poll or two after it stops, and the next
     // trip cannot start before that much time has passed.
@@ -81,7 +83,8 @@ public class TripRecorder(ITelemetryRepository telemetry, ITripRepository trips,
             recorded.Add(new RecordedTrip(
                 trip,
                 await telemetry.GetOdometerAtAsync(vehicleId, trip.StartedAt, ct),
-                await telemetry.GetOdometerAtAsync(vehicleId, trip.EndedAt + TripSegmenter.ParkThreshold, ct)));
+                await telemetry.GetOdometerAtAsync(vehicleId, trip.EndedAt + TripSegmenter.ParkThreshold, ct),
+                await energy.ReadAsync(vehicleId, trip.StartedAt, trip.EndedAt, trip.DistanceKm, ct)));
         }
 
         return recorded;

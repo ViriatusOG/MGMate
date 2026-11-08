@@ -1,7 +1,11 @@
+import type { TripLogEntry } from '@/services/tripLogApi'
 import type { DailyStat, TripSummary } from '@/services/vehicleApi'
+import type { VehicleType } from '@/stores/vehicle'
+import { tripEnergy } from '@/utils/energy'
 import { localDateKey } from '@/utils/dates'
 import { DAY_MONTH } from '@/utils/format'
 import { parseLocalDate, type StatsGrouping } from '@/utils/statsPeriod'
+import { loggedDistanceKm } from '@/utils/tripLog'
 
 /**
  * The trip figures the statistics page shows, read from trip summaries rather than from every
@@ -126,6 +130,28 @@ export function bucketAverages(
   return buckets.map((bucket) => average(bucket.days.map(read)))
 }
 
+/** Each point's lowest daily value, null for a point without any. */
+export function bucketMins(
+  buckets: readonly StatsBucket[],
+  read: (day: DailyStat) => number | null | undefined,
+): (number | null)[] {
+  return buckets.map((bucket) => {
+    const values = bucket.days.map(read).filter((v): v is number => typeof v === 'number')
+    return values.length ? Math.min(...values) : null
+  })
+}
+
+/** Each point's highest daily value, null for a point without any. */
+export function bucketMaxes(
+  buckets: readonly StatsBucket[],
+  read: (day: DailyStat) => number | null | undefined,
+): (number | null)[] {
+  return buckets.map((bucket) => {
+    const values = bucket.days.map(read).filter((v): v is number => typeof v === 'number')
+    return values.length ? Math.max(...values) : null
+  })
+}
+
 /** Each point's sum of a daily total, null for a point without any. */
 export function bucketTotals(
   buckets: readonly StatsBucket[],
@@ -240,4 +266,54 @@ export function monthlyTotals(
 export function roundedRange(min: number, max: number): { min: number; max: number } {
   const step = 10 ** Math.floor(Math.log10(max - min)) / 2
   return { min: Math.floor(min / step) * step, max: Math.ceil(max / step) * step }
+}
+
+/** One trip's consumption against the outside temperature it was driven in. */
+export interface TemperaturePoint {
+  /** °C */
+  temperature: number
+  whPerKm: number
+}
+
+// Below this a trip's consumption is mostly the climate warming up, not the driving.
+const MIN_TRIP_KM = 2
+// Outside this a figure is a counter that did not match the trip, not a real consumption.
+const PLAUSIBLE_WH_PER_KM = { min: 60, max: 600 }
+
+/** The trips with both a consumption and an outside temperature, hidden ones left out. */
+export function consumptionByTemperature(
+  entries: readonly TripLogEntry[],
+  vehicleType: VehicleType,
+  capacityKwh: number | null,
+): TemperaturePoint[] {
+  const points: TemperaturePoint[] = []
+  for (const entry of entries) {
+    const temperature = entry.outsideTemperature ?? null
+    if (entry.isHidden || temperature === null) continue
+    const km = loggedDistanceKm(entry)
+    if (km < MIN_TRIP_KM) continue
+    const wh = tripEnergy(entry, km, vehicleType, capacityKwh)?.whPerKm ?? null
+    if (wh === null || wh < PLAUSIBLE_WH_PER_KM.min || wh > PLAUSIBLE_WH_PER_KM.max) continue
+    points.push({ temperature, whPerKm: wh })
+  }
+  return points
+}
+
+/** The least-squares line through the points; null for fewer than three or a single temperature. */
+export function linearFit(
+  points: readonly { x: number; y: number }[],
+): { slope: number; intercept: number } | null {
+  if (points.length < 3) return null
+  const n = points.length
+  const mx = points.reduce((s, p) => s + p.x, 0) / n
+  const my = points.reduce((s, p) => s + p.y, 0) / n
+  let sxx = 0
+  let sxy = 0
+  for (const p of points) {
+    sxx += (p.x - mx) ** 2
+    sxy += (p.x - mx) * (p.y - my)
+  }
+  if (sxx === 0) return null
+  const slope = sxy / sxx
+  return { slope, intercept: my - slope * mx }
 }

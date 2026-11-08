@@ -1,0 +1,703 @@
+/* The trip and charge logs share one layout: figure tiles (statTile.css), a small month calendar
+   to the side, and the entries grouped by day in a list. */
+
+.ll-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.ll-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Below the two-column width the calendar stays on top and the side cards follow the list. */
+@media (width < 1024px) {
+  .ll-side {
+    display: contents;
+  }
+
+  .ll-side > :not(.month-cal) {
+    order: 2;
+  }
+
+  /* The search stays above the calendar, where it is found. */
+  .ll-side > .log-search {
+    order: 0;
+  }
+
+  .ll-days {
+    order: 1;
+  }
+}
+
+/* ── Phone: the list first ────────────────────────────────── */
+
+/* On a phone a week strip stands in for the calendar, and the calendar and search open from it. */
+.week-strip {
+  display: none;
+}
+
+@media (width <= 767px) {
+  .week-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .ll-layout:not(.ll-layout--picker-open) .ll-side > .month-cal,
+  .ll-layout:not(.ll-layout--picker-open) .ll-side > .log-search {
+    display: none;
+  }
+}
+
+.week-strip__days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+.week-strip__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  padding: 0.35rem 0 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.week-strip__day small {
+  font-size: 0.65rem;
+}
+
+.week-strip__day b {
+  font-size: 0.95rem;
+}
+
+.week-strip__day.is-busy {
+  border-color: color-mix(in srgb, var(--color-primary) 60%, var(--color-border));
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.week-strip__day i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+}
+
+.week-strip__day.is-selected {
+  background: color-mix(in srgb, var(--color-primary) 25%, var(--color-surface));
+}
+
+.week-strip__day.is-outside {
+  opacity: 0.45;
+}
+
+.week-strip__more {
+  align-self: flex-start;
+}
+
+@media (width >= 1024px) {
+  .ll-layout {
+    grid-template-columns: 17.5rem minmax(0, 1fr);
+  }
+
+  .ll-side {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.ll-card {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.ll-stats {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.ll-stats div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ll-stats dt {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.ll-stats dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ll-days {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.ll-day {
+  scroll-margin-top: 1rem;
+}
+
+.ll-day__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.9rem;
+  padding: 0 0.25rem 0.5rem;
+}
+
+.ll-day__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.ll-day__figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ll-day__figures strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* What a search of the log found, above the days it lists. */
+.log-search-results {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+  padding: 0.75rem 1rem;
+  border-color: var(--color-primary);
+}
+
+.log-search-results__icon {
+  color: var(--color-primary);
+}
+
+.log-search-results__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.log-search-results .ll-day__figures {
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+.ll-day--selected .ll-day__title {
+  color: var(--color-primary);
+}
+
+.ll-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ll-item {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.ll-item--open {
+  border-color: var(--color-primary);
+}
+
+.ll-item--hidden {
+  opacity: 0.55;
+}
+
+.ll-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.7rem 0.9rem;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ll-row:hover {
+  background: var(--color-surface-2);
+}
+
+.ll-row__lead {
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 10px;
+  background: var(--color-surface-2);
+}
+
+.ll-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.ll-row__time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ll-row__time small {
+  margin-left: 0.35rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.ll-row__meta,
+.ll-row__place {
+  overflow: hidden;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ll-row__soc {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  min-width: 7.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ll-row__figures {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  min-width: 5.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ll-row__big {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.ll-row__small {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.ll-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ll-pill--good {
+  background: rgb(34 197 94 / 15%);
+  color: var(--color-success-text);
+}
+
+.ll-pill--info {
+  background: rgb(59 130 246 / 15%);
+  color: var(--color-info-text);
+}
+
+.ll-pill--warn {
+  background: rgb(245 158 11 / 15%);
+  color: var(--color-warning-text);
+}
+
+.ll-pill--muted {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+.ll-cost {
+  color: var(--color-success-text);
+  font-weight: 700;
+}
+
+.ll-detail {
+  padding: 1rem;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+@media (width < 640px) {
+  .ll-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .ll-row__soc {
+    display: none;
+  }
+
+  .ll-day__figures {
+    margin-left: 0;
+  }
+
+  .month-cal__day {
+    min-height: 2.2rem;
+  }
+}
+
+/* ── Month calendar ─────────────────────────────────────── */
+
+.month-cal {
+  padding: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.month-cal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.month-cal__title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.month-cal__today {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.month-cal__nav {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.month-cal__nav:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.month-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.month-cal__weekday {
+  padding-bottom: 0.2rem;
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.month-cal__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.6rem;
+  padding: 0.15rem 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: default;
+}
+
+.month-cal__day--active {
+  background: color-mix(
+    in srgb,
+    var(--color-primary) calc(var(--level, 0.3) * 45%),
+    var(--color-surface-2)
+  );
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.month-cal__day--active:hover {
+  border-color: var(--color-primary);
+}
+
+.month-cal__day--selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.month-cal__day--today .month-cal__num {
+  text-decoration: underline;
+}
+
+.month-cal__num {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.month-cal__count {
+  display: inline-flex;
+  gap: 0.2rem;
+  align-items: center;
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+/* ── Battery gauge ──────────────────────────────────────── */
+
+.soc-bar {
+  display: inline-block;
+  width: 6.5rem;
+}
+
+.soc-bar__track {
+  position: relative;
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-2);
+  overflow: hidden;
+}
+
+.soc-bar__kept,
+.soc-bar__change {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.soc-bar__kept {
+  left: 0;
+  background: #22c55e;
+}
+
+.soc-bar__change--down {
+  background: #ef4444;
+}
+
+.soc-bar__change--up {
+  background: #f59e0b;
+}
+
+/* ── Split bar (components/SplitCard.vue) ──────────────── */
+
+.split-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.split-card__title {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.split-card__bar {
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--color-surface-2);
+}
+
+.split-card__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.split-card__legend li {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 0.45rem;
+}
+
+.split-card__legend li.is-empty {
+  opacity: 0.55;
+}
+
+.split-card__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.split-card__note {
+  overflow: hidden;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+/* ── Trip detail ────────────────────────────────────────── */
+
+.trip-detail__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+@media (width >= 1280px) {
+  .trip-detail__grid {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  }
+}
+
+.trip-detail__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.trip-detail__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+}
+
+.trip-detail__card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.trip-detail__card .trip-log-detail__figures,
+.trip-detail__card .trip-log-detail__figures--six {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.trip-detail__list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.trip-detail__list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.trip-detail__list dt {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.trip-detail__list dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.trip-detail__chart-canvas {
+  position: relative;
+  height: 22rem;
+}
+
+.trip-detail__chart-canvas > * {
+  height: 100%;
+}
+
+/* A chart inside one of these cards: no second frame or title around it. */
+.ll-chart .chart-container {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.ll-chart .chart-container .card-title {
+  display: none;
+}
+
+.ll-chart .chart-container canvas {
+  max-height: 100%;
+}

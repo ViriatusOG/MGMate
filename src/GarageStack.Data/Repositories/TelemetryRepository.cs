@@ -372,6 +372,82 @@ public class TelemetryRepository(
             .Select(s => s.OdometerKm)
             .FirstOrDefaultAsync(ct);
 
+    public Task<TimedReading?> GetSocAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt <= at && s.EvSocPercent != null)
+            .OrderByDescending(s => s.RecordedAt)
+            .Select(s => new TimedReading(s.RecordedAt, s.EvSocPercent!.Value))
+            .FirstOrDefaultAsync(ct);
+
+    public Task<double?> GetMeanOutsideTemperatureAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt <= to && s.ExteriorTemperature != null)
+            .AverageAsync(s => s.ExteriorTemperature, ct);
+
+    public async Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt < to
+                        && (s.IsCharging != null || s.EvSocPercent != null || s.HvPower != null))
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => new ChargeSample(
+                s.RecordedAt, s.IsCharging, s.EvSocPercent, s.HvPower, s.ChargingType,
+                s.Latitude, s.Longitude, s.OdometerKm, s.ChargingStopReason, s.SocTargetPercent, s.ExteriorTemperature,
+                s.ObcPowerSinglePhase, s.ObcPowerThreePhase))
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt <= to
+                        && (s.Speed != null || s.EvSocPercent != null || s.HvPower != null
+                            || s.Elevation != null || s.ExteriorTemperature != null || s.ClimateOn != null
+                            || s.ElectricRangeKm != null))
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => new TripTelemetryPoint(
+                s.RecordedAt, s.Speed, s.EvSocPercent, s.HvPower, s.Elevation, s.ExteriorTemperature, s.ClimateOn,
+                s.ElectricRangeKm))
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<ActivitySample>> GetActivitySamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt < to)
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => new ActivitySample(
+                s.RecordedAt,
+                s.IsLocked,
+                s.DriverDoorOpen == null && s.PassengerDoorOpen == null && s.RearLeftDoorOpen == null
+                    && s.RearRightDoorOpen == null && s.TrunkOpen == null && s.BonnetOpen == null
+                    ? null
+                    : s.DriverDoorOpen == true || s.PassengerDoorOpen == true || s.RearLeftDoorOpen == true
+                      || s.RearRightDoorOpen == true || s.TrunkOpen == true || s.BonnetOpen == true,
+                s.ChargerConnected,
+                s.IsCharging,
+                s.ClimateOn,
+                s.EngineRunning,
+                s.EvSocPercent))
+            .ToListAsync(ct);
+
+    public Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.IsCharging == true)
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => (DateTime?)s.RecordedAt)
+            .FirstOrDefaultAsync(ct);
+
+    // Both counters arrive in the same poll, so the row that carries the energy carries the distance.
+    public Task<DayCounterReading?> GetDayCountersAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt <= at && s.PowerUsageOfDay != null)
+            .OrderByDescending(s => s.RecordedAt)
+            .Select(s => new DayCounterReading(s.RecordedAt, s.PowerUsageOfDay!.Value, s.MileageOfTheDay))
+            .FirstOrDefaultAsync(ct);
+
     public async Task<IReadOnlyList<StatusReading>> GetStatusReadingsAsync(int vehicleId, int count, CancellationToken ct = default)
     {
         // Twice the rows asked for: a delivered-again poll takes a row of its own, folded away below.

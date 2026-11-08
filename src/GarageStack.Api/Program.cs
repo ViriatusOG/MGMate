@@ -181,6 +181,9 @@ try
     app.MapLogEndpoints();
     app.MapVehicleEndpoints();
     app.MapTripEndpoints();
+    app.MapChargeEndpoints();
+    app.MapVehiclePhotoEndpoints();
+    app.MapActivityEndpoints();
     app.MapPushEndpoints();
     app.MapNotificationEndpoints();
     app.MapMaintenanceEndpoints();

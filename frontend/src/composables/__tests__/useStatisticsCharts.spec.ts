@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import en from '@/locales/en.json'
 import nl from '@/locales/nl.json'
+import type { TripLogEntry } from '@/services/tripLogApi'
 import type { DailyStat } from '@/services/vehicleApi'
 import type { VehicleType } from '@/stores/vehicle'
 import { useUiSettingsStore } from '@/stores/settingsUi'
@@ -110,9 +111,138 @@ describe('useStatisticsCharts', () => {
         .filter((c) => c.vehicleApplicable)
         .map((c) => c.id)
 
-    expect(offered('bev')).toEqual(['evChart', 'tyreChart', 'dailyKwhChart'])
-    expect(offered('phev')).toEqual(['evChart', 'tyreChart', 'hybridSocChart', 'dailyKwhChart'])
-    expect(offered('hev')).toEqual(['tyreChart', 'hybridSocChart', 'dailyKwhChart'])
+    const everyCar = ['distanceChart', 'temperatureChart']
+    expect(offered('bev')).toEqual([
+      'evChart',
+      'voltage12vChart',
+      'tyreChart',
+      'dailyKwhChart',
+      'distanceChart',
+      'rangeChart',
+      'consumptionTempChart',
+      'temperatureChart',
+    ])
+    expect(offered('phev')).toEqual([
+      'evChart',
+      'voltage12vChart',
+      'tyreChart',
+      'hybridSocChart',
+      'dailyKwhChart',
+      'distanceChart',
+      'rangeChart',
+      'consumptionTempChart',
+      'temperatureChart',
+    ])
+    expect(offered('hev')).toEqual([
+      'voltage12vChart',
+      'tyreChart',
+      'hybridSocChart',
+      'dailyKwhChart',
+      ...everyCar,
+    ])
+  })
+
+  // A tired 12V battery shows in how low it sags, so the chart keeps the low and high around the average.
+  it("draws the 12V battery's lowest, average and highest reading per point", () => {
+    const days = [
+      bucket('2026-10-14', [
+        day('2026-10-14', {
+          batteryVoltage: 12.6,
+          batteryVoltageMin: 12.3,
+          batteryVoltageMax: 14.4,
+        }),
+      ]),
+      bucket('2026-10-15', [day('2026-10-15', { batteryVoltage: 12.5 })]),
+    ]
+    const c = chart('bev', 'voltage12vChart', days)
+
+    expect(c.applicable).toBe(true)
+    expect(c.data.datasets.map((d) => d.data)).toEqual([
+      [12.3, 12.5],
+      [12.6, 12.5],
+      [14.4, 12.5],
+    ])
+    expect(chart('bev', 'voltage12vChart', TWO_DAYS).applicable).toBe(false)
+  })
+
+  it('adds up the distance driven and shows it in the chosen unit', () => {
+    useUiSettingsStore().units = { ...useUiSettingsStore().units, distance: 'mi' }
+    const days = [
+      bucket('2026-10-12', [
+        day('2026-10-12', { distanceKm: 16.09344 }),
+        day('2026-10-13', { distanceKm: 32.18688 }),
+      ]),
+    ]
+
+    expect(chart('bev', 'distanceChart', days).data.datasets[0]!.data).toEqual([30])
+  })
+
+  // One dot per trip, against the temperature it was driven in, with a trend line through them.
+  it("plots each trip's consumption against the outside temperature", () => {
+    const trip = (id: number, outsideTemperature: number, kwh: number) =>
+      ({
+        id,
+        startedAt: '2026-10-14T08:00:00Z',
+        endedAt: '2026-10-14T08:30:00Z',
+        distanceKm: 20,
+        odometerStartKm: null,
+        odometerEndKm: null,
+        isHidden: false,
+        energyCounterUsed: kwh,
+        outsideTemperature,
+      }) as unknown as TripLogEntry
+    useUiSettingsStore().units = {
+      ...useUiSettingsStore().units,
+      distance: 'km',
+      temperature: 'celsius',
+      energyEfficiency: 'whPerDistance',
+    }
+    const i18n = createI18n({ legacy: false, locale: 'en', messages: { en, nl } })
+    let charts: ReturnType<typeof useStatisticsCharts> | null = null
+    mount(
+      defineComponent({
+        setup() {
+          charts = useStatisticsCharts(
+            ref([]),
+            ref('day'),
+            ref('bev'),
+            ref([trip(1, 0, 4), trip(2, 10, 3.5), trip(3, 20, 3), trip(4, 5, 0.1)]),
+          )
+          return () => h('div')
+        },
+      }),
+      { global: { plugins: [i18n] } },
+    )
+    const c = charts!.value.find((d) => d.id === 'consumptionTempChart')!
+
+    expect(c.applicable).toBe(true)
+    // The last trip's 5 Wh/km is no real consumption, so it is left out.
+    expect(c.data.datasets[0]!.data).toEqual([
+      { x: 0, y: 200 },
+      { x: 10, y: 175 },
+      { x: 20, y: 150 },
+    ])
+    expect(c.data.datasets[1]!.data).toEqual([
+      { x: 0, y: 200 },
+      { x: 20, y: 150 },
+    ])
+  })
+
+  it('charts the temperatures only once the car has reported one', () => {
+    expect(chart('bev', 'temperatureChart', TWO_DAYS).applicable).toBe(false)
+    const days = [
+      bucket('2026-10-14', [
+        day('2026-10-14', {
+          exteriorTemperature: 8,
+          exteriorTemperatureMin: 3,
+          exteriorTemperatureMax: 12,
+          interiorTemperature: 19,
+        }),
+      ]),
+    ]
+    const c = chart('bev', 'temperatureChart', days)
+    expect(c.applicable).toBe(true)
+    expect(c.data.datasets.map((d) => d.data)).toEqual([[3], [8], [12], [19]])
   })
 
   // A canvas draws in whatever colours it is given; left alone, Chart.js greys suit neither theme.
@@ -146,8 +276,8 @@ describe('useStatisticsCharts', () => {
     const labels = (locale: 'en' | 'nl') =>
       chart('bev', 'tyreChart', TWO_DAYS, locale).data.datasets.map((d) => d.label)
 
-    expect(labels('en')).toEqual(['FL (bar)', 'FR (bar)', 'RL (bar)', 'RR (bar)'])
-    expect(labels('nl')).toEqual(['LV (bar)', 'RV (bar)', 'LA (bar)', 'RA (bar)'])
+    expect(labels('en')).toEqual(['FL (bar)', 'FR (bar)', 'RL (bar)', 'RR (bar)', 'Warning'])
+    expect(labels('nl')).toEqual(['LV (bar)', 'RV (bar)', 'LA (bar)', 'RA (bar)', 'Waarschuwing'])
   })
 
   it('shows tyre pressure in the chosen unit', () => {

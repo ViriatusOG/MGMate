@@ -1,0 +1,60 @@
+import { buildQuery, request, requestJson } from '@/services/apiCore'
+
+/** Mirrors ChargeSession.NotesMaxLength. */
+export const CHARGE_NOTES_MAX_LENGTH = 500
+
+/** One saved charge: a plug-in, from the first reading that said charging to the last. */
+export interface ChargeSession {
+  id: number
+  startedAt: string
+  endedAt: string
+  socStartPercent: number | null
+  socEndPercent: number | null
+  /** Battery power integrated over the charge; null when the car reported too little power. */
+  energyAddedKwh: number | null
+  maxPowerKw: number | null
+  chargeType: 'AC' | 'DC' | null
+  latitude: number | null
+  longitude: number | null
+  odometerKm: number | null
+  stopReason: string | null
+  socTargetPercent: number | null
+  notes: string | null
+  /** Where the owner says it was; null leaves it to the home place. */
+  place: 'home' | 'work' | 'public' | null
+  /** What the owner says it cost, in their currency; null prices it from the tariff. */
+  paidAmount: number | null
+  isHidden: boolean
+  /**
+   * What the on-board charger drew from the supply: what a meter bills. Null on a DC charge and
+   * when the car reported no usable charger power.
+   */
+  chargerEnergyKwh?: number | null
+}
+
+/** What can be changed on a charge, sent whole. */
+export interface ChargeEdit {
+  notes: string | null
+  place: ChargeSession['place']
+  paidAmount: number | null
+}
+
+export interface ChargeChartPoint {
+  recordedAt: string
+  powerKw: number | null
+  socPercent: number | null
+  outsideTemperature?: number | null
+}
+
+export const chargesApi = {
+  log: (vin: string, from: string, to: string) =>
+    request<ChargeSession[]>(`/api/vehicles/${vin}/charges${buildQuery({ from, to })}`),
+  chart: (vin: string, id: number) =>
+    request<ChargeChartPoint[]>(`/api/vehicles/${vin}/charges/${id}/chart`),
+  update: (vin: string, id: number, edit: ChargeEdit) =>
+    requestJson<ChargeSession>(`/api/vehicles/${vin}/charges/${id}`, 'PUT', edit),
+  setHidden: (vin: string, id: number, hidden: boolean) =>
+    requestJson<ChargeSession>(`/api/vehicles/${vin}/charges/${id}/hidden`, 'PUT', { hidden }),
+  mergeWithNext: (vin: string, id: number) =>
+    requestJson<ChargeSession>(`/api/vehicles/${vin}/charges/${id}/merge-next`, 'POST'),
+}

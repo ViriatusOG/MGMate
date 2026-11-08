@@ -73,6 +73,40 @@ public interface ITelemetryRepository
     Task<double?> GetOdometerAtAsync(int vehicleId, DateTime at, CancellationToken ct = default);
 
     /// <summary>
+    /// The state of charge in percent as last reported at or before <paramref name="at"/>, with
+    /// when it was stored, or null when the vehicle had not reported one by then.
+    /// </summary>
+    Task<TimedReading?> GetSocAtAsync(int vehicleId, DateTime at, CancellationToken ct = default);
+
+    /// <summary>The mean outside temperature reported from <paramref name="from"/> to <paramref name="to"/>, in °C; null when none was.</summary>
+    Task<double?> GetMeanOutsideTemperatureAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
+    /// <summary>
+    /// The day counters (energy or fuel used today, distance driven today) as last reported at or
+    /// before <paramref name="at"/>, or null when the vehicle had not reported them by then.
+    /// </summary>
+    Task<DayCounterReading?> GetDayCountersAtAsync(int vehicleId, DateTime at, CancellationToken ct = default);
+
+    /// <summary>
+    /// The readings that say anything about charging between <paramref name="from"/> (inclusive)
+    /// and <paramref name="to"/> (exclusive), oldest first.
+    /// </summary>
+    Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
+    /// <summary>
+    /// What the car reported while a trip was driven, from <paramref name="from"/> to
+    /// <paramref name="to"/> (both inclusive), oldest first: speed, charge level, battery power,
+    /// elevation, outside temperature and climate.
+    /// </summary>
+    Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
+    /// <summary>Every reading from <paramref name="from"/> up to <paramref name="to"/>, oldest first, as the activity timeline reads it.</summary>
+    Task<IReadOnlyList<ActivitySample>> GetActivitySamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
+    /// <summary>When the vehicle first reported that it was charging, or null when it never has.</summary>
+    Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default);
+
+    /// <summary>
     /// The car's last <paramref name="count"/> status polls (lock, doors, windows), newest first.
     /// A poll the broker delivers again, as it does with retained messages on a reconnect, is still
     /// one poll: it comes back once, at the time it first arrived.

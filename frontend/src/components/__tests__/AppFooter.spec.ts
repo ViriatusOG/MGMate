@@ -49,12 +49,15 @@ vi.mock('@/utils/appVersion', () => ({
   },
 }))
 
+const vehicle = vi.hoisted(() => ({ activeVin: null as string | null }))
+const sendCommand = vi.hoisted(() => vi.fn<(vin: string, command: string, value: string) => void>())
+
 vi.mock('@/stores/vehicle', () => ({
-  useVehicleStore: () => ({ loading: false, activeVin: null }),
+  useVehicleStore: () => ({ loading: false, activeVin: vehicle.activeVin }),
 }))
 
 vi.mock('@/composables/useVehicleCommand', () => ({
-  useVehicleCommand: () => ({ sending: ref(null), send: vi.fn<() => void>() }),
+  useVehicleCommand: () => ({ sending: ref(null), send: sendCommand }),
 }))
 
 const i18n = createI18n({ legacy: false, locale: 'en', missingWarn: false, fallbackWarn: false })
@@ -71,6 +74,25 @@ describe('AppFooter', () => {
     modalOpenHistory.length = 0
     update.fails = false
     update.answer = { updateAvailable: false, latestVersion: null, releaseUrl: null }
+    vehicle.activeVin = null
+    sendCommand.mockClear()
+    vi.restoreAllMocks()
+  })
+
+  // Waking the car costs 12V battery, so the forced refresh asks first.
+  it('wakes the car only after the owner confirms', async () => {
+    vehicle.activeVin = 'VIN1'
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const wrapper = mountFooter()
+    const button = wrapper.find('button[aria-label="control.refresh"]')
+
+    await button.trigger('click')
+    expect(confirm).toHaveBeenCalledWith('control.refreshConfirm')
+    expect(sendCommand).not.toHaveBeenCalled()
+
+    confirm.mockReturnValue(true)
+    await button.trigger('click')
+    expect(sendCommand).toHaveBeenCalledWith('VIN1', 'refresh', 'force')
   })
 
   it('loads the settings modal on first use and opens it after mounting it closed', async () => {

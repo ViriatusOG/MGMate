@@ -1,16 +1,34 @@
 {
   "nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "Overzicht",
     "statistics": "Statistieken",
     "map": "Kaart",
-    "tripLog": "Rittenregistratie",
-    "climateSchedules": "Klimaatschema's",
+    "charges": "Laadbeurten",
+    "tripLog": "Ritten",
+    "climateSchedules": "Klimaat",
     "maintenance": "Onderhoud",
-    "logs": "Logboek",
-    "menuLabel": "Menu"
+    "logs": "Systeemlogs",
+    "menuLabel": "Menu",
+    "batteryHealth": "Accugezondheid",
+    "activity": "Activiteit",
+    "reports": "Rapporten",
+    "tabsLabel": "Hoofdpagina's",
+    "groups": {
+      "car": "Auto",
+      "logbook": "Logboek",
+      "insights": "Inzicht",
+      "upkeep": "Onderhoud"
+    },
+    "tabs": {
+      "overview": "Overzicht",
+      "trips": "Ritten",
+      "charges": "Laden",
+      "statistics": "Statistiek",
+      "more": "Meer"
+    }
   },
   "dashboard": {
-    "title": "Dashboard",
+    "title": "Overzicht",
     "noData": "Geen gegevens beschikbaar",
     "editLayout": "Indeling bewerken",
     "doneEditing": "Klaar",
@@ -38,7 +56,7 @@
       "efficiencyDistance": "Totale afstand gereden vandaag.",
       "efficiencyEnergy": "Wat de auto sinds middernacht heeft verbruikt. Op een BEV of PHEV is dat elektrische energie door de hoogspanningsaccu, in kilowattuur. Op een HEV bevat diezelfde teller het brandstoftotaal van de boordcomputer en wordt die dus in liters getoond.",
       "efficiencyCharge": "Afstand gereden sinds de laatste laadsessie.",
-      "efficiencyRatio": "Hoeveel de auto verbruikte voor de afstand van vandaag. Op een BEV of PHEV is dat {energyPerDistance}, waarbij lager beter is, en dat vertaalt zich direct naar elektriciteitskosten per {distance}. Op een HEV is het brandstofverbruik in {fuelConsumption}, waarbij {fuelBetter}: snelwegrijden geeft een betere waarde dan korte ritjes vanuit koude start. Als er nog geen rijgegevens beschikbaar zijn, vallen HEV en PHEV terug op een geschat brandstofverbruik ({distancePerPercent}) afgeleid van de rangecalculator van de auto, waarbij hoger zuiniger is.",
+      "efficiencyRatio": "Hoeveel de auto verbruikte voor de afstand van vandaag. Op een BEV of PHEV is dat {energyPerDistance}, waarbij {energyBetter}, en dat vertaalt zich direct naar elektriciteitskosten per {distance}. Op een HEV is het brandstofverbruik in {fuelConsumption}, waarbij {fuelBetter}: snelwegrijden geeft een betere waarde dan korte ritjes vanuit koude start. Als er nog geen rijgegevens beschikbaar zijn, vallen HEV en PHEV terug op een geschat brandstofverbruik ({distancePerPercent}) afgeleid van de rangecalculator van de auto, waarbij hoger zuiniger is.",
       "speed": "Actuele rijsnelheid zoals gerapporteerd door de gateway.",
       "topSpeed": "Hoogste gemeten snelheid over alle GPS-punten van de meest recente rit.",
       "activeTrip": "Afstand afgelegd tijdens de huidige rit, of de afstand van de laatste afgesloten rit als de auto geparkeerd staat.",
@@ -78,7 +96,12 @@
       "tyreChart": "Dagelijkse gemiddelde bandenspanning per wiel in de geselecteerde periode. Normaal bereik voor personenwagens is circa {low} – {high} {unit}.",
       "hybridSocChart": "Dagelijks gemiddeld EV-accuniveau en brandstofniveau in de geselecteerde periode. Geeft inzicht in hoe beide energiebronnen zich samen ontwikkelen.",
       "dailyKwhChart": "Geschat kWh-verbruik uit de EV-accu per dag, week of maand, afhankelijk van de periode. Een voltooide dag telt de piek van zijn teller; vandaag telt alleen de toename sinds middernacht, of sinds de laatste tellerreset.",
-      "dailyFuelChart": "Verbruikte brandstof per dag, week of maand, afhankelijk van de periode, volgens de teller van de boordcomputer. Een voltooide dag telt de piek van zijn teller; vandaag telt alleen de toename sinds middernacht, of sinds de laatste tellerreset."
+      "dailyFuelChart": "Verbruikte brandstof per dag, week of maand, afhankelijk van de periode, volgens de teller van de boordcomputer. Een voltooide dag telt de piek van zijn teller; vandaag telt alleen de toename sinds middernacht, of sinds de laatste tellerreset.",
+      "voltage12vChart": "De gemiddelde spanning van de 12V-accu per dag, met de laagste en hoogste meting. Geparkeerd staat een gezonde accu rond 12,4 – 12,8 V; tijdens het rijden of laden houdt de auto hem op ongeveer 13,5 – 14,5 V. Een lage lijn die steeds verder zakt, of in rust onder 12,2 V komt, wijst op een 12V-accu die aan het eind van zijn leven is.",
+      "distanceChart": "Hoe ver de kilometerteller per dag, week of maand opliep, uit de metingen van de auto zelf.",
+      "rangeChart": "De elektrische actieradius die de auto schatte, gemiddeld per dag. Die volgt de laadtoestand en daalt bij koud weer.",
+      "temperatureChart": "De buitentemperatuur die de auto mat, gemiddeld per dag met de laagste en hoogste meting, en de temperatuur in de auto.",
+      "consumptionTempChart": "Elke stip is één rit: het verbruik tegen de buitentemperatuur waarin hij gereden is, met de trendlijn erdoor. Zo zie je wat de kou je auto kost, uit je eigen ritten. Ritten korter dan 2 km tellen niet mee: daarin gaat het meeste naar het verwarmen van het interieur."
     },
     "hybridSocChart": "EV & Brandstofniveaus",
     "weekOf": "Week van {date}",
@@ -106,7 +129,13 @@
         "custom": "Eigen datums"
       },
       "from": "Van",
-      "to": "Tot en met"
+      "to": "Tot en met",
+      "chip": {
+        "last7": "7 d",
+        "last30": "30 d",
+        "last90": "90 d",
+        "thisYear": "Jaar"
+      }
     },
     "months": {
       "title": "Per maand",
@@ -116,6 +145,32 @@
       "energy": "Elektrisch verbruik (kWh)",
       "fuel": "Brandstof ({unit})",
       "total": "Totaal"
+    },
+    "voltage12vChart": "12V-accu (V)",
+    "temperatureChart": "Temperatuur ({unit})",
+    "rangeChart": "Elektrische actieradius ({unit})",
+    "distanceChart": {
+      "day": "Afstand per dag ({unit})",
+      "week": "Afstand per week ({unit})",
+      "month": "Afstand per maand ({unit})"
+    },
+    "series": {
+      "low": "Laagste",
+      "average": "Gemiddeld",
+      "high": "Hoogste",
+      "outside": "Buiten",
+      "outsideLow": "Laag",
+      "outsideHigh": "Hoog",
+      "inside": "Binnen",
+      "trips": "Ritten",
+      "trend": "Trend",
+      "lowPressure": "Waarschuwing"
+    },
+    "consumptionTempChart": "Verbruik vs buitentemperatuur",
+    "sections": {
+      "driving": "Rijden",
+      "energy": "Energie en accu",
+      "health": "12V, banden en temperatuur"
     }
   },
   "vehicle": {
@@ -261,7 +316,17 @@
       "schedule": "Schema",
       "startTime": "Starttijd"
     },
-    "windowsOpenCount": "{n} open"
+    "windowsOpenCount": "{n} open",
+    "photo": {
+      "add": "Gebruik een foto van je auto",
+      "change": "Foto wijzigen",
+      "remove": "Foto verwijderen en de auto weer tekenen",
+      "removeConfirm": "De foto van je auto verwijderen? De kaart tekent de auto dan weer.",
+      "alt": "Je auto",
+      "lightsOn": "Lichten aan",
+      "tooLarge": "Die foto is te groot om te uploaden. Probeer er een onder de 3 MB.",
+      "unsupported": "Dat bestand is geen PNG-, JPEG- of WebP-afbeelding."
+    }
   },
   "control": {
     "climate": "Klimaatbeheersing",
@@ -308,6 +373,8 @@
     "scheduleCarTime": "Tijden gelden in de tijdzone van de auto.",
     "saveSchedule": "Schema opslaan",
     "refresh": "Vernieuwen",
+    "refreshConfirm": "Dit maakt de auto wakker om verse gegevens op te vragen, wat een beetje van de 12V-accu kost. GarageStack kijkt al elke 30 minuten bij de servers van MG zonder de auto te wekken. Auto nu wekken?",
+    "refreshHint": "Auto wekken voor verse gegevens",
     "pending": "Verstuurd - wachten op auto...",
     "error": "Commando mislukt",
     "rejected": "De auto heeft het commando niet uitgevoerd"
@@ -586,6 +653,8 @@
       "pressure": "Bandenspanning",
       "fuelConsumption": "Brandstofverbruik",
       "fuelConsumptionDesc": "Verbruikte brandstof telt in dezelfde gallon",
+      "energyEfficiency": "Energieverbruik",
+      "energyEfficiencyDesc": "Geteld in de afstandseenheid hierboven",
       "options": {
         "km": "Kilometers (km, km/h)",
         "mi": "Mijlen (mi, mph)",
@@ -596,7 +665,9 @@
         "kpa": "kPa",
         "l100km": "L/100 km",
         "mpgUk": "mpg (Britse gallon)",
-        "mpgUs": "mpg (Amerikaanse gallon)"
+        "mpgUs": "mpg (Amerikaanse gallon)",
+        "whPerDistance": "Energie per afstand (Wh/km, Wh/mi)",
+        "distancePerKwh": "Afstand per kWh (km/kWh, mi/kWh)"
       }
     },
     "apiTokens": {
@@ -633,6 +704,8 @@
     "whPerMi": "Wh/mi",
     "kmPerPercent": "km/%",
     "miPerPercent": "mi/%",
+    "kmPerKwh": "km/kWh",
+    "miPerKwh": "mi/kWh",
     "bar": "bar",
     "psi": "psi",
     "kpa": "kPa",
@@ -702,7 +775,7 @@
     "speed": "Snelheid"
   },
   "tripLog": {
-    "title": "Rittenregistratie",
+    "title": "Ritten",
     "subtitle": "Leg per rit vast waarvoor die was en exporteer de registratie als spreadsheet, met de adressen en kilometerstanden die een rittenregistratie vraagt. Ritten verschijnen hier een paar minuten nadat de auto geparkeerd is.",
     "year": "Jaar",
     "month": "Maand",
@@ -730,7 +803,38 @@
       "averageSpeedHint": "Het gemiddelde van de snelheden die de auto tijdens het rijden doorgaf",
       "topSpeed": "Topsnelheid",
       "speed": "Snelheid",
-      "speedChart": "Snelheid tijdens de rit"
+      "speedChart": "Snelheid tijdens de rit",
+      "energy": "Energie",
+      "energyFromCar": "Zoals de auto het telde",
+      "energyFromSoc": "Geschat uit het accuniveau, {start}% tot {end}%",
+      "battery": "Accu {start}% tot {end}%",
+      "efficiency": "Verbruik",
+      "regen": "Terugwinning",
+      "regenHint": "Energie die door remmen terug in de accu ging, uit het accuvermogen dat de auto meldde",
+      "regenShare": "{percent}% van wat het rijden verbruikte",
+      "cost": "Kosten",
+      "costAt": "Tegen het thuistarief van {rate} per kWh",
+      "climb": "Hoogteverschil",
+      "outside": "Buiten",
+      "climate": "Klimaat",
+      "climateOn": "{minutes} min aan",
+      "climateOff": "Uit",
+      "duringTrip": "Tijdens de rit",
+      "batteryLevel": "Accu",
+      "power": "Vermogen, onder 0 is terugwinning",
+      "elevation": "Hoogte",
+      "summary": "Ritoverzicht",
+      "tripDetails": "Ritgegevens",
+      "tripData": "Ritdata",
+      "soc": "Accu",
+      "maxPower": "Max. vermogen",
+      "maxRegen": "Max. terugwinning",
+      "ascentDescent": "Stijgen / dalen",
+      "gpsPoints": "GPS-punten",
+      "drivingStopped": "Rijden / stilstaan",
+      "drivingStoppedValue": "{driving} min rijden · {stopped} min stil",
+      "medianSpeed": "Mediane snelheid",
+      "range": "Actieradius"
     },
     "purposeLabel": "Doel",
     "purpose": {
@@ -809,7 +913,20 @@
     "showHidden": "Verborgen rit tonen | {n} verborgen ritten tonen",
     "editRoute": "Route bewerken",
     "edited": "Bewerkt",
-    "editedHint": "De route is met de hand bewerkt. De afstand komt nog steeds van de kilometerteller."
+    "editedHint": "De route is met de hand bewerkt. De afstand komt nog steeds van de kilometerteller.",
+    "downloadGpx": "GPX downloaden",
+    "tiles": {
+      "distance": "Afstand",
+      "trips": "Ritten",
+      "efficiency": "Gem. verbruik",
+      "energy": "Energie verbruikt",
+      "cost": "Kosten",
+      "noPrice": "Geen prijs ingesteld"
+    },
+    "tripCount": "{n} rit | {n} ritten",
+    "showWholeYear": "Heel {year}",
+    "searchPlaceholder": "Plaats, notitie of doel",
+    "searchResults": "Geen ritten gevonden | 1 rit gevonden | {n} ritten gevonden"
   },
   "tripEdit": {
     "title": "Route bewerken",
@@ -875,7 +992,8 @@
       "lastServiceHint": "Optioneel. Laat leeg als dit nog niet onderhouden is.",
       "save": "Opslaan",
       "validationNameRequired": "Naam is verplicht",
-      "validationIntervalRequired": "Stel minstens één interval in (afstand of tijd)"
+      "validationIntervalRequired": "Stel minstens één interval in (afstand of tijd)",
+      "suggestions": "Gebruikelijk voor een elektrische auto"
     },
     "logForm": {
       "performedAt": "Servicedatum",
@@ -892,6 +1010,24 @@
     "dashboard": {
       "allOk": "Alle onderhoudsitems zijn up-to-date",
       "moreCount": "+{count} meer"
+    },
+    "left": "nog {amount}",
+    "over": "{amount} over tijd",
+    "leftDays": "vandaag | nog {n} dag | nog {n} dagen",
+    "overDays": "vandaag | {n} dag over tijd | {n} dagen over tijd",
+    "dueOn": "Gepland {when}",
+    "atOdometer": "bij {distance}",
+    "lastDone": "Laatst gedaan {when}",
+    "neverDone": "Nog niet gedaan",
+    "suggestions": {
+      "service": "Jaarlijkse beurt",
+      "mot": "APK",
+      "cabinFilter": "Interieurfilter",
+      "brakeFluid": "Remvloeistof",
+      "tyreRotation": "Banden wisselen",
+      "coolant": "Accukoelvloeistof",
+      "wipers": "Ruitenwissers",
+      "battery12v": "12V-accu controleren"
     }
   },
   "climateSchedules": {
@@ -1134,5 +1270,263 @@
     "fetchedAt": "Van de RDW, {time}",
     "lastAttemptFailed": "De laatste poging de RDW te vragen is mislukt; later wordt het opnieuw geprobeerd.",
     "source": "Bron: open data van de RDW"
+  },
+  "charges": {
+    "title": "Laadbeurten",
+    "subtitle": "Elke laadbeurt die de auto meldde, één per keer inpluggen",
+    "previousMonth": "Vorige maand",
+    "nextMonth": "Volgende maand",
+    "sessions": "Laadbeurten",
+    "acDcSplit": "{ac} AC · {dc} DC",
+    "energyAdded": "Geladen energie",
+    "timeCharging": "Laadtijd",
+    "perDay": "Geladen kWh per dag",
+    "ac": "AC",
+    "dc": "DC",
+    "none": "Geen laadbeurten deze maand.",
+    "added": "Geladen",
+    "estimated": "Geschat uit het accuniveau",
+    "battery": "Accu",
+    "duration": "Duur",
+    "peakPower": "Hoogste vermogen",
+    "stopReason": "Gestopt omdat",
+    "chart": "Laadgegevens",
+    "power": "Vermogen",
+    "notes": "Notities",
+    "hide": "Verbergen",
+    "show": "Weer tonen",
+    "joinNext": "Samenvoegen met volgende",
+    "joinConfirm": "Deze laadbeurt samenvoegen met de volgende? Dit kan niet ongedaan worden gemaakt.",
+    "cost": "Kosten",
+    "homeAwaySplit": "{home} thuis · {away} elders",
+    "perKwhAverage": "gemiddeld {rate} per kWh",
+    "unpriced": "{n} laadbeurt zonder prijs | {n} laadbeurten zonder prijs",
+    "costPaid": "Zoals je het hebt ingevuld",
+    "costWork": "Op het werk: gratis tenzij je een prijs invult",
+    "costHome": "Thuistarief, {rate} per kWh",
+    "costPublic": "Publieke prijs, {rate} per kWh",
+    "place": "Waar",
+    "placeAuto": "Automatisch ({place})",
+    "places": {
+      "home": "Thuis",
+      "work": "Werk",
+      "public": "Publiek"
+    },
+    "paid": "Wat je betaalde ({currency}, optioneel)",
+    "paidPlaceholder": "Leeg laten om je prijzen te gebruiken",
+    "paidInvalid": "Wat je betaalde moet een getal van 0 of meer zijn",
+    "acVsDc": "AC tegen DC",
+    "homeVsPublic": "Thuis tegen openbaar",
+    "avgDuration": "Gem. duur",
+    "avgPrice": "Gem. prijs",
+    "avgEnergy": "Gem. per laadbeurt",
+    "batteryAdded": "Accu bijgeladen",
+    "daysCharged": "Dagen met een laadbeurt",
+    "count": "{n} laadbeurt | {n} laadbeurten",
+    "peak": "piek",
+    "summary": "Samenvatting laadbeurt",
+    "target": "Doel {n}%",
+    "avgPower": "Gemiddeld vermogen",
+    "outside": "Buiten",
+    "noChart": "De auto stuurde te weinig metingen om deze laadbeurt te tekenen.",
+    "fromSupply": "Uit het net",
+    "loss": "Laadverlies",
+    "lossNote": "{kwh} kWh verloren als warmte ({percent}%)",
+    "searchPlaceholder": "Notitie, plaats, AC of DC",
+    "searchResults": "Geen laadsessies gevonden | 1 laadsessie gevonden | {n} laadsessies gevonden",
+    "peakNote": "piek {power}",
+    "totalsLabel": "Laadtotalen"
+  },
+  "tariff": {
+    "button": "Prijzen",
+    "setUp": "Stel je stroomprijzen in",
+    "title": "Stroomprijzen",
+    "intro": "Hiermee wordt berekend wat elke laadbeurt kostte. Laden bij je thuislocatie gebruikt de thuisprijzen, verdeeld over de blokken waarin het viel; elders geldt de publieke prijs.",
+    "currency": "Valuta",
+    "home": "Thuistarief",
+    "bandsHint": "Eén blok van 00:00 tot 00:00 is een vast tarief. Een blok dat eindigt voor het begint, loopt over middernacht.",
+    "from": "Van",
+    "to": "Tot",
+    "pricePerKwh": "{currency} per kWh",
+    "days": "Dagen",
+    "dayOptions": {
+      "all": "Elke dag",
+      "weekdays": "Doordeweeks",
+      "weekends": "Weekend"
+    },
+    "removeBand": "Dit blok verwijderen",
+    "addBand": "Blok toevoegen",
+    "public": "Publiek laden, per kWh, als er geen prijs is ingevuld",
+    "publicPlaceholder": "Bijvoorbeeld 0,79",
+    "placesHint": "Je thuislocatie stel je in bij het rittenlogboek, onder “Thuis en werk”.",
+    "invalid": "Controleer de tijden (UU:mm) en dat elke prijs een getal tussen 0 en 10 is.",
+    "clear": "Prijzen verwijderen",
+    "save": "Prijzen opslaan"
+  },
+  "batteryHealth": {
+    "title": "Accugezondheid",
+    "subtitle": "Hoeveel de accu vasthoudt, berekend uit je laadbeurten",
+    "usableNow": "Bruikbare capaciteit nu",
+    "againstNew": "Ten opzichte van nieuw",
+    "nominal": "van {kwh} kWh nieuw",
+    "noNominal": "Stel je accugrootte in om te vergelijken",
+    "basedOn": "Gebaseerd op",
+    "charges": "laadbeurt | laadbeurten",
+    "minSpan": "die elk {percent}% of meer laden",
+    "trendLabel": "Trend",
+    "perYear": "kWh per jaar",
+    "trendPending": "Nog een paar laadbeurten over een maand of langer nodig",
+    "chart": "Capaciteitsmetingen in de tijd",
+    "reading": "Eén laadbeurt (groter = meer van de accu)",
+    "trend": "Trend",
+    "none": "Nog geen metingen. Een meting komt van een laadbeurt die {percent}% of meer toevoegt en waarvan de auto de energie mat.",
+    "disclaimer": "Een schatting uit de energie die elke laadbeurt in de accu stopte, gedeeld door het percentage dat erbij kwam; geen labtest. Metingen schommelen met de temperatuur en hoe de auto het percentage afrondt.",
+    "margin": "Marge",
+    "newLine": "Nieuw ({kwh} kWh)",
+    "health": "Gezondheid",
+    "pack": "Accu nieuw:"
+  },
+  "activity": {
+    "title": "Activiteit",
+    "subtitle": "Wat de auto deed, en wanneer hij stil bleef",
+    "previousDay": "Vorige dag",
+    "nextDay": "Volgende dag",
+    "events": "Gebeurtenissen",
+    "reporting": "Bereikbaar",
+    "gaps": "geen gaten | {n} gat | {n} gaten",
+    "longestGap": "Langste stilte",
+    "readings": "Metingen",
+    "perHour": "Metingen per uur",
+    "none": "Niets vastgelegd op deze dag.",
+    "gap": "Geen gegevens gedurende {duration}, tot {until}",
+    "hint": "Gelezen uit de meldingen van de auto zelf. Een gat is een uur of langer zonder iets van de auto: in slaap, geen bereik, of de gateway uitgelogd.",
+    "kinds": {
+      "locked": "Vergrendeld",
+      "unlocked": "Ontgrendeld",
+      "doorOpened": "Een deur ging open",
+      "doorsClosed": "Deuren dicht",
+      "plugged": "Stekker erin",
+      "unplugged": "Stekker eruit",
+      "chargingStarted": "Laden gestart",
+      "chargingStopped": "Laden gestopt",
+      "climateOn": "Klimaat aan",
+      "climateOff": "Klimaat uit",
+      "driveStarted": "Rit gestart",
+      "driveEnded": "Geparkeerd"
+    },
+    "driving": "Rijden",
+    "charging": "Laden",
+    "drives": "{n} rit | {n} ritten",
+    "sessions": "{n} sessie | {n} sessies",
+    "woken": "Keer gewekt",
+    "readingsNote": "geen metingen | {n} meting | {n} metingen",
+    "dayStrip": "De dag in één oogopslag",
+    "quiet": "Geen data",
+    "otherEvents": "Deuren, sloten, klimaat"
+  },
+  "calendar": {
+    "previousMonth": "Vorige maand",
+    "nextMonth": "Volgende maand",
+    "jumpToToday": "Naar vandaag",
+    "week": "Deze week",
+    "close": "Sluiten",
+    "monthAndSearch": "Maand en zoeken"
+  },
+  "logSearch": {
+    "label": "Zoeken",
+    "from": "Van",
+    "to": "Tot en met",
+    "search": "Zoeken",
+    "clear": "Wissen",
+    "range": "{from} – {to}",
+    "invalid": {
+      "missing": "Kies beide dagen.",
+      "backwards": "De laatste dag ligt voor de eerste.",
+      "tooLong": "Zoek hooguit een jaar tegelijk."
+    }
+  },
+  "reports": {
+    "title": "Rapporten",
+    "subtitle": "Per maand: wat je reed, wat dat verbruikte, wat je laadde en wat het kostte, naast de maand ervoor.",
+    "previousMonth": "Vorige maand",
+    "nextMonth": "Volgende maand",
+    "thisMonth": "Deze maand",
+    "emptyMonth": "Nog niets gereden of geladen in {month}.",
+    "change": "{change} t.o.v. {month}",
+    "unpriced": "1 laadsessie zonder prijs | {n} laadsessies zonder prijs",
+    "yearTitle": "Het jaar per maand",
+    "tiles": {
+      "distance": "Afstand",
+      "trips": "Ritten",
+      "drivingTime": "Rijtijd",
+      "daysDriven": "Dagen gereden",
+      "efficiency": "Verbruik",
+      "energyUsed": "Energie verbruikt",
+      "charges": "Laadsessies",
+      "charged": "Geladen",
+      "chargingCost": "Laadkosten",
+      "costPer100": "Kosten per afstand"
+    },
+    "table": {
+      "month": "Maand",
+      "trips": "Ritten",
+      "distance": "Afstand ({unit})",
+      "efficiency": "Verbruik ({unit})",
+      "charges": "Laadsessies",
+      "charged": "Geladen (kWh)",
+      "cost": "Kosten",
+      "total": "Totaal"
+    },
+    "emptyRun": "{from} – {to}: niets vastgelegd",
+    "barsTitle": "Afstand per maand ({unit})"
+  },
+  "overview": {
+    "battery": "Accu",
+    "range": "Bereik",
+    "limit": "Laadlimiet {percent}%",
+    "atLimit": "Bij {percent}%: {range}",
+    "atFull": "Bij 100%: {range}",
+    "state": "Status",
+    "states": {
+      "driving": "Rijdt",
+      "charging": "Laadt",
+      "pluggedIn": "Aan de stekker",
+      "parked": "Geparkeerd"
+    },
+    "outside": "Buiten",
+    "cabin": "Binnen",
+    "drivenToday": "Vandaag gereden",
+    "sinceCharge": "Sinds laatste laadbeurt",
+    "lastUpdate": "Laatste update",
+    "showTiles": "Toon de statustegels onder het overzicht",
+    "charge": {
+      "title": "Laatste laadbeurt",
+      "all": "Alle laadbeurten →",
+      "added": "Geladen",
+      "battery": "Accu",
+      "when": "Wanneer",
+      "where": "Waar",
+      "fromWall": "Uit het stopcontact",
+      "cost": "Kosten",
+      "none": "Geen laadbeurten in de afgelopen 60 dagen."
+    },
+    "trips": {
+      "title": "Recente ritten",
+      "all": "Alle ritten →",
+      "none": "Geen ritten in de afgelopen twee weken.",
+      "week": "Afgelopen 7 dagen",
+      "count": "{n} rit | {n} ritten"
+    },
+    "attention": {
+      "title": "Aandacht nodig",
+      "overdue": "{name} is te laat",
+      "dueSoon": "{name} moet binnenkort",
+      "dueOn": "uiterlijk {date}",
+      "past": "{distance} over tijd",
+      "left": "nog {distance}",
+      "low12v": "12V-accu is laag",
+      "lowTyre": "Een band is zacht | {n} banden zijn zacht"
+    },
+    "controls": "Bediening"
   }
 }

@@ -51,6 +51,26 @@ const router = createRouter({
       component: () => import('@/views/TripEditView.vue'),
     },
     {
+      path: '/charges',
+      name: 'charges',
+      component: () => import('@/views/ChargesView.vue'),
+    },
+    {
+      path: '/reports',
+      name: 'reports',
+      component: () => import('@/views/ReportsView.vue'),
+    },
+    {
+      path: '/battery-health',
+      name: 'batteryHealth',
+      component: () => import('@/views/BatteryHealthView.vue'),
+    },
+    {
+      path: '/activity',
+      name: 'activity',
+      component: () => import('@/views/ActivityView.vue'),
+    },
+    {
       path: '/climate-schedules',
       name: 'climateSchedules',
       component: () => import('@/views/ClimateSchedulesView.vue'),

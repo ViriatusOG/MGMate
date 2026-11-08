@@ -97,6 +97,35 @@ public class TripRepository(
         return trips.Count;
     }
 
+    public async Task<IReadOnlyList<TripEnergyPending>> GetEnergyPendingAsync(int batchSize, CancellationToken ct = default) =>
+        await db.Trips
+            .AsNoTracking()
+            .Where(t => !t.EnergyRead)
+            .OrderBy(t => t.Id)
+            .Take(batchSize)
+            .Select(t => new TripEnergyPending(t.Id, t.VehicleId, t.StartedAt, t.EndedAt, t.DistanceKm))
+            .ToListAsync(ct);
+
+    public async Task SaveEnergyAsync(IReadOnlyDictionary<long, TripEnergy> energy, CancellationToken ct = default)
+    {
+        var ids = energy.Keys.ToList();
+        var trips = await db.Trips.Where(t => ids.Contains(t.Id)).ToListAsync(ct);
+        foreach (var trip in trips)
+            Apply(trip, energy[trip.Id]);
+
+        await db.SaveChangesAsync(ct);
+        db.ChangeTracker.Clear();
+    }
+
+    private static void Apply(Trip trip, TripEnergy energy)
+    {
+        trip.SocStartPercent = energy.SocStartPercent;
+        trip.SocEndPercent = energy.SocEndPercent;
+        trip.EnergyCounterUsed = energy.CounterUsed;
+        trip.OutsideTemperature = energy.OutsideTemperature;
+        trip.EnergyRead = true;
+    }
+
     // How far back the newest unsaved trip is looked for. The Worker saves a finished trip within
     // minutes, so the fixes past the recording line only span more than this while it is down.
     private static readonly TimeSpan LatestTripLookback = TimeSpan.FromDays(7);
@@ -146,7 +175,7 @@ public class TripRepository(
             var trip = recorded.Trip;
             var start = trip.Points[0];
             var end = trip.Points[^1];
-            return new Trip
+            var saved = new Trip
             {
                 VehicleId = vehicleId,
                 StartedAt = trip.StartedAt,
@@ -165,6 +194,8 @@ public class TripRepository(
                 MovingSpeedSamples = trip.MovingSpeedSamples,
                 Purpose = CommuteRule.AutomaticPurpose(start.Latitude, start.Longitude, end.Latitude, end.Longitude, places),
             };
+            if (recorded.Energy is { } energy) Apply(saved, energy);
+            return saved;
         }));
         vehicle.TripsRecordedUntil = recordedUntil;
 
@@ -286,6 +317,12 @@ public class TripRepository(
         first.EndLatitude = second.EndLatitude;
         first.EndLongitude = second.EndLongitude;
         first.OdometerEndKm = second.OdometerEndKm;
+        // The battery from where the first set off to where the second parked. The counters add up
+        // only when both were matched; one without its count leaves the whole unknown.
+        first.SocEndPercent = second.SocEndPercent;
+        first.EnergyCounterUsed = first.EnergyCounterUsed + second.EnergyCounterUsed;
+        first.OutsideTemperature = Mean(first.OutsideTemperature, second.OutsideTemperature);
+        first.EnergyRead = first.EnergyRead && second.EnergyRead;
         first.EndPlaceJson = second.EndPlaceJson;
         first.MaxSpeedKmh = joined.MaxSpeedKmh;
         first.AvgMovingSpeedKmh = joined.AvgMovingSpeedKmh;
@@ -505,14 +542,16 @@ public class TripRepository(
         t.StartLatitude, t.StartLongitude, t.EndLatitude, t.EndLongitude,
         t.OdometerStartKm, t.OdometerEndKm,
         t.StartPlaceJson, t.EndPlaceJson, t.Purpose, t.Notes, t.PurposeIsManual, t.IsHidden, t.EditedAt != null,
-        t.MaxSpeedKmh, t.AvgMovingSpeedKmh);
+        t.MaxSpeedKmh, t.AvgMovingSpeedKmh,
+        t.SocStartPercent, t.SocEndPercent, t.EnergyCounterUsed, t.OutsideTemperature);
 
     private sealed record LogRow(
         long Id, DateTime StartedAt, DateTime EndedAt, double DistanceKm,
         double StartLatitude, double StartLongitude, double EndLatitude, double EndLongitude,
         double? OdometerStartKm, double? OdometerEndKm,
         string? StartPlaceJson, string? EndPlaceJson, TripPurpose? Purpose, string? Notes, bool PurposeIsManual, bool IsHidden,
-        bool IsEdited, double? MaxSpeedKmh, double? AvgMovingSpeedKmh);
+        bool IsEdited, double? MaxSpeedKmh, double? AvgMovingSpeedKmh,
+        double? SocStartPercent, double? SocEndPercent, double? EnergyCounterUsed, double? OutsideTemperature);
 
     private TripLogEntry ToEntry(LogRow r) => new(
         r.Id, r.StartedAt, r.EndedAt, r.DistanceKm,
@@ -520,7 +559,12 @@ public class TripRepository(
         r.OdometerStartKm, r.OdometerEndKm,
         ReadPlace(r.Id, r.StartPlaceJson), ReadPlace(r.Id, r.EndPlaceJson),
         r.Purpose, r.Notes, PurposeIsAutomatic: r.Purpose is not null && !r.PurposeIsManual, IsHidden: r.IsHidden,
-        IsEdited: r.IsEdited, MaxSpeedKmh: r.MaxSpeedKmh, AvgMovingSpeedKmh: r.AvgMovingSpeedKmh);
+        IsEdited: r.IsEdited, MaxSpeedKmh: r.MaxSpeedKmh, AvgMovingSpeedKmh: r.AvgMovingSpeedKmh,
+        SocStartPercent: r.SocStartPercent, SocEndPercent: r.SocEndPercent, EnergyCounterUsed: r.EnergyCounterUsed,
+        OutsideTemperature: r.OutsideTemperature);
+
+    // A joined trip's temperature: the mean of its halves, or the one that has one.
+    private static double? Mean(double? a, double? b) => a is { } x && b is { } y ? Math.Round((x + y) / 2, 1) : a ?? b;
 
     // An unreadable place is as good as none: the trip log looks it up again.
     private PlaceAddress? ReadPlace(long tripId, string? json) =>

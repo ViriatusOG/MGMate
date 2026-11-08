@@ -13,46 +13,6 @@
   gap: 0.25rem;
 }
 
-/* ── Totals ───────────────────────────────────────────────── */
-
-/* Spaced like the status grid it borrows its cards from. On a phone and on a tablet beside the
-   sidebar the content column is narrow, so "All trips" takes a row of its own and the purposes
-   share two columns; from 1024px they share a row of four, and from 1280px all five fit. */
-.trip-log-totals,
-.trip-log-summary {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.trip-log-totals__all {
-  grid-column: 1 / -1;
-}
-
-/* The driving figures are set off from the trips below, as the dashboard and statistics set
-   their summaries off from what follows. */
-.trip-log-summary {
-  margin-bottom: 1.5rem;
-}
-
-@media (width >= 1024px) {
-  .trip-log-totals,
-  .trip-log-summary {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (width >= 1280px) {
-  .trip-log-totals {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
-  .trip-log-totals__all {
-    grid-column: auto;
-  }
-}
-
 /* ── Classify every unclassified trip at once ─────────────── */
 
 .trip-log-bulk {
@@ -547,6 +507,11 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  /* With the trip's energy and efficiency, three across keeps the rows even. */
+  .trip-log-detail__figures--six {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .trip-route-map {
     height: 260px;
   }
@@ -603,13 +568,4 @@
 /* Hiding takes the trip out of everything, so it stands apart from the rest. */
 .trip-log-detail__hide {
   margin-left: auto;
-}
-
-/* ── Phones ───────────────────────────────────────────────── */
-
-@media (width <= 767px) {
-  .trip-log-totals,
-  .trip-log-summary {
-    gap: 0.5rem;
-  }
 }

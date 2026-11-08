@@ -71,6 +71,66 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
         lock (_lock) { return Task.FromResult(_current.OdometerKm); }
     }
 
+    // Demo trips carry their energy already; nothing reads these in demo mode.
+    public Task<double?> GetMeanOutsideTemperatureAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        Task.FromResult<double?>(null);
+
+    public Task<TimedReading?> GetSocAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
+        Task.FromResult<TimedReading?>(null);
+
+    public Task<DayCounterReading?> GetDayCountersAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
+        Task.FromResult<DayCounterReading?>(null);
+
+    // Demo charges are fixed and carry their own chart; nothing records them.
+    // Nothing records demo charges (DemoSeeder saves them), so their chart is drawn here: a
+    // steady charge that tapers at the end, every five minutes, as the readings the window asks for.
+    public Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default)
+    {
+        var start = from.AddMinutes(5);
+        var end = to - ChargeSegmenter.PauseThreshold;
+        if (end <= start) return Task.FromResult<IReadOnlyList<ChargeSample>>([]);
+        var dc = (end - start) < TimeSpan.FromHours(1.5);
+        var steps = Math.Max(2, (int)((end - start).TotalMinutes / (dc ? 2 : 5)));
+        var samples = new List<ChargeSample>(steps + 1);
+        for (var i = 0; i <= steps; i++)
+        {
+            var share = (double)i / steps;
+            var power = dc ? 95 - 55 * share : share < 0.85 ? 7.1 : 7.1 * (1 - share) / 0.15;
+            samples.Add(new ChargeSample(
+                start.AddMinutes((end - start).TotalMinutes * share), true, Math.Round(30 + 50 * share, 1), -power,
+                dc ? "DC" : "AC", null, null, null, null, 80, Math.Round(11 - 2 * share + Math.Sin(i / 6.0) * 0.4, 1)));
+        }
+        return Task.FromResult<IReadOnlyList<ChargeSample>>(samples);
+    }
+
+    // Demo trips carry their route only, so what the car would have reported along it is drawn here:
+    // speed, falling charge, power with regen on the slow-downs, rolling elevation and temperature.
+    public Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default)
+    {
+        var steps = Math.Max(2, (int)(to - from).TotalSeconds / 20);
+        var points = new List<TripTelemetryPoint>(steps + 1);
+        for (var i = 0; i <= steps; i++)
+        {
+            var share = (double)i / steps;
+            var speed = Math.Max(0, 55 + 35 * Math.Sin(i / 9.0) + 10 * Math.Sin(i / 3.1)) * Math.Min(1, Math.Min(share, 1 - share) * 12);
+            // A red light now and then, so the detail has stopped time to show.
+            if (Math.Sin(i / 7.0) > 0.96) speed = 0;
+            var accelerating = Math.Cos(i / 9.0) + 0.3 * Math.Cos(i / 3.1);
+            var power = speed < 1 ? 0.4 : accelerating < -0.4 ? -12 * -accelerating : 6 + speed * 0.18 + accelerating * 8;
+            points.Add(new TripTelemetryPoint(
+                from.AddSeconds((to - from).TotalSeconds * share), Math.Round(speed, 1), Math.Round(72 - 6 * share, 1),
+                Math.Round(power, 1), Math.Round(30 + 25 * Math.Sin(share * Math.PI * 2) + 8 * Math.Sin(i / 5.0), 1),
+                Math.Round(9 + 2 * share, 1), true, ElectricRangeAt(72 - 6 * share)));
+        }
+        return Task.FromResult<IReadOnlyList<TripTelemetryPoint>>(points);
+    }
+
+    public Task<IReadOnlyList<ActivitySample>> GetActivitySamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<ActivitySample>>([]);
+
+    public Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default) =>
+        Task.FromResult<DateTime?>(null);
+
     // Only the Worker's parked alerts weigh past polls, and demo mode runs no Worker.
     public Task<IReadOnlyList<StatusReading>> GetStatusReadingsAsync(int vehicleId, int count, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<StatusReading>>([]);
@@ -361,7 +421,9 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
                 fuel = Math.Clamp(fuel, 5, 100);
 
                 var isCharging = hour == 22;
-                var extTemp = 13.0 + (rng.NextDouble() - 0.5) * 10.0;
+                // Warm summers and cold winters, so the temperature and range charts have a season.
+                var season = Math.Cos(2 * Math.PI * (ts.DayOfYear - 200) / 365.0);
+                var extTemp = 11.0 + season * 9.0 + (hour is 12 or 17 ? 4 : 0) + (rng.NextDouble() - 0.5) * 6.0;
                 var frontPressure = 2.4 + (rng.NextDouble() - 0.5) * 0.06;
                 var rearPressure = 2.5 + (rng.NextDouble() - 0.5) * 0.06;
                 // The rear right has a slow puncture: over the last twelve days it loses air the
@@ -391,7 +453,12 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
                     TyrePressureRearLeft = Math.Round(rearPressure, 2),
                     TyrePressureRearRight = Math.Round(rearPressure - leak + (rng.NextDouble() - 0.5) * 0.04, 2),
                     MileageOfTheDay = hour >= 12 ? Math.Round((odometer - 24300 - day * 90) % 200, 1) : 0,
-                    BatteryVoltage = 12.6 + rng.NextDouble() * 0.3,
+                    ElectricRangeKm = Math.Round(soc / 100.0 * FullBatteryRangeKm * (0.85 + 0.15 * (season + 1) / 2)),
+                    // Just back from a drive the car has topped the 12V battery up; parked it rests
+                    // lower, and slowly a little lower as the battery ages over the year.
+                    BatteryVoltage = Math.Round(hour == 17
+                        ? 14.1 + rng.NextDouble() * 0.3
+                        : 12.75 - 0.25 * day / HistoryDays + rng.NextDouble() * 0.15 - (hour == 7 ? 0.1 : 0), 2),
                     Latitude = 52.3676 + (rng.NextDouble() - 0.5) * 0.02,
                     Longitude = 4.9041 + (rng.NextDouble() - 0.5) * 0.02,
                     Speed = 0,

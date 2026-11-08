@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useVehicleStore } from '@/stores/vehicle'
 import AppFooter from '@/components/AppFooter.vue'
+import MobileTabBar from '@/components/MobileTabBar.vue'
 import NotificationPanel from '@/components/NotificationPanel.vue'
 import DemoBanner from '@/components/DemoBanner.vue'
 import PwaInstallModal from '@/components/PwaInstallModal.vue'
@@ -74,6 +75,43 @@ const notificationsLabel = computed(() =>
 )
 
 const carModel = computed(() => vehicleStore.activeVehicle?.model ?? null)
+const socLabel = computed(() => {
+  const soc = vehicleStore.currentStatus?.evSocPercent
+  return soc == null ? null : `${Math.round(soc)}%`
+})
+
+// The pages in four groups, so the list reads as what it is: the car now, what it did, what that
+// adds up to, and its upkeep. System logs sits with the account buttons at the bottom.
+const navGroups = [
+  {
+    key: 'car',
+    items: [
+      { to: '/', label: 'nav.dashboard', icon: 'gauge-high' },
+      { to: '/map', label: 'nav.map', icon: 'map' },
+      { to: '/climate-schedules', label: 'nav.climateSchedules', icon: 'calendar-days' },
+    ],
+  },
+  {
+    key: 'logbook',
+    items: [
+      { to: '/trip-log', label: 'nav.tripLog', icon: 'book' },
+      { to: '/charges', label: 'nav.charges', icon: 'charging-station' },
+      { to: '/activity', label: 'nav.activity', icon: 'clock-rotate-left' },
+    ],
+  },
+  {
+    key: 'insights',
+    items: [
+      { to: '/statistics', label: 'nav.statistics', icon: 'chart-line' },
+      { to: '/reports', label: 'nav.reports', icon: 'chart-column' },
+      { to: '/battery-health', label: 'nav.batteryHealth', icon: 'heart-pulse' },
+    ],
+  },
+  {
+    key: 'upkeep',
+    items: [{ to: '/maintenance', label: 'nav.maintenance', icon: 'screwdriver-wrench' }],
+  },
+]
 const vehicleId = computed(() => vehicleStore.activeVehicle?.id ?? null)
 
 const availabilityToast = ref<'online' | 'offline' | null>(null)
@@ -154,6 +192,7 @@ const lastRecorded = computed(() => {
 })
 
 const menuOpen = ref(false)
+const footer = ref<InstanceType<typeof AppFooter> | null>(null)
 const isLoginRoute = computed(() => route.name === 'login')
 const mainContent = ref<HTMLElement | null>(null)
 
@@ -221,6 +260,18 @@ watch(
         <font-awesome-icon icon="car" />
         GarageStack
       </RouterLink>
+      <button
+        class="topbar-btn"
+        :aria-label="t('control.refresh')"
+        :title="t('control.refreshHint')"
+        :disabled="vehicleStore.loading"
+        @click="footer?.refresh()"
+      >
+        <font-awesome-icon icon="rotate" :spin="vehicleStore.loading" />
+      </button>
+      <button class="topbar-btn" :aria-label="t('settings.title')" @click="footer?.openSettings()">
+        <font-awesome-icon icon="gear" />
+      </button>
       <button class="notif-bell" :aria-label="notificationsLabel" @click="togglePanel">
         <font-awesome-icon icon="bell" />
         <span v-if="unreadCount > 0" class="notif-bell__badge" aria-hidden="true">{{
@@ -245,88 +296,43 @@ watch(
           <font-awesome-icon icon="car" />
           <span>GarageStack</span>
         </RouterLink>
-        <ul class="sidebar-nav">
-          <li>
-            <RouterLink to="/" active-class="active">
-              <font-awesome-icon icon="gauge-high" />
-              <span>{{ t('nav.dashboard') }}</span>
-            </RouterLink>
-          </li>
-          <li>
-            <RouterLink to="/statistics" active-class="active">
-              <font-awesome-icon icon="chart-line" />
-              <span>{{ t('nav.statistics') }}</span>
-            </RouterLink>
-          </li>
-          <li>
-            <RouterLink to="/map" active-class="active">
-              <font-awesome-icon icon="map" />
-              <span>{{ t('nav.map') }}</span>
-            </RouterLink>
-          </li>
-          <li>
-            <RouterLink to="/trip-log" active-class="active">
-              <font-awesome-icon icon="book" />
-              <span>{{ t('nav.tripLog') }}</span>
-            </RouterLink>
-          </li>
-          <li>
-            <RouterLink to="/climate-schedules" active-class="active">
-              <font-awesome-icon icon="calendar-days" />
-              <span>{{ t('nav.climateSchedules') }}</span>
-            </RouterLink>
-          </li>
-          <li>
-            <RouterLink to="/maintenance" active-class="active">
-              <font-awesome-icon icon="screwdriver-wrench" />
-              <span>{{ t('nav.maintenance') }}</span>
-            </RouterLink>
-          </li>
-          <li>
-            <RouterLink to="/logs" active-class="active">
-              <font-awesome-icon icon="file-lines" />
-              <span>{{ t('nav.logs') }}</span>
-            </RouterLink>
-          </li>
-        </ul>
+        <div v-if="carModel || onlineStatusText" class="sidebar-car">
+          <span
+            class="sidebar-car__dot"
+            :class="onlineStatusVariant ? `sidebar-car__dot--${onlineStatusVariant}` : ''"
+            aria-hidden="true"
+          />
+          <span class="sidebar-car__text">
+            <span class="sidebar-car__name"
+              >{{ carModel }}<template v-if="socLabel"> · {{ socLabel }}</template></span
+            >
+            <span v-if="onlineStatusText" class="sidebar-car__state"
+              >{{ onlineStatusText
+              }}<template v-if="onlineStatusTime"> · {{ onlineStatusTime }}</template></span
+            >
+          </span>
+        </div>
+        <template v-for="group in navGroups" :key="group.key">
+          <p :id="`nav-group-${group.key}`" class="sidebar-group">
+            {{ t(`nav.groups.${group.key}`) }}
+          </p>
+          <ul class="sidebar-nav" :aria-labelledby="`nav-group-${group.key}`">
+            <li v-for="item in group.items" :key="item.to">
+              <RouterLink :to="item.to" active-class="active">
+                <font-awesome-icon :icon="item.icon" />
+                <span>{{ t(item.label) }}</span>
+              </RouterLink>
+            </li>
+          </ul>
+        </template>
 
         <div class="sidebar-footer">
-          <div v-if="carModel" class="sidebar-car-model">
-            <font-awesome-icon icon="car" />
-            <span>{{ carModel }}</span>
-          </div>
           <div
             v-if="signalRAttempted && !signalRConnected"
             class="sidebar-online-status sidebar-online-status--offline"
           >
             <font-awesome-icon icon="triangle-exclamation" aria-hidden="true" />
             <span class="sidebar-footer__text">{{ t('common.liveUpdatesPaused') }}</span>
-          </div>
-          <div
-            v-if="isInitialLoading || onlineStatusText"
-            class="sidebar-online-status"
-            :class="
-              !isInitialLoading && onlineStatusVariant
-                ? `sidebar-online-status--${onlineStatusVariant}`
-                : ''
-            "
-          >
-            <template v-if="isInitialLoading">
-              <span class="skeleton skeleton--icon" />
-              <span class="skeleton skeleton--text skeleton--text-md" />
-            </template>
-            <template v-else>
-              <font-awesome-icon icon="wifi" aria-hidden="true" />
-              <span class="sidebar-footer__text" :title="onlineStatusText ?? undefined">{{
-                onlineStatusText
-              }}</span>
-              <span
-                v-if="onlineStatusTime"
-                class="sidebar-online-status__time"
-                :title="onlineStatusTime"
-                >{{ onlineStatusTime }}</span
-              >
-            </template>
           </div>
           <div v-if="isInitialLoading || lastFetched" class="sidebar-timestamp">
             <template v-if="isInitialLoading">
@@ -356,6 +362,10 @@ watch(
             <font-awesome-icon icon="user" aria-hidden="true" />
             <span class="sidebar-user__email" :title="auth.username">{{ auth.username }}</span>
           </div>
+          <RouterLink to="/logs" class="sidebar-action sidebar-logs-link" active-class="is-active">
+            <font-awesome-icon icon="file-lines" />
+            <span>{{ t('nav.logs') }}</span>
+          </RouterLink>
           <button
             v-if="isDemoMode"
             class="sidebar-action sidebar-demo-btn"
@@ -405,7 +415,8 @@ watch(
       </Transition>
     </div>
 
-    <AppFooter />
+    <AppFooter ref="footer" />
+    <MobileTabBar :more-open="menuOpen" @more="toggleMenu" />
 
     <NotificationPanel
       :open="panelOpen"

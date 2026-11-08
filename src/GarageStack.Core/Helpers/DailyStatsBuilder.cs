@@ -32,10 +32,31 @@ public sealed class DailyStatsBuilder(TimeZoneInfo zone, DateOnly from, DateOnly
         public double? Value => _count > 0 ? _sum / _count : null;
     }
 
+    /// <summary>The mean of a day's readings, and its lowest and highest.</summary>
+    private sealed class Spread
+    {
+        private readonly Mean _mean = new();
+
+        public double? Min { get; private set; }
+        public double? Max { get; private set; }
+        public double? Value => _mean.Value;
+
+        public void Add(double? value)
+        {
+            if (value is not { } v || !double.IsFinite(v)) return;
+            _mean.Add(v);
+            Min = Min is { } min ? Math.Min(min, v) : v;
+            Max = Max is { } max ? Math.Max(max, v) : v;
+        }
+    }
+
     private sealed class Day
     {
         public readonly Mean EvSoc = new(), Fuel = new(), FrontLeft = new(), FrontRight = new(),
-            RearLeft = new(), RearRight = new(), Voltage = new();
+            RearLeft = new(), RearRight = new(), Inside = new(), Range = new();
+        public readonly Spread Voltage = new(), Outside = new();
+        // An odometer at 0 is a car that hasn't sent it yet, not one that drove back to zero.
+        public readonly Spread Odometer = new();
         public readonly List<double> Counter = [];
     }
 
@@ -57,6 +78,10 @@ public sealed class DailyStatsBuilder(TimeZoneInfo zone, DateOnly from, DateOnly
         day.RearLeft.Add(reading.TyrePressureRearLeft);
         day.RearRight.Add(reading.TyrePressureRearRight);
         day.Voltage.Add(reading.BatteryVoltage);
+        day.Inside.Add(reading.InteriorTemperature);
+        day.Outside.Add(reading.ExteriorTemperature);
+        day.Range.Add(reading.ElectricRangeKm);
+        if (reading.OdometerKm > 0) day.Odometer.Add(reading.OdometerKm);
         if (reading.PowerUsageOfDay is { } counter && double.IsFinite(counter)) day.Counter.Add(counter);
     }
 
@@ -69,7 +94,9 @@ public sealed class DailyStatsBuilder(TimeZoneInfo zone, DateOnly from, DateOnly
         {
             stats.Add(_days.TryGetValue(date, out var day)
                 ? new DailyStat(date, day.EvSoc.Value, day.Fuel.Value, day.FrontLeft.Value, day.FrontRight.Value,
-                    day.RearLeft.Value, day.RearRight.Value, day.Voltage.Value, CounterTotal(day.Counter, date == today))
+                    day.RearLeft.Value, day.RearRight.Value, day.Voltage.Value, CounterTotal(day.Counter, date == today),
+                    day.Voltage.Min, day.Voltage.Max, day.Inside.Value, day.Outside.Value, day.Outside.Min,
+                    day.Outside.Max, day.Range.Value, day.Odometer.Max - day.Odometer.Min)
                 : new DailyStat(date, null, null, null, null, null, null, null, null));
         }
         return stats;

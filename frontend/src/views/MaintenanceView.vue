@@ -4,19 +4,16 @@ import { onMounted, computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useMaintenanceStore } from '@/stores/maintenance'
-import StatusCard from '@/components/StatusCard.vue'
+import MaintenanceDueCard from '@/components/MaintenanceDueCard.vue'
 import MaintenanceItemFormModal from '@/components/MaintenanceItemFormModal.vue'
 import MaintenanceItemDetailModal from '@/components/MaintenanceItemDetailModal.vue'
 import type { MaintenanceItem, MaintenanceDueStatus } from '@/services/maintenanceApi'
-import { dueStatusVariant, formatIntervalSummary } from '@/utils/maintenance'
-import { useUnits } from '@/composables/useUnits'
 import { useErrorMessage } from '@/composables/useErrorMessage'
 import ViewHeader from '@/components/ViewHeader.vue'
 
 const { t } = useI18n()
 const vehicleStore = useVehicleStore()
 const store = useMaintenanceStore()
-const units = useUnits()
 const errorMessage = useErrorMessage()
 
 const vin = computed(() => vehicleStore.activeVin)
@@ -85,17 +82,12 @@ watch(vin, (v) => {
     <div v-else-if="!store.loading && sortedItems.length === 0" class="empty-state">
       {{ t('maintenance.empty') }}
     </div>
-    <div v-else class="status-card-list">
-      <StatusCard
+    <div v-else class="due-card-list">
+      <MaintenanceDueCard
         v-for="item in sortedItems"
         :key="item.id"
-        icon="screwdriver-wrench"
-        :label="item.name"
-        :value="t(`maintenance.status.${item.dueStatus}`)"
-        :subtitle="formatIntervalSummary(item, t, units)"
-        :variant="dueStatusVariant(item.dueStatus)"
-        clickable
-        @click="openDetail(item)"
+        :item="item"
+        @open="openDetail(item)"
       />
     </div>
 
@@ -116,3 +108,11 @@ watch(vin, (v) => {
     />
   </div>
 </template>
+
+<style scoped>
+.due-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: 0.75rem;
+}
+</style>

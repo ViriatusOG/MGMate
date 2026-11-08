@@ -1,6 +1,6 @@
 <script lang="ts">
 /** The chart kinds this card can draw, so bar data never has to pose as line data. */
-export type StatsChartType = 'line' | 'bar'
+export type StatsChartType = 'line' | 'bar' | 'scatter'
 </script>
 
 <script setup lang="ts">
@@ -16,6 +16,7 @@ import {
   LineController,
   BarElement,
   BarController,
+  ScatterController,
   Title,
   Tooltip,
   Legend,
@@ -31,6 +32,7 @@ ChartJS.register(
   LineController,
   BarElement,
   BarController,
+  ScatterController,
   Title,
   Tooltip,
   Legend,

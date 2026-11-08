@@ -10,6 +10,7 @@ import type { StatsInsightId, StatsChartId } from '@/stores/settingsShared'
 import type { Quantity } from '@/utils/units'
 import { vehicleApi } from '@/services/vehicleApi'
 import type { VehicleAggregateStats } from '@/services/vehicleApi'
+import { tripLogApi, type TripLogEntry } from '@/services/tripLogApi'
 import { LMap, LMarker } from '@vue-leaflet/vue-leaflet'
 import { DEFAULT_MAP_CENTER, fitToPoints, type LeafletMap } from '@/utils/leaflet'
 import { useLeafletMap } from '@/composables/useLeafletMap'
@@ -18,6 +19,7 @@ import CardInfoWrap from '@/components/CardInfoWrap.vue'
 import DetailModal from '@/components/DetailModal.vue'
 import ToolbarPanel from '@/components/ToolbarPanel.vue'
 import StatsPeriodFilter from '@/components/StatsPeriodFilter.vue'
+import StatsPeriodChips from '@/components/StatsPeriodChips.vue'
 import StatsMonthTable from '@/components/StatsMonthTable.vue'
 import SkeletonCard from '@/components/SkeletonCard.vue'
 import SkeletonChart from '@/components/SkeletonChart.vue'
@@ -61,6 +63,8 @@ const errorMessage = useErrorMessage()
 const editMode = ref(false)
 const loading = ref(false)
 const aggregateStats = ref<VehicleAggregateStats | null>(null)
+// The period's saved trips with their consumption, for the chart against outside temperature.
+const tripLog = ref<TripLogEntry[]>([])
 
 // The days the page shows, from its own period (the map keeps its 7, 30 or 90 days).
 const period = computed(() => resolveStatsPeriod(uiSettings.statsPeriod))
@@ -85,14 +89,19 @@ async function load() {
     await store.fetchVehicles()
     if (!vin.value) return
     const query = statsQuery(period.value)
-    const [, , , , stats] = await Promise.all([
+    const [, , , , stats, trips] = await Promise.all([
       store.fetchDailyStats(vin.value, query.fromDate, query.toDate),
       store.fetchTripSummaries(vin.value, query.fromIso, query.toIso),
       store.fetchStatus(vin.value),
       store.fetchConfig(vin.value),
       vehicleApi.stats(vin.value, query.fromIso, query.toIso),
+      // One chart among many: without it the rest of the page still shows.
+      tripLogApi
+        .log(vin.value, query.fromIso, query.toIso ?? new Date().toISOString())
+        .catch(() => [] as TripLogEntry[]),
     ])
     aggregateStats.value = stats
+    tripLog.value = trips
   } finally {
     loading.value = false
   }
@@ -327,12 +336,34 @@ const insightRows = computed(() =>
 
 // ── Charts ────────────────────────────────────────────────
 
-const chartDefs = useStatisticsCharts(buckets, grouping, vehicleType)
+const chartDefs = useStatisticsCharts(
+  buckets,
+  grouping,
+  vehicleType,
+  tripLog,
+  computed(() => store.hvBatteryCapacityKwh ?? status.value?.hvTotalCapacityKwh ?? null),
+)
 const chartDefMap = computed(() => new Map(chartDefs.value.map((d) => [d.id, d])))
 
 // Each chart in the user's order, with what it shows.
 const chartRows = computed(() =>
   settings.statsCharts.map((item) => ({ item, def: chartDefMap.value.get(item.id)! })),
+)
+
+// The charts in three sections, each keeping the user's order within it.
+const CHART_SECTIONS: { key: string; charts: readonly StatsChartId[] }[] = [
+  { key: 'driving', charts: ['distanceChart', 'consumptionTempChart'] },
+  { key: 'energy', charts: ['evChart', 'hybridSocChart', 'dailyKwhChart', 'rangeChart'] },
+  { key: 'health', charts: ['voltage12vChart', 'tyreChart', 'temperatureChart'] },
+]
+
+const chartSections = computed(() =>
+  CHART_SECTIONS.map((section) => ({
+    key: section.key,
+    rows: chartRows.value.filter(
+      ({ item, def }) => section.charts.includes(item.id) && item.visible && def.applicable,
+    ),
+  })).filter((section) => section.rows.length > 0),
 )
 
 // ── Layout reset ──────────────────────────────────────────────
@@ -359,6 +390,7 @@ const skeletonChartCount = computed(
   <div class="view-container">
     <ViewHeader :title="t('nav.statistics')" :caption="periodLabel">
       <template #actions>
+        <StatsPeriodChips />
         <ToolbarPanel>
           <StatsPeriodFilter />
         </ToolbarPanel>
@@ -483,21 +515,27 @@ const skeletonChartCount = computed(
             </template>
           </EditableCardGrid>
 
-          <!-- Normal mode: visible + applicable charts -->
-          <div v-else class="stats-chart-grid">
-            <template v-for="{ item, def } in chartRows" :key="item.id">
-              <StatsChartCard
-                v-if="item.visible && def.applicable"
-                :title="def.title"
-                :icon="def.icon"
-                :type="def.type"
-                :data="def.data"
-                :options="def.options"
-                :show-info="uiSettings.showCardInfoIcons"
-                @info="activeChartInfo = item.id"
-              />
-            </template>
-          </div>
+          <!-- Normal mode: visible + applicable charts, in their sections -->
+          <template v-else>
+            <details v-for="section in chartSections" :key="section.key" class="stats-section" open>
+              <summary class="stats-section__title">
+                {{ t(`statistics.sections.${section.key}`) }}
+              </summary>
+              <div class="stats-chart-grid">
+                <StatsChartCard
+                  v-for="{ item, def } in section.rows"
+                  :key="item.id"
+                  :title="def.title"
+                  :icon="def.icon"
+                  :type="def.type"
+                  :data="def.data"
+                  :options="def.options"
+                  :show-info="uiSettings.showCardInfoIcons"
+                  @info="activeChartInfo = item.id"
+                />
+              </div>
+            </details>
+          </template>
         </template>
 
         <StatsMonthTable
@@ -563,6 +601,17 @@ const skeletonChartCount = computed(
 
 .stats-insights {
   margin-bottom: 1.5rem;
+}
+
+.stats-section {
+  margin-bottom: 1.5rem;
+}
+
+.stats-section__title {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .stats-chart-grid {

@@ -1,16 +1,34 @@
 {
   "nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "Overview",
     "statistics": "Statistics",
     "map": "Map",
-    "tripLog": "Trip log",
-    "climateSchedules": "Climate schedules",
+    "tripLog": "Trips",
+    "charges": "Charges",
+    "climateSchedules": "Climate",
     "maintenance": "Maintenance",
-    "logs": "Logs",
-    "menuLabel": "Menu"
+    "logs": "System logs",
+    "menuLabel": "Menu",
+    "batteryHealth": "Battery health",
+    "activity": "Activity",
+    "reports": "Reports",
+    "tabsLabel": "Main pages",
+    "groups": {
+      "car": "Car",
+      "logbook": "Logbook",
+      "insights": "Insights",
+      "upkeep": "Upkeep"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "trips": "Trips",
+      "charges": "Charges",
+      "statistics": "Stats",
+      "more": "More"
+    }
   },
   "dashboard": {
-    "title": "Dashboard",
+    "title": "Overview",
     "noData": "No data available",
     "editLayout": "Edit layout",
     "doneEditing": "Done",
@@ -38,7 +56,7 @@
       "efficiencyDistance": "Total distance driven so far today.",
       "efficiencyEnergy": "What the car has used since midnight. On a BEV or PHEV that is electrical energy through the high-voltage battery, in kilowatt-hours. On an HEV the same counter carries the trip computer's fuel total instead, so it is shown in litres.",
       "efficiencyCharge": "Distance driven since the last charge session.",
-      "efficiencyRatio": "How much the car used for the distance driven today. On a BEV or PHEV that is {energyPerDistance}, where lower is better, and it translates directly to electricity cost per {distance}. On an HEV it is fuel consumption in {fuelConsumption}, where {fuelBetter}: motorway driving gives a better figure than short stop-start trips from cold. When no driving data is available yet, HEV and PHEV fall back to estimated fuel economy ({distancePerPercent}) derived from the car's own range computer, where higher is more efficient.",
+      "efficiencyRatio": "How much the car used for the distance driven today. On a BEV or PHEV that is {energyPerDistance}, where {energyBetter}, and it translates directly to electricity cost per {distance}. On an HEV it is fuel consumption in {fuelConsumption}, where {fuelBetter}: motorway driving gives a better figure than short stop-start trips from cold. When no driving data is available yet, HEV and PHEV fall back to estimated fuel economy ({distancePerPercent}) derived from the car's own range computer, where higher is more efficient.",
       "speed": "Current vehicle speed as reported by the gateway.",
       "topSpeed": "Highest speed recorded across all GPS points in the most recent completed trip.",
       "activeTrip": "Distance covered in the current trip while active, or the distance of the last completed trip when parked.",
@@ -78,7 +96,12 @@
       "tyreChart": "Daily average tyre pressure per wheel over the selected period. Typical passenger-car range is {low} – {high} {unit}.",
       "hybridSocChart": "Daily average EV battery and fuel level over the selected period. Lets you compare how both energy sources change together.",
       "dailyKwhChart": "Estimated kWh consumed from the EV battery per day, week or month, depending on the period. A finished day counts the peak of its counter; today counts only the increase since midnight, or since the last counter reset.",
-      "dailyFuelChart": "Fuel burned per day, week or month, depending on the period, from the trip computer's own counter. A finished day counts the peak of its counter; today counts only the increase since midnight, or since the last counter reset."
+      "dailyFuelChart": "Fuel burned per day, week or month, depending on the period, from the trip computer's own counter. A finished day counts the peak of its counter; today counts only the increase since midnight, or since the last counter reset.",
+      "voltage12vChart": "The 12V battery's average voltage per day, with the lowest and highest reading. Parked, a healthy battery rests around 12.4 – 12.8 V; while driving or charging the car tops it up to about 13.5 – 14.5 V. A low line that keeps drifting down, or rests below 12.2 V, points at a 12V battery on its way out.",
+      "distanceChart": "How far the odometer moved per day, week or month, from the car's own readings.",
+      "rangeChart": "The electric range the car estimated, averaged per day. It follows the state of charge, and drops in cold weather.",
+      "temperatureChart": "The outside temperature the car measured, averaged per day with its lowest and highest reading, and the temperature inside the car.",
+      "consumptionTempChart": "Each dot is one trip: its consumption against the outside temperature it was driven in, with the trend line through them. It shows how much the cold costs your car, from your own driving. Trips under 2 km are left out, since warming the cabin is most of what they use."
     },
     "hybridSocChart": "EV & Fuel Levels",
     "weekOf": "Week of {date}",
@@ -106,7 +129,13 @@
         "custom": "Custom dates"
       },
       "from": "From",
-      "to": "To"
+      "to": "To",
+      "chip": {
+        "last7": "7 d",
+        "last30": "30 d",
+        "last90": "90 d",
+        "thisYear": "Year"
+      }
     },
     "months": {
       "title": "Per month",
@@ -116,6 +145,32 @@
       "energy": "Electric usage (kWh)",
       "fuel": "Fuel ({unit})",
       "total": "Total"
+    },
+    "voltage12vChart": "12V Battery (V)",
+    "temperatureChart": "Temperature ({unit})",
+    "rangeChart": "Electric Range ({unit})",
+    "distanceChart": {
+      "day": "Distance per Day ({unit})",
+      "week": "Distance per Week ({unit})",
+      "month": "Distance per Month ({unit})"
+    },
+    "series": {
+      "low": "Lowest",
+      "average": "Average",
+      "high": "Highest",
+      "outside": "Outside",
+      "outsideLow": "Low",
+      "outsideHigh": "High",
+      "inside": "Inside",
+      "trips": "Trips",
+      "trend": "Trend",
+      "lowPressure": "Warning"
+    },
+    "consumptionTempChart": "Consumption vs Outside Temperature",
+    "sections": {
+      "driving": "Driving",
+      "energy": "Energy and battery",
+      "health": "12V, tyres and temperature"
     }
   },
   "vehicle": {
@@ -261,7 +316,17 @@
       "schedule": "Schedule",
       "startTime": "Start time"
     },
-    "windowsOpenCount": "{n} open"
+    "windowsOpenCount": "{n} open",
+    "photo": {
+      "add": "Use a photo of your car",
+      "change": "Change the photo",
+      "remove": "Remove the photo and draw the car again",
+      "removeConfirm": "Remove the photo of your car? The card draws the car again.",
+      "alt": "Your car",
+      "lightsOn": "Lights on",
+      "tooLarge": "That photo is too large to upload. Try one under 3 MB.",
+      "unsupported": "That file is not a PNG, JPEG or WebP image."
+    }
   },
   "control": {
     "climate": "Climate control",
@@ -308,6 +373,8 @@
     "scheduleCarTime": "Times are in the car's own time zone.",
     "saveSchedule": "Save schedule",
     "refresh": "Refresh",
+    "refreshConfirm": "This wakes the car to ask for fresh data, which uses a little of its 12V battery. GarageStack already checks MG's servers every 30 minutes without waking it. Wake the car now?",
+    "refreshHint": "Wake the car for fresh data",
     "pending": "Sent - waiting for car...",
     "error": "Command failed",
     "rejected": "The car did not carry out the command"
@@ -586,6 +653,8 @@
       "pressure": "Tyre pressure",
       "fuelConsumption": "Fuel consumption",
       "fuelConsumptionDesc": "Fuel used is counted in the same gallon",
+      "energyEfficiency": "Energy efficiency",
+      "energyEfficiencyDesc": "Counted in the distance unit above",
       "options": {
         "km": "Kilometres (km, km/h)",
         "mi": "Miles (mi, mph)",
@@ -596,7 +665,9 @@
         "kpa": "kPa",
         "l100km": "L/100 km",
         "mpgUk": "mpg (UK gallon)",
-        "mpgUs": "mpg (US gallon)"
+        "mpgUs": "mpg (US gallon)",
+        "whPerDistance": "Energy per distance (Wh/km, Wh/mi)",
+        "distancePerKwh": "Distance per kWh (km/kWh, mi/kWh)"
       }
     },
     "apiTokens": {
@@ -633,6 +704,8 @@
     "whPerMi": "Wh/mi",
     "kmPerPercent": "km/%",
     "miPerPercent": "mi/%",
+    "kmPerKwh": "km/kWh",
+    "miPerKwh": "mi/kWh",
     "bar": "bar",
     "psi": "psi",
     "kpa": "kPa",
@@ -702,7 +775,7 @@
     "speed": "Speed"
   },
   "tripLog": {
-    "title": "Trip log",
+    "title": "Trips",
     "subtitle": "Record what each trip was for and export the log as a spreadsheet, with the addresses and odometer readings a tax trip log asks for. Trips appear here a few minutes after the car parks.",
     "year": "Year",
     "month": "Month",
@@ -730,7 +803,38 @@
       "averageSpeedHint": "The mean of the speeds the car reported while moving",
       "topSpeed": "Top speed",
       "speed": "Speed",
-      "speedChart": "Speed during the trip"
+      "speedChart": "Speed during the trip",
+      "energy": "Energy",
+      "energyFromCar": "As counted by the car",
+      "energyFromSoc": "Estimated from the battery level, {start}% to {end}%",
+      "battery": "Battery {start}% to {end}%",
+      "efficiency": "Efficiency",
+      "regen": "Regen",
+      "regenHint": "Energy put back into the battery by braking, from the battery power the car reported",
+      "regenShare": "{percent}% of what driving used",
+      "cost": "Cost",
+      "costAt": "At the {rate} per kWh home rate",
+      "climb": "Climb",
+      "outside": "Outside",
+      "climate": "Climate",
+      "climateOn": "On {minutes} min",
+      "climateOff": "Off",
+      "duringTrip": "During the trip",
+      "batteryLevel": "Battery",
+      "power": "Power, below 0 is regen",
+      "elevation": "Elevation",
+      "summary": "Trip summary",
+      "tripDetails": "Trip details",
+      "tripData": "Trip data",
+      "soc": "Battery",
+      "maxPower": "Max power",
+      "maxRegen": "Max regen",
+      "ascentDescent": "Ascent / descent",
+      "gpsPoints": "GPS points",
+      "drivingStopped": "Driving / stopped",
+      "drivingStoppedValue": "{driving} min driving · {stopped} min stopped",
+      "medianSpeed": "Median speed",
+      "range": "Range"
     },
     "purposeLabel": "Purpose",
     "purpose": {
@@ -809,7 +913,20 @@
     "showHidden": "Show hidden trip | Show {n} hidden trips",
     "editRoute": "Edit route",
     "edited": "Edited",
-    "editedHint": "The route was edited by hand. The distance still comes from the odometer."
+    "editedHint": "The route was edited by hand. The distance still comes from the odometer.",
+    "downloadGpx": "Download GPX",
+    "tiles": {
+      "distance": "Distance",
+      "trips": "Trips",
+      "efficiency": "Avg consumption",
+      "energy": "Energy used",
+      "cost": "Cost",
+      "noPrice": "No price set"
+    },
+    "tripCount": "{n} trip | {n} trips",
+    "showWholeYear": "Whole of {year}",
+    "searchPlaceholder": "Place, note or purpose",
+    "searchResults": "No trips found | 1 trip found | {n} trips found"
   },
   "tripEdit": {
     "title": "Edit route",
@@ -875,7 +992,8 @@
       "lastServiceHint": "Optional. Leave empty if this hasn't been serviced yet.",
       "save": "Save",
       "validationNameRequired": "Name is required",
-      "validationIntervalRequired": "Set at least one interval (distance or time)"
+      "validationIntervalRequired": "Set at least one interval (distance or time)",
+      "suggestions": "Common for an electric car"
     },
     "logForm": {
       "performedAt": "Service date",
@@ -892,6 +1010,24 @@
     "dashboard": {
       "allOk": "All maintenance items are up to date",
       "moreCount": "+{count} more"
+    },
+    "left": "{amount} left",
+    "over": "{amount} over",
+    "leftDays": "due today | {n} day left | {n} days left",
+    "overDays": "due today | {n} day over | {n} days over",
+    "dueOn": "Due {when}",
+    "atOdometer": "at {distance}",
+    "lastDone": "Last done {when}",
+    "neverDone": "Not done yet",
+    "suggestions": {
+      "service": "Annual service",
+      "mot": "MOT",
+      "cabinFilter": "Cabin air filter",
+      "brakeFluid": "Brake fluid",
+      "tyreRotation": "Tyre rotation",
+      "coolant": "Battery coolant",
+      "wipers": "Wiper blades",
+      "battery12v": "12V battery check"
     }
   },
   "climateSchedules": {
@@ -1134,5 +1270,263 @@
     "fetchedAt": "From the RDW, {time}",
     "lastAttemptFailed": "The last attempt to ask the RDW failed; trying again later.",
     "source": "Source: RDW open data"
+  },
+  "charges": {
+    "title": "Charges",
+    "subtitle": "Every charge the car reported, one per plug-in",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "sessions": "Charges",
+    "acDcSplit": "{ac} AC · {dc} DC",
+    "energyAdded": "Energy added",
+    "timeCharging": "Time charging",
+    "perDay": "kWh added per day",
+    "ac": "AC",
+    "dc": "DC",
+    "none": "No charges recorded this month.",
+    "added": "Added",
+    "estimated": "Estimated from the battery level",
+    "battery": "Battery",
+    "duration": "Duration",
+    "peakPower": "Peak power",
+    "stopReason": "Stopped because",
+    "chart": "Charging data",
+    "power": "Power",
+    "notes": "Notes",
+    "hide": "Hide",
+    "show": "Show again",
+    "joinNext": "Join with next",
+    "joinConfirm": "Join this charge with the next one? This cannot be undone.",
+    "cost": "Cost",
+    "homeAwaySplit": "{home} home · {away} elsewhere",
+    "perKwhAverage": "{rate} per kWh on average",
+    "unpriced": "{n} charge without a price | {n} charges without a price",
+    "costPaid": "As you typed it in",
+    "costWork": "At work: free unless you type a price in",
+    "costHome": "Home tariff, {rate} per kWh",
+    "costPublic": "Public price, {rate} per kWh",
+    "place": "Where",
+    "placeAuto": "Automatic ({place})",
+    "places": {
+      "home": "Home",
+      "work": "Work",
+      "public": "Public"
+    },
+    "paid": "What you paid ({currency}, optional)",
+    "paidPlaceholder": "Leave empty to use your prices",
+    "paidInvalid": "What you paid must be a number of 0 or more",
+    "acVsDc": "AC vs DC",
+    "homeVsPublic": "Home vs public",
+    "avgDuration": "Avg duration",
+    "avgPrice": "Avg price",
+    "avgEnergy": "Avg per charge",
+    "batteryAdded": "Battery added",
+    "daysCharged": "Days with a charge",
+    "count": "{n} charge | {n} charges",
+    "peak": "peak",
+    "summary": "Charge summary",
+    "target": "Target {n}%",
+    "avgPower": "Average power",
+    "outside": "Outside",
+    "noChart": "The car sent too few readings to draw this charge.",
+    "fromSupply": "From the supply",
+    "loss": "Charging loss",
+    "lossNote": "{kwh} kWh lost as heat ({percent}%)",
+    "searchPlaceholder": "Note, place, AC or DC",
+    "searchResults": "No charges found | 1 charge found | {n} charges found",
+    "peakNote": "peak {power}",
+    "totalsLabel": "Charging totals"
+  },
+  "tariff": {
+    "button": "Prices",
+    "setUp": "Set your electricity prices",
+    "title": "Electricity prices",
+    "intro": "Used to work out what each charge cost. Charges at your home place use the home prices, split across the bands they span; everywhere else uses the public price.",
+    "currency": "Currency",
+    "home": "Home tariff",
+    "bandsHint": "One band from 00:00 to 00:00 is a flat rate. A band ending before it starts runs past midnight.",
+    "from": "From",
+    "to": "To",
+    "pricePerKwh": "{currency} per kWh",
+    "days": "Days",
+    "dayOptions": {
+      "all": "Every day",
+      "weekdays": "Weekdays",
+      "weekends": "Weekends"
+    },
+    "removeBand": "Remove this band",
+    "addBand": "Add a band",
+    "public": "Public charging, per kWh, when no price is typed in",
+    "publicPlaceholder": "For example 0.79",
+    "placesHint": "Your home place is set on the trip log, under “Home and work”.",
+    "invalid": "Check the times (HH:mm) and that every price is a number between 0 and 10.",
+    "clear": "Remove prices",
+    "save": "Save prices"
+  },
+  "batteryHealth": {
+    "title": "Battery health",
+    "subtitle": "How much the battery holds, worked out from your charges",
+    "usableNow": "Usable capacity now",
+    "againstNew": "Against new",
+    "nominal": "of {kwh} kWh new",
+    "noNominal": "Set your pack size to compare",
+    "basedOn": "Based on",
+    "charges": "charge | charges",
+    "minSpan": "each covering {percent}% or more",
+    "trendLabel": "Trend",
+    "perYear": "kWh a year",
+    "trendPending": "Needs a few more charges over a month or more",
+    "chart": "Capacity readings over time",
+    "reading": "One charge (bigger = more of the battery)",
+    "trend": "Trend",
+    "none": "No readings yet. A reading comes from a charge that adds {percent}% or more and whose energy the car measured.",
+    "disclaimer": "An estimate from the energy each charge put into the battery over the battery percentage it added, not a lab test. Readings vary with temperature and how the car rounds its percentage.",
+    "margin": "Margin",
+    "newLine": "New ({kwh} kWh)",
+    "health": "Health",
+    "pack": "Pack when new:"
+  },
+  "activity": {
+    "title": "Activity",
+    "subtitle": "What the car did, and when it went quiet",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "events": "Events",
+    "reporting": "Reporting",
+    "gaps": "no gaps | {n} gap | {n} gaps",
+    "longestGap": "Longest silence",
+    "readings": "Readings",
+    "perHour": "Readings per hour",
+    "none": "Nothing recorded on this day.",
+    "gap": "No data for {duration}, until {until}",
+    "hint": "Read from the car's own reports. A gap is an hour or more with nothing from the car: asleep, out of signal, or the gateway signed out.",
+    "kinds": {
+      "locked": "Locked",
+      "unlocked": "Unlocked",
+      "doorOpened": "A door opened",
+      "doorsClosed": "Doors closed",
+      "plugged": "Plugged in",
+      "unplugged": "Unplugged",
+      "chargingStarted": "Charging started",
+      "chargingStopped": "Charging stopped",
+      "climateOn": "Climate on",
+      "climateOff": "Climate off",
+      "driveStarted": "Drive started",
+      "driveEnded": "Parked"
+    },
+    "driving": "Driving",
+    "charging": "Charging",
+    "drives": "{n} drive | {n} drives",
+    "sessions": "{n} session | {n} sessions",
+    "woken": "Times woken",
+    "readingsNote": "no readings | {n} reading | {n} readings",
+    "dayStrip": "The day at a glance",
+    "quiet": "No data",
+    "otherEvents": "Doors, locks, climate"
+  },
+  "calendar": {
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "jumpToToday": "Jump to today",
+    "week": "This week",
+    "close": "Close",
+    "monthAndSearch": "Month and search"
+  },
+  "logSearch": {
+    "label": "Search",
+    "from": "From",
+    "to": "To",
+    "search": "Search",
+    "clear": "Clear",
+    "range": "{from} – {to}",
+    "invalid": {
+      "missing": "Pick both days.",
+      "backwards": "The last day comes before the first.",
+      "tooLong": "Search at most a year at a time."
+    }
+  },
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Month by month: what you drove, what it used, what you charged and what it cost, set against the month before.",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "thisMonth": "This month",
+    "emptyMonth": "Nothing driven or charged in {month} yet.",
+    "change": "{change} vs {month}",
+    "unpriced": "1 charge has no price | {n} charges have no price",
+    "yearTitle": "The year month by month",
+    "tiles": {
+      "distance": "Distance",
+      "trips": "Trips",
+      "drivingTime": "Driving time",
+      "daysDriven": "Days driven",
+      "efficiency": "Consumption",
+      "energyUsed": "Energy used",
+      "charges": "Charges",
+      "charged": "Charged",
+      "chargingCost": "Charging cost",
+      "costPer100": "Cost per distance"
+    },
+    "table": {
+      "month": "Month",
+      "trips": "Trips",
+      "distance": "Distance ({unit})",
+      "efficiency": "Use ({unit})",
+      "charges": "Charges",
+      "charged": "Charged (kWh)",
+      "cost": "Cost",
+      "total": "Total"
+    },
+    "emptyRun": "{from} – {to}: nothing recorded",
+    "barsTitle": "Distance per month ({unit})"
+  },
+  "overview": {
+    "battery": "Battery",
+    "range": "Range",
+    "limit": "Charge limit {percent}%",
+    "atLimit": "At {percent}%: {range}",
+    "atFull": "At 100%: {range}",
+    "state": "State",
+    "states": {
+      "driving": "Driving",
+      "charging": "Charging",
+      "pluggedIn": "Plugged in",
+      "parked": "Parked"
+    },
+    "outside": "Outside",
+    "cabin": "Cabin",
+    "drivenToday": "Driven today",
+    "sinceCharge": "Since last charge",
+    "lastUpdate": "Last update",
+    "showTiles": "Show the status tiles under the overview",
+    "charge": {
+      "title": "Last charge",
+      "all": "All charges →",
+      "added": "Added",
+      "battery": "Battery",
+      "when": "When",
+      "where": "Where",
+      "fromWall": "From the wall",
+      "cost": "Cost",
+      "none": "No charges in the last 60 days."
+    },
+    "trips": {
+      "title": "Recent trips",
+      "all": "All trips →",
+      "none": "No trips in the last two weeks.",
+      "week": "Last 7 days",
+      "count": "{n} trip | {n} trips"
+    },
+    "attention": {
+      "title": "Needs attention",
+      "overdue": "{name} is overdue",
+      "dueSoon": "{name} is due soon",
+      "dueOn": "due {date}",
+      "past": "{distance} past",
+      "left": "{distance} left",
+      "low12v": "12V battery is low",
+      "lowTyre": "A tyre is low | {n} tyres are low"
+    },
+    "controls": "Controls"
   }
 }

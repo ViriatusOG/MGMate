@@ -17,8 +17,9 @@ let fetchPromise: Promise<void> | null = null
 
 function load(): Promise<void> {
   if (!fetchPromise) {
-    fetchPromise = vehicleApi
-      .tyrePressureThresholds()
+    // Started inside a promise so a client without the call fails like a failed request would.
+    fetchPromise = Promise.resolve()
+      .then(() => vehicleApi.tyrePressureThresholds())
       .then((result) => {
         thresholds.value = result
       })

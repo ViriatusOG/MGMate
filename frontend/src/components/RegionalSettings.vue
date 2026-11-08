@@ -5,10 +5,11 @@ import { CLOCK_SETTINGS, useUiSettingsStore, type RegionSetting } from '@/stores
 import { useVehicleStore } from '@/stores/vehicle'
 import { clockExample } from '@/utils/format'
 import { REGIONS, regionHourCycle, regionName, type HourCycle } from '@/utils/region'
-import { mayBurnFuel } from '@/utils/vehicleType'
+import { mayBurnFuel, mayPlugIn } from '@/utils/vehicleType'
 import SettingsSelect, { type SettingsSelectOption } from './SettingsSelect.vue'
 import {
   DISTANCE_UNITS,
+  ENERGY_EFFICIENCY_UNITS,
   FUEL_CONSUMPTION_UNITS,
   PRESSURE_UNITS,
   regionUnits,
@@ -71,6 +72,9 @@ function unitChoice(key: keyof UnitSettings, units: readonly string[], desc?: st
 // it is offered, as the dashboard offers its fuel cards then too.
 const offersFuelConsumption = computed(() => mayBurnFuel(vehicleStore.effectiveVehicleType))
 
+// Likewise energy efficiency, for a car with a battery to plug in.
+const offersEnergyEfficiency = computed(() => mayPlugIn(vehicleStore.effectiveVehicleType))
+
 const unitChoices = computed((): UnitChoice[] => [
   unitChoice('distance', DISTANCE_UNITS, t('settings.units.distanceDesc')),
   unitChoice('temperature', TEMPERATURE_UNITS),
@@ -81,6 +85,15 @@ const unitChoices = computed((): UnitChoice[] => [
           'fuelConsumption',
           FUEL_CONSUMPTION_UNITS,
           t('settings.units.fuelConsumptionDesc'),
+        ),
+      ]
+    : []),
+  ...(offersEnergyEfficiency.value
+    ? [
+        unitChoice(
+          'energyEfficiency',
+          ENERGY_EFFICIENCY_UNITS,
+          t('settings.units.energyEfficiencyDesc'),
         ),
       ]
     : []),

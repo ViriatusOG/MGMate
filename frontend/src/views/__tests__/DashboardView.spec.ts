@@ -8,6 +8,7 @@ import { vehicleApi, type TelemetrySnapshot, type Trip, type Vehicle } from '@/s
 import { rdwApi } from '@/services/rdwApi'
 import { ApiError } from '@/services/apiCore'
 import { useVehicleStore } from '@/stores/vehicle'
+import { useDashboardSettingsStore } from '@/stores/settingsDashboard'
 
 vi.mock('@/services/vehicleApi', () => ({
   vehicleApi: {
@@ -61,6 +62,10 @@ async function mountView() {
         FontAwesomeIcon: true,
         CarDiagram: true,
         LocationMapWidget: true,
+        BatteryOverviewCard: true,
+        LastChargeCard: true,
+        RecentTripsCard: true,
+        NeedsAttention: true,
         CardInfoWrap: { template: '<div><slot /></div>' },
         DashboardCardContent: {
           props: ['cardId'],
@@ -105,7 +110,14 @@ describe('DashboardView', () => {
       expect(call).toHaveBeenCalledWith('FAKEVN00000000001')
   })
 
+  it('shows only the control tiles until the full set is switched on', async () => {
+    const wrapper = await mountView()
+
+    expect(cardIds(wrapper)).toEqual(['doors', 'climate', 'windows', 'findMyCar'])
+  })
+
   it("shows the cards the car's drivetrain has, and leaves out the ones it has no use for", async () => {
+    useDashboardSettingsStore(pinia).showStatusCards = true
     const wrapper = await mountView()
 
     const shown = cardIds(wrapper)

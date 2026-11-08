@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { energyUnit, hvBatteryReading, litres, litresPer100Km, whPerKm } from '@/utils/energy'
+import {
+  energyUnit,
+  hvBatteryReading,
+  litres,
+  litresPer100Km,
+  tripEnergy,
+  whPerKm,
+} from '@/utils/energy'
 import type { TelemetrySnapshot } from '@/services/vehicleApi'
 
 type HvFields = Pick<TelemetrySnapshot, 'evSocPercent' | 'hvSocKwh' | 'hvTotalCapacityKwh'>
@@ -110,5 +117,35 @@ describe('hvBatteryReading', () => {
     expect(reading.socPercent).toBeNull()
     expect(reading.storedKwh).toBeNull()
     expect(reading.capacityKwh).toBeNull()
+  })
+})
+
+describe('tripEnergy', () => {
+  it("takes the car's own count first", () => {
+    const energy = tripEnergy(
+      { energyCounterUsed: 3.2, socStartPercent: 80, socEndPercent: 70 },
+      20,
+      'bev',
+      64,
+    )
+    expect(energy).toEqual({ kwh: 3.2, source: 'car', whPerKm: 160 })
+  })
+
+  it('estimates from the drop in state of charge without one', () => {
+    const energy = tripEnergy({ socStartPercent: 80, socEndPercent: 75 }, 20, 'bev', 64)
+    expect(energy?.source).toBe('soc')
+    expect(energy?.kwh).toBeCloseTo(3.2, 6)
+    expect(energy?.whPerKm).toBeCloseTo(160, 6)
+  })
+
+  it('gives nothing without a capacity to scale the drop by, or a drop at all', () => {
+    expect(tripEnergy({ socStartPercent: 80, socEndPercent: 75 }, 20, 'bev', null)).toBeNull()
+    expect(tripEnergy({ socStartPercent: 75, socEndPercent: 75 }, 20, 'bev', 64)).toBeNull()
+    expect(tripEnergy({ socStartPercent: 70, socEndPercent: 75 }, 20, 'bev', 64)).toBeNull()
+    expect(tripEnergy({}, 20, 'bev', 64)).toBeNull()
+  })
+
+  it('leaves a plain hybrid out, whose counter holds fuel', () => {
+    expect(tripEnergy({ energyCounterUsed: 120 }, 20, 'hev', null)).toBeNull()
   })
 })

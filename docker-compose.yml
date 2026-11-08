@@ -104,6 +104,8 @@ services:
       MQTT_PASSWORD: "${MQTT_BROKER_PASSWORD:?Set MQTT_BROKER_PASSWORD in your .env file, see .env.example}"
       SAIC_REGION: "${SAIC_REGION:-eu}"
       SAIC_REST_URI: "${SAIC_REST_URI:-}"
+      # Reads MG's cached copy of the car's status; never wakes the car. 0 turns it off.
+      CACHED_STATUS_INTERVAL: "${CACHED_STATUS_INTERVAL:-1800}"
     volumes:
       - ./docker/resolve-saic-rest-uri.sh:/resolve-saic-rest-uri.sh:ro
     entrypoint: ["/bin/sh", "-c"]

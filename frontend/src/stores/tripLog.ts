@@ -45,8 +45,13 @@ export const useTripLogStore = defineStore('tripLog', () => {
   const summary = computed(() => periodSummary(visibleEntries.value))
 
   async function fetchLog(vin: string, period: TripLogPeriod) {
-    const load = ++latestLoad
     const { from, to } = periodRange(period)
+    await fetchRange(vin, from, to)
+  }
+
+  /** The trips between two moments, for a search over days that are not one month or year. */
+  async function fetchRange(vin: string, from: Date, to: Date) {
+    const load = ++latestLoad
     await withLoading(loadError, async () => {
       const loaded = await tripLogApi.log(vin, from.toISOString(), to.toISOString())
       if (load === latestLoad) entries.value = loaded
@@ -245,6 +250,7 @@ export const useTripLogStore = defineStore('tripLog', () => {
     totals,
     summary,
     fetchLog,
+    fetchRange,
     updateEntry,
     classifyUnclassified,
     setHidden,

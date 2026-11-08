@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { dueStatusVariant, formatIntervalSummary } from '@/utils/maintenance'
+import { dueProgress, dueStatusVariant, formatIntervalSummary } from '@/utils/maintenance'
 import { METRIC_UNITS, UnitFormatter } from '@/utils/units'
 
 const t = (key: string, named?: Record<string, unknown>) =>
@@ -36,5 +36,28 @@ describe('dueStatusVariant', () => {
     expect(
       (['overdue', 'dueSoon', 'ok', 'unknown'] as const).map((status) => dueStatusVariant(status)),
     ).toEqual(['danger', 'warning', 'success', 'info'])
+  })
+})
+
+describe('dueProgress', () => {
+  it('measures how far through each interval an item is', () => {
+    const p = dueProgress({
+      intervalKm: 10000,
+      intervalMonths: 12,
+      kmRemaining: 2500,
+      daysRemaining: -10,
+    })
+    expect(p.distance).toEqual({ used: 0.75, remaining: 2500 })
+    expect(p.time).toEqual({ used: 1, remaining: -10 })
+  })
+
+  it('leaves out an interval the item has no figures for', () => {
+    const p = dueProgress({
+      intervalKm: null,
+      intervalMonths: 24,
+      kmRemaining: null,
+      daysRemaining: null,
+    })
+    expect(p).toEqual({ distance: null, time: null })
   })
 })
