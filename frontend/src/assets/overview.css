@@ -308,46 +308,124 @@
   flex: 1 1 auto;
   flex-direction: column;
   gap: 0.25rem;
-  min-height: 5rem;
+  min-height: 9rem;
   margin: 0;
 }
 
-.ov-spark {
-  display: block;
+/* The chart under a card: legend, then a box that fills what the card has left. */
+.ov-chart {
+  display: flex;
   flex: 1 1 auto;
-  width: 100%;
-  min-height: 3.5rem;
-  max-height: 10rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 0;
+}
+
+.ov-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.ov-chart__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ov-chart__legend i {
+  display: inline-block;
+  width: 1rem;
+  border-top: 2px solid var(--tone);
+}
+
+.ov-chart__legend i.is-dashed {
+  border-top-style: dashed;
+}
+
+.ov-chart__box {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 7rem;
+  max-height: 13rem;
+}
+
+.ov-chart__svg {
+  position: absolute;
+  inset: 0;
+  display: block;
   overflow: visible;
 }
 
-.ov-spark__line {
+.ov-chart__svg text {
+  font-size: 10.5px;
+  fill: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-chart__axis.is-success text,
+.ov-chart__axis.is-warning text,
+.ov-chart__axis.is-info text {
+  fill: var(--tone);
+}
+
+.ov-chart__svg .ov-chart__unit {
+  font-weight: 600;
+}
+
+.ov-chart__grid {
+  stroke: var(--color-border);
+  stroke-dasharray: 2 3;
+}
+
+.ov-chart__grid.is-base,
+.ov-chart__tick {
+  stroke: var(--color-text-muted);
+  stroke-dasharray: none;
+  opacity: 0.6;
+}
+
+.ov-chart__line {
   fill: none;
   stroke: var(--tone);
   stroke-width: 2;
   stroke-linejoin: round;
 }
 
-.ov-spark__line.is-dashed {
-  stroke-width: 1.5;
+.ov-chart__line.is-dashed {
+  stroke-width: 1.6;
   stroke-dasharray: 4 3;
 }
 
-.ov-spark__area {
+.ov-chart__area {
   fill: var(--tone);
   stroke: none;
   opacity: 0.18;
 }
 
-.ov-spark .is-success {
+.ov-chart__peak circle {
+  fill: var(--tone);
+}
+
+.ov-chart__svg .ov-chart__peak text {
+  fill: var(--tone);
+  font-weight: 600;
+}
+
+.ov-chart .is-success {
   --tone: var(--color-success);
 }
 
-.ov-spark .is-warning {
+.ov-chart .is-warning {
   --tone: var(--color-warning);
 }
 
-.ov-spark .is-info {
+.ov-chart .is-info {
   --tone: var(--color-info);
 }
 

@@ -1543,6 +1543,13 @@
     },
     "controls": "Bediening",
     "socDay": "Laadniveau, laatste 24 u",
+    "chart": {
+      "now": "Nu",
+      "soc": "Laadniveau (SOC %)",
+      "power": "Vermogen (kW)",
+      "peak": "{value} kW piek",
+      "last24h": "Laatste 24 u"
+    },
     "live": {
       "title": "Laden",
       "target": "Doel {percent}%",
