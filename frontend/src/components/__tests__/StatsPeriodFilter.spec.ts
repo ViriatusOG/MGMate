@@ -29,6 +29,7 @@ describe('StatsPeriodFilter', () => {
     const options = wrapper.findAll('option').map((o) => o.text())
 
     expect(options).toEqual([
+      'Last 24 hours',
       'Last 7 days',
       'Last 30 days',
       'Last 90 days',

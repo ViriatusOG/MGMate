@@ -32,6 +32,30 @@ function shown(period: StatsPeriod) {
 }
 
 describe('resolveStatsPeriod', () => {
+  it('reaches back 24 hours from now, over the days those hours touch', () => {
+    const resolved = resolveStatsPeriod(preset('last24h'), NOW)
+
+    expect(resolved.since).toEqual(new Date(2026, 9, 12, 15, 30))
+    expect(shown(preset('last24h'))).toEqual({
+      first: '2026-10-12',
+      last: '2026-10-13',
+      days: 2,
+      grouping: 'day',
+    })
+  })
+
+  it('asks for trips from 24 hours ago up to now', () => {
+    const query = statsQuery(resolveStatsPeriod(preset('last24h'), NOW), NOW)
+
+    expect(query).toEqual({
+      fromDate: '2026-10-12',
+      toDate: '2026-10-13',
+      fromIso: new Date(2026, 9, 12, 15, 30).toISOString(),
+      toIso: undefined,
+    })
+    expect(isStatsPeriod(preset('last24h'))).toBe(true)
+  })
+
   it('counts the last days back from today, like the map does', () => {
     expect(shown(preset('last7'))).toEqual({
       first: '2026-10-06',

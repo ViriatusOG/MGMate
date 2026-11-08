@@ -119,6 +119,7 @@
       "label": "Period",
       "desc": "The days the statistics cover. Longer periods are charted per week, and per month beyond a year.",
       "preset": {
+        "last24h": "Last 24 hours",
         "last7": "Last 7 days",
         "last30": "Last 30 days",
         "last90": "Last 90 days",
@@ -129,8 +130,10 @@
         "custom": "Custom dates"
       },
       "from": "From",
+      "now": "now",
       "to": "To",
       "chip": {
+        "last24h": "24 h",
         "last7": "7 d",
         "last30": "30 d",
         "last90": "90 d",

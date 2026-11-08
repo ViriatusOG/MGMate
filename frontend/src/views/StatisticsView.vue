@@ -26,7 +26,7 @@ import SkeletonChart from '@/components/SkeletonChart.vue'
 import StatusCard from '@/components/StatusCard.vue'
 import StatsChartCard from '@/components/StatsChartCard.vue'
 import type EditableCardGridComponent from '@/components/EditableCardGrid.vue'
-import { DAY_MONTH, formatDate, formatHour, formatNumber } from '@/utils/format'
+import { DAY_MONTH, formatDate, formatDateTime, formatHour, formatNumber } from '@/utils/format'
 import { resolveStatsPeriod, statsQuery } from '@/utils/statsPeriod'
 import { energyUnit } from '@/utils/energy'
 import { burnsFuel, plugsIn } from '@/utils/vehicleType'
@@ -70,7 +70,10 @@ const tripLog = ref<TripLogEntry[]>([])
 const period = computed(() => resolveStatsPeriod(uiSettings.statsPeriod))
 
 const periodLabel = computed(() => {
-  const { first, last } = period.value
+  const { first, last, since } = period.value
+  // A rolling period of hours starts at a time of day, not at midnight.
+  if (since)
+    return `${formatDateTime(since, { ...DAY_MONTH, hour: 'numeric', minute: '2-digit' })} - ${t('statistics.period.now')}`
   const sameYear = first.getFullYear() === last.getFullYear()
   const from = formatDate(first, {
     day: 'numeric',
@@ -108,8 +111,13 @@ async function load() {
 }
 
 onMounted(load)
-// By its days rather than its preset: "this month" and a custom period can be the same days.
-watch(() => `${period.value.first.getTime()}-${period.value.last.getTime()}`, load)
+// By its days rather than its preset: "this month" and a custom period can be the same days. The
+// last 24 hours also counts its start, so it differs from the custom days it shares.
+watch(
+  () =>
+    `${period.value.first.getTime()}-${period.value.last.getTime()}-${period.value.since?.getTime() ?? ''}`,
+  load,
+)
 
 // Trip just finished: refresh stats and trip list silently
 watch(
