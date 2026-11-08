@@ -158,13 +158,15 @@ public sealed class TelemetryHandler(
         int vehicleId, TelemetrySnapshot patch, ITelemetryRepository telemetryRepo, IVehicleRepository vehicleRepo,
         ICommutePlaceRepository places, CancellationToken ct)
     {
-        if (patch is { Latitude: null, Longitude: null }) return;
         if (!_awaitingParkedFix.TryGetValue(vehicleId, out var parkedAt)) return;
+        // Past the window any message ends the wait, fix or not, so a car parked where it has no
+        // GPS (a garage) does not leave its entry behind until it next moves.
         if (patch.RecordedAt - parkedAt > MergeWindow)
         {
             _awaitingParkedFix.TryRemove(vehicleId, out _);
             return;
         }
+        if (patch is { Latitude: null, Longitude: null }) return;
 
         var merged = await telemetryRepo.GetMergedLatestAsync(vehicleId, ct);
         await vehicleRepo.SetParkedAsync(vehicleId, parkedAt, merged?.Latitude, merged?.Longitude, ct);
