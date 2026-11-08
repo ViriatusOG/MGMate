@@ -34,6 +34,6 @@ dotnet_sort_system_directives_first = true
 csharp_using_directive_placement = outside_namespace:warning
 dotnet_diagnostic.IDE0005.severity = warning
 
-# EF Core migrations are exempted by src/GarageStack.Data/Migrations/.editorconfig rather than a
+# EF Core migrations are exempted by src/MGMate.Data/Migrations/.editorconfig rather than a
 # path section here: the Dockerfiles copy projects to /src without the src/ prefix, so a
 # repository-relative path would stop matching inside the container build.

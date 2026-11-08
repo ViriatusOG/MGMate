@@ -73,8 +73,8 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       manifest: {
-        name: 'GarageStack',
-        short_name: 'GarageStack',
+        name: 'MGMate',
+        short_name: 'MGMate',
         description: 'MG vehicle telemetry dashboard',
         theme_color: '#0f1117',
         background_color: '#0f1117',

@@ -69,25 +69,25 @@ jobs:
         include:
           # All-in-one image (frontend + API + worker + postgres + mosquitto + saic gateway)
           - label: all-in-one
-            image: garagestack
+            image: mgmate
             context: .
             dockerfile: docker/all-in-one/Dockerfile
 
           # Individual service images (used with docker-compose)
           - label: frontend
-            image: garagestack-frontend
+            image: mgmate-frontend
             context: ./frontend
             dockerfile: frontend/Dockerfile
 
           - label: api
-            image: garagestack-api
+            image: mgmate-api
             context: .
-            dockerfile: src/GarageStack.Api/Dockerfile
+            dockerfile: src/MGMate.Api/Dockerfile
 
           - label: worker
-            image: garagestack-worker
+            image: mgmate-worker
             context: .
-            dockerfile: src/GarageStack.Worker/Dockerfile
+            dockerfile: src/MGMate.Worker/Dockerfile
 
     steps:
       - name: Checkout
@@ -214,6 +214,8 @@ jobs:
 
       - name: Sign image with Cosign
         if: env.RELEASE_GRADE == 'true'
+        # An image reference must be lower case, and the owner name may not be (ViriatusOG).
+        env:
+          IMAGE_REF: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}@${{ steps.build.outputs.digest }}
         run: |
-          cosign sign --yes \
-            "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}@${{ steps.build.outputs.digest }}"
+          cosign sign --yes "${IMAGE_REF,,}"

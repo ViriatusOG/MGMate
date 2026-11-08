@@ -3,7 +3,7 @@ import { useUiSettingsStore } from '@/stores/settingsUi'
 import { notificationCategoryId } from '@/utils/notificationCategories'
 
 // The same tag the service worker gives a push, so a newer notice of a kind replaces the last.
-const FALLBACK_TAG = 'garagestack-notification'
+const FALLBACK_TAG = 'mgmate-notification'
 
 async function hasPushSubscription(): Promise<boolean> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false

@@ -9,4 +9,4 @@ for _ in $(seq 1 60); do
     sleep 1
 done
 
-echo "[garagestack] postgres did not become ready within 60s, starting anyway" >&2
+echo "[mgmate] postgres did not become ready within 60s, starting anyway" >&2

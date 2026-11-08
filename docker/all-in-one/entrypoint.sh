@@ -30,7 +30,7 @@ if [ -z "${POSTGRES_PASSWORD:-}" ]; then
         POSTGRES_PASSWORD="$(openssl rand -hex 32)"
         echo "${POSTGRES_PASSWORD}" > /data/.postgres_password
         chmod 600 /data/.postgres_password
-        echo "[garagestack] POSTGRES_PASSWORD not set -- auto-generated and saved to /data/.postgres_password"
+        echo "[mgmate] POSTGRES_PASSWORD not set -- auto-generated and saved to /data/.postgres_password"
     fi
 fi
 
@@ -42,7 +42,7 @@ if [ -z "${MQTT_BROKER_PASSWORD:-}" ]; then
 fi
 
 # The .NET services read the template's variables (OIDC_AUTHORITY, WIDGET_API_KEY, ...) under
-# the names the template uses (src/GarageStack.Core/Configuration/EnvironmentAliases.cs), and
+# the names the template uses (src/MGMate.Core/Configuration/EnvironmentAliases.cs), and
 # treat an empty one as "use the default". Only what this container derives is set here, under
 # each setting's own key, which wins over the template's variable of the same meaning.
 
@@ -90,20 +90,20 @@ chown mosquitto:mosquitto /data/db/mosquitto
 # Guard on a dedicated marker file rather than PG_VERSION so we can recover
 # from a partial initialisation: a container that crashed after initdb wrote
 # PG_VERSION but before CREATE ROLE executed leaves the cluster without the
-# garagestack role, causing 28P01 ("password authentication failed") on every
+# mgmate role, causing 28P01 ("password authentication failed") on every
 # subsequent start because Postgres hides role-not-found behind that error code.
 DB_INIT_MARKER="/data/.db_initialized"
 
 if [ ! -f "$DB_INIT_MARKER" ]; then
     if [ ! -f "$PGDATA/PG_VERSION" ]; then
-        echo "[garagestack] Initialising PostgreSQL data directory..."
+        echo "[mgmate] Initialising PostgreSQL data directory..."
         chown -R postgres:postgres /data/db/postgres /data/logs
         # Only this script (as the postgres OS user) uses the socket, and the .NET services connect
         # over TCP with their password, so nothing else in the container gets into the database.
         as_postgres /usr/lib/postgresql/18/bin/initdb \
             -D "$PGDATA" --auth-host=scram-sha-256 --auth-local=peer -E UTF8 --locale=C
     else
-        echo "[garagestack] Resuming PostgreSQL setup (partial initialisation detected)..."
+        echo "[mgmate] Resuming PostgreSQL setup (partial initialisation detected)..."
         chown -R postgres:postgres /data/db/postgres /data/logs
     fi
 
@@ -128,7 +128,7 @@ EOSQL
 
     as_postgres /usr/lib/postgresql/18/bin/pg_ctl -D "$PGDATA" stop -w
     touch "$DB_INIT_MARKER"
-    echo "[garagestack] PostgreSQL initialised."
+    echo "[mgmate] PostgreSQL initialised."
 fi
 
 chown -R postgres:postgres /data/db/postgres /data/logs
@@ -140,7 +140,7 @@ chown -R postgres:postgres /data/db/postgres /data/logs
 # first (the plaintext is POSTGRES_PASSWORD, which the services connect with), and only then are
 # initdb's own default lines switched over. Runs once: afterwards nothing matches.
 if grep -Eq '^(local[[:space:]].*[[:space:]]trust|host[[:space:]].*[[:space:]]md5)[[:space:]]*$' "$PGDATA/pg_hba.conf"; then
-    echo "[garagestack] Moving PostgreSQL authentication to peer (socket) and scram-sha-256 (TCP)..."
+    echo "[mgmate] Moving PostgreSQL authentication to peer (socket) and scram-sha-256 (TCP)..."
     as_postgres /usr/lib/postgresql/18/bin/pg_ctl -D "$PGDATA" \
         -l /data/logs/postgres-init.log start -w
     as_postgres psql -v ON_ERROR_STOP=1 \
@@ -156,8 +156,8 @@ EOSQL
         -e 's/^(local[[:space:]].*[[:space:]])trust[[:space:]]*$/\1peer/' \
         -e 's/^(host[[:space:]].*[[:space:]])md5[[:space:]]*$/\1scram-sha-256/' \
         "$PGDATA/pg_hba.conf"
-    echo "[garagestack] PostgreSQL authentication tightened."
+    echo "[mgmate] PostgreSQL authentication tightened."
 fi
 
-echo "[garagestack] Starting all services via supervisord..."
+echo "[mgmate] Starting all services via supervisord..."
 exec /usr/local/bin/supervisord -n -c /etc/supervisor/supervisord.conf

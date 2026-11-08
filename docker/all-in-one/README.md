@@ -1,14 +1,14 @@
-# GarageStack -- All-in-One Container
+# MGMate -- All-in-One Container
 
-Single container that bundles every GarageStack service. Designed for Unraid and similar NAS/homelab environments where running multiple containers is inconvenient.
+Single container that bundles every MGMate service. Designed for Unraid and similar NAS/homelab environments where running multiple containers is inconvenient.
 
 ## What runs inside
 
 | Process | Role |
 |---------|------|
 | **nginx** | Serves the Vue SPA on port 80; proxies `/api/` and `/hubs/` to the .NET API |
-| **GarageStack.Api** | ASP.NET Core REST API (localhost:9000, not directly exposed) |
-| **GarageStack.Worker** | .NET background service -- stores the gateway's telemetry, saves trips, sends push notifications, runs climate schedules, pre-caches map overlays and keeps the database tidy |
+| **MGMate.Api** | ASP.NET Core REST API (localhost:9000, not directly exposed) |
+| **MGMate.Worker** | .NET background service -- stores the gateway's telemetry, saves trips, sends push notifications, runs climate schedules, pre-caches map overlays and keeps the database tidy |
 | **PostgreSQL 18** | Embedded database (localhost:5432, not directly exposed) |
 | **Mosquitto** | MQTT broker on port 1883 with username/password auth and ACL |
 | **SAIC MQTT Gateway** | Python 3.14 service that polls the MG iSmart cloud and publishes telemetry to Mosquitto. Copied from the official `saicismartapi/saic-python-mqtt-gateway` image. |
@@ -61,7 +61,7 @@ Every other variable works here as well, under the same name as in Docker Compos
 | `POSTGRES_PASSWORD` | Generated on first start and saved to `/data/.postgres_password` when not set. Set it only if you need a known value, for example to connect an external tool to the database. |
 | `MQTT_BROKER_PASSWORD` | Generated on every start when not set. Set it if you publish port 1883 and connect other clients. |
 | `MQTT_HOST` / `MQTT_PORT` | Ignored: the services always use the broker inside the container. |
-| `AUTH_COOKIE_SECURE` | Defaults to `auto`: the session cookie is marked Secure whenever GarageStack is opened over HTTPS (also behind a TLS-terminating proxy), and a plain-HTTP LAN address still works. `true` always marks it Secure, `false` never does. |
+| `AUTH_COOKIE_SECURE` | Defaults to `auto`: the session cookie is marked Secure whenever MGMate is opened over HTTPS (also behind a TLS-terminating proxy), and a plain-HTTP LAN address still works. `true` always marks it Secure, `false` never does. |
 
 ## Building the image
 
@@ -72,7 +72,7 @@ macOS/Linux:
 ```bash
 docker build \
   -f docker/all-in-one/Dockerfile \
-  -t garagestack-aio:local \
+  -t mgmate-aio:local \
   .
 ```
 
@@ -81,7 +81,7 @@ Windows (PowerShell):
 ```powershell
 docker build `
   -f docker/all-in-one/Dockerfile `
-  -t garagestack-aio:local `
+  -t mgmate-aio:local `
   .
 ```
 
@@ -91,15 +91,15 @@ docker build `
 
 ```bash
 docker run -d \
-  --name garagestack \
+  --name mgmate \
   --restart unless-stopped \
   -p 8080:80 \
-  -v ./garagestack-data:/data \
+  -v ./mgmate-data:/data \
   -e SAIC_USER=your@email.com \
   -e SAIC_PASSWORD=yourpassword \
   -e SAIC_REGION=eu \
   -e CORS_ORIGIN=http://localhost:8080 \
-  ghcr.io/joszz/garagestack:latest
+  ghcr.io/viriatusog/mgmate:latest
 ```
 
 ### Windows (PowerShell)
@@ -108,15 +108,15 @@ docker run -d \
 
 ```powershell
 docker run -d `
-  --name garagestack `
+  --name mgmate `
   --restart unless-stopped `
   -p 8080:80 `
-  -v "${PWD}\garagestack-data:/data" `
+  -v "${PWD}\mgmate-data:/data" `
   -e SAIC_USER=your@email.com `
   -e SAIC_PASSWORD=yourpassword `
   -e SAIC_REGION=eu `
   -e CORS_ORIGIN=http://localhost:8080 `
-  ghcr.io/joszz/garagestack:latest
+  ghcr.io/viriatusog/mgmate:latest
 ```
 
 > `POSTGRES_PASSWORD` is omitted -- a random password is auto-generated on first start and saved to `/data/.postgres_password`. Pass `-e POSTGRES_PASSWORD=yourpassword` if you need a known value (e.g. to connect with an external DB tool).
@@ -128,63 +128,63 @@ Once running, open `http://localhost:8080` in your browser. The first start init
 ### View live logs (PowerShell or bash)
 
 ```powershell
-docker logs -f garagestack
+docker logs -f mgmate
 ```
 
 The API's and the Worker's own log files are on the **Logs** page in the web UI. On disk they are in `/data/api` and `/data/worker`; the other services' console output is in `/data/logs`:
 
 ```powershell
 # Tail today's API log from the host
-Get-Content -Wait (Get-ChildItem garagestack-data\api\api-*.log | Sort-Object Name | Select-Object -Last 1)
+Get-Content -Wait (Get-ChildItem mgmate-data\api\api-*.log | Sort-Object Name | Select-Object -Last 1)
 
 # The gateway's output
-Get-Content -Wait garagestack-data\logs\saic-gateway.log
+Get-Content -Wait mgmate-data\logs\saic-gateway.log
 ```
 
 ### Stop and start
 
 ```powershell
-docker stop garagestack
-docker start garagestack
+docker stop mgmate
+docker start mgmate
 ```
 
-The container picks up where it left off on restart -- the database and data protection keys are persisted in the mounted `garagestack-data` directory.
+The container picks up where it left off on restart -- the database and data protection keys are persisted in the mounted `mgmate-data` directory.
 
 ### Remove
 
 ```powershell
-docker rm -f garagestack
+docker rm -f mgmate
 ```
 
-This removes the container but **keeps** `garagestack-data`. To also wipe the data:
+This removes the container but **keeps** `mgmate-data`. To also wipe the data:
 
 ```powershell
-docker rm -f garagestack
-Remove-Item -Recurse -Force garagestack-data
+docker rm -f mgmate
+Remove-Item -Recurse -Force mgmate-data
 ```
 
 ### Backup and restore
 
-Everything -- the PostgreSQL database, Mosquitto retained messages, logs, and DataProtection keys -- lives under `garagestack-data`. Stop the container first so nothing is mid-write, then copy the whole directory:
+Everything -- the PostgreSQL database, Mosquitto retained messages, logs, and DataProtection keys -- lives under `mgmate-data`. Stop the container first so nothing is mid-write, then copy the whole directory:
 
 ```powershell
-docker stop garagestack
-Copy-Item -Recurse garagestack-data garagestack-data-backup
-docker start garagestack
+docker stop mgmate
+Copy-Item -Recurse mgmate-data mgmate-data-backup
+docker start mgmate
 ```
 
 ```bash
-docker stop garagestack
-cp -r garagestack-data garagestack-data-backup
-docker start garagestack
+docker stop mgmate
+cp -r mgmate-data mgmate-data-backup
+docker start mgmate
 ```
 
-To restore, stop the container, replace `garagestack-data` with the backup, and start it again. Only the database (`garagestack-data/db/postgres`) and DataProtection keys (`garagestack-data/dataprotection`) actually matter for disaster recovery -- losing the keys just logs everyone out, it doesn't lose any vehicle data.
+To restore, stop the container, replace `mgmate-data` with the backup, and start it again. Only the database (`mgmate-data/db/postgres`) and DataProtection keys (`mgmate-data/dataprotection`) actually matter for disaster recovery -- losing the keys just logs everyone out, it doesn't lose any vehicle data.
 
 A dump of the database alone, taken while the container runs, is a smaller backup that also moves between PostgreSQL versions:
 
 ```bash
-docker exec -u postgres garagestack pg_dump --clean --if-exists garagestack > garagestack-backup.sql
+docker exec -u postgres mgmate pg_dump --clean --if-exists garagestack > mgmate-backup.sql
 ```
 
 ### Moving to a new PostgreSQL major version
@@ -194,17 +194,17 @@ The image bundles PostgreSQL 18, and a PostgreSQL major version cannot read the 
 1. **Dump the database with the image you run now**, as above, and keep a copy of the whole folder too:
 
    ```bash
-   docker exec -u postgres garagestack pg_dump --clean --if-exists garagestack > garagestack-backup.sql
-   docker stop garagestack
-   cp -r garagestack-data garagestack-data-backup
+   docker exec -u postgres mgmate pg_dump --clean --if-exists garagestack > mgmate-backup.sql
+   docker stop mgmate
+   cp -r mgmate-data mgmate-data-backup
    ```
 
 2. **Put the old database aside**, so the new image starts a fresh one. `.db_initialized` is what tells the container its database is set up already:
 
    ```bash
-   docker rm garagestack
-   mv garagestack-data/db/postgres garagestack-data/db/postgres-old
-   rm garagestack-data/.db_initialized
+   docker rm mgmate
+   mv mgmate-data/db/postgres mgmate-data/db/postgres-old
+   rm mgmate-data/.db_initialized
    ```
 
 3. **Start the new image** with your usual `docker run` command, and wait for the web interface to answer. It creates an empty database, keeping the password in `.postgres_password`.
@@ -212,12 +212,12 @@ The image bundles PostgreSQL 18, and a PostgreSQL major version cannot read the 
 4. **Load the dump into it**, with the API and the Worker stopped so nothing writes meanwhile. The dump drops the empty tables before it loads its own:
 
    ```bash
-   docker exec garagestack supervisorctl stop api worker
-   docker exec -i -u postgres garagestack psql -v ON_ERROR_STOP=1 garagestack < garagestack-backup.sql
-   docker exec garagestack supervisorctl start api worker
+   docker exec mgmate supervisorctl stop api worker
+   docker exec -i -u postgres mgmate psql -v ON_ERROR_STOP=1 garagestack < mgmate-backup.sql
+   docker exec mgmate supervisorctl start api worker
    ```
 
-5. **Check the app**, then remove `garagestack-data/db/postgres-old` and the backup copy once you are sure. To go back instead, stop the container, put `garagestack-data-backup` back in place of `garagestack-data`, and run the previous image.
+5. **Check the app**, then remove `mgmate-data/db/postgres-old` and the backup copy once you are sure. To go back instead, stop the container, put `mgmate-data-backup` back in place of `mgmate-data`, and run the previous image.
 
 Docker Compose with the bundled database works the same way: dump with `docker compose exec postgres pg_dump ...`, start the new `postgres` image on a fresh volume, and restore with `psql` (see [Backup and restore](../../README.md#backup-and-restore)).
 
@@ -225,37 +225,37 @@ Docker Compose with the bundled database works the same way: dump with `docker c
 
 ### 28P01: password authentication failed for user "garagestack"
 
-The API crash-loops with this error when it cannot connect to the embedded PostgreSQL instance. This most commonly happens when the data directory (`garagestack-data`) contains a partially-initialised database cluster from a previous container version that crashed during first-run setup.
+The API crash-loops with this error when it cannot connect to the embedded PostgreSQL instance. This most commonly happens when the data directory (`mgmate-data`) contains a partially-initialised database cluster from a previous container version that crashed during first-run setup.
 
 **Fix:** wipe the data directory and let the container reinitialise from scratch.
 
 PowerShell:
 
 ```powershell
-docker rm -f garagestack
-Remove-Item -Recurse -Force garagestack-data
+docker rm -f mgmate
+Remove-Item -Recurse -Force mgmate-data
 ```
 
 Linux/macOS:
 
 ```bash
-docker rm -f garagestack
-rm -rf garagestack-data
+docker rm -f mgmate
+rm -rf mgmate-data
 ```
 
 Then run the container again. The database, credentials, and data protection keys will all be regenerated automatically.
 
-> Note: if the `garagestack-data` directory was created by Docker on Linux (including WSL2), the files inside are owned by Linux UIDs and may not be deletable from Windows Explorer or PowerShell. Use the commands above which force-remove them.
+> Note: if the `mgmate-data` directory was created by Docker on Linux (including WSL2), the files inside are owned by Linux UIDs and may not be deletable from Windows Explorer or PowerShell. Use the commands above which force-remove them.
 
 ### Container starts but the web UI returns 502
 
 PostgreSQL or the .NET API is still starting up. The API waits for PostgreSQL before it starts, so on a first start (which also initialises the database) allow up to a minute after `docker start`. `/api/health` answers once the API is up. Watch the logs:
 
 ```powershell
-docker logs -f garagestack
+docker logs -f mgmate
 ```
 
-Look for `[garagestack] Starting all services via supervisord...` and then all six services reaching `RUNNING` state in the supervisord output.
+Look for `[mgmate] Starting all services via supervisord...` and then all six services reaching `RUNNING` state in the supervisord output.
 
 ### Cannot log in with my MG iSmart credentials
 
@@ -265,7 +265,7 @@ Note that setting `OIDC_AUTHORITY` replaces this login: the page then offers onl
 
 ## Unraid Community Apps
 
-Import the template from `unraid/garagestack.xml`. Fill in at minimum:
+Import the template from `unraid/mgmate.xml`. Fill in at minimum:
 
 1. **MG iSmart Email / Password / Region**
 2. **App URL** -- the address you use in your browser (e.g. `http://192.168.1.50:8080`)

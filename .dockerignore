@@ -10,7 +10,7 @@
 # image copies frontend/ wholesale, so a local frontend/.env would otherwise be built in.
 **/.env
 **/.env.*
-garagestack-data
+mgmate-data
 
 **/node_modules
 **/dist

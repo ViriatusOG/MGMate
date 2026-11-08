@@ -1,0 +1,183 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using MGMate.Core.Configuration;
+using MGMate.Core.Helpers;
+using MGMate.Core.Models;
+using Microsoft.Extensions.Logging;
+
+namespace MGMate.Data.Services;
+
+public sealed class OverpassApiClient(
+    IHttpClientFactory httpClientFactory,
+    OverpassOptions options,
+    ILogger<OverpassApiClient> logger)
+{
+    public const string HttpClientName = "overpass";
+
+    // Singleton-level gate: serializes all Overpass requests so we never fire two in parallel.
+    private readonly UpstreamRateGate _gate = new();
+
+    // Background (Worker): polite interval + long 429 backoff.
+    private static readonly TimeSpan BackgroundMinInterval = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan BackgroundRetryAfter429 = TimeSpan.FromSeconds(180);
+
+    // Foreground (API on-demand): moderate interval reduces burst rate; gate acquisition
+    // has a hard timeout so the HTTP request never blocks the user for more than
+    // ForegroundGateTimeout per tile. After a 429 a short backoff is applied so the
+    // same rate-limited tile is not immediately retried on every subsequent pan.
+    private static readonly TimeSpan ForegroundMinInterval = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan ForegroundGateTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan ForegroundRetryAfter429 = TimeSpan.FromSeconds(30);
+
+    private const string FuelQuery =
+        "[out:json][timeout:30];(node[\"amenity\"=\"fuel\"]{bbox};way[\"amenity\"=\"fuel\"]{bbox};);out center;";
+    private const string ServiceAreaQuery =
+        "[out:json][timeout:30];(node[\"highway\"=\"services\"]{bbox};way[\"highway\"=\"services\"]{bbox};);out center;";
+    // Cameras are mapped as nodes, including the ones an average-speed "enforcement" relation
+    // ties together, so the nodes alone cover the layer and no way lookup is needed.
+    private const string SpeedCameraQuery =
+        "[out:json][timeout:30];node[\"highway\"=\"speed_camera\"]{bbox};out;";
+
+    /// <summary>
+    /// Whether this deployment serves <paramref name="poiType"/> at all. Only the speed camera
+    /// layer can be switched off (<see cref="OverpassOptions.SpeedCamerasEnabled"/>), for the
+    /// jurisdictions that restrict pointing a driver at camera positions; the other layers are
+    /// always served. Both the on-demand endpoint and the Worker's pre-caching ask, so a layer
+    /// that is off costs no Overpass request either.
+    /// </summary>
+    public bool IsTypeEnabled(string poiType) =>
+        poiType != PoiTypePolicy.SpeedCamera || options.SpeedCamerasEnabled;
+
+    private static string QueryFor(string poiType) => poiType switch
+    {
+        PoiTypePolicy.Fuel => FuelQuery,
+        PoiTypePolicy.ServiceArea => ServiceAreaQuery,
+        PoiTypePolicy.SpeedCamera => SpeedCameraQuery,
+        _ => throw new ArgumentOutOfRangeException(nameof(poiType), poiType, "Not an Overpass POI type"),
+    };
+
+    /// <summary>
+    /// Foreground (on-demand API) fetch: fails fast and returns null when Overpass is in a
+    /// backoff window or the gate is held by the Worker, so the caller serves whatever is
+    /// already cached. Callers must skip UpsertTileAsync on null so the tile is not cached as empty.
+    /// </summary>
+    public Task<IReadOnlyList<PoiItem>?> FetchAsync(string poiType, int cellLat, int cellLng, CancellationToken ct = default)
+        => FetchTileAsync(poiType, cellLat, cellLng, foreground: true, ct);
+
+    /// <summary>
+    /// Background (Worker pre-caching) fetch: waits indefinitely for the gate, honours the full
+    /// 429 backoff window, and throws on rate limit so the Worker can retry the tile later.
+    /// </summary>
+    public async Task<IReadOnlyList<PoiItem>> FetchBackgroundAsync(string poiType, int cellLat, int cellLng, CancellationToken ct = default)
+        => (await FetchTileAsync(poiType, cellLat, cellLng, foreground: false, ct))!;
+
+    private async Task<IReadOnlyList<PoiItem>?> FetchTileAsync(
+        string poiType, int cellLat, int cellLng, bool foreground, CancellationToken ct)
+    {
+        var query = QueryFor(poiType).Replace("{bbox}", BuildBbox(cellLat, cellLng));
+
+        // A foreground caller respects the Worker's 429 backoff and waits for the gate only so
+        // long, so a browser request is never held for minutes. The background pass waits its turn.
+        using var entry = await _gate.TryEnterAsync(
+            foreground ? ForegroundGateTimeout : null, failWhenBackingOff: foreground, ct);
+        if (!entry.Entered)
+        {
+            logger.LogDebug("Overpass refused ({Refusal}) for {PoiType} ({CellLat},{CellLng}), serving from cache",
+                entry.Refusal, poiType, cellLat, cellLng);
+            return null;
+        }
+
+        var client = httpClientFactory.CreateClient(HttpClientName);
+        using var content = new FormUrlEncodedContent([new KeyValuePair<string, string>("data", query)]);
+        // A foreground 429 backs off briefly, so later pans don't retry the same rate-limited
+        // tile and keep getting 429 forever ("area stays blank"); a background one for longer,
+        // and the foreground path skips Overpass for as long. Either way as long as Overpass
+        // asks, when it says.
+        using var answer = await _gate.SendAsync(
+            token => client.PostAsync(options.BaseUrl, content, token),
+            foreground ? ForegroundMinInterval : BackgroundMinInterval,
+            honourBackoff: !foreground,
+            foreground ? ForegroundRetryAfter429 : BackgroundRetryAfter429,
+            ct);
+        var response = answer.Response;
+
+        if (answer.Backoff is { } backoff)
+        {
+            if (foreground)
+            {
+                logger.LogDebug("Overpass {Status} for {PoiType} ({CellLat},{CellLng}) on foreground path, backing off {Seconds}s",
+                    (int)response.StatusCode, poiType, cellLat, cellLng, (int)backoff.TotalSeconds);
+                return null;
+            }
+
+            throw new HttpRequestException(
+                $"Overpass rate-limited ({(int)response.StatusCode}) for {poiType} ({cellLat},{cellLng})");
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        var result = await JsonSerializer.DeserializeAsync<OverpassResponse>(stream, cancellationToken: ct);
+        return result?.Elements
+            .Select(e => MapElement(e, poiType))
+            .ToList() ?? [];
+    }
+
+    // Tile (cellLat, cellLng) covers [cellLat/2, (cellLat+1)/2) degrees, see TileHelper.CellOf.
+    private static string BuildBbox(int cellLat, int cellLng) =>
+        FormattableString.Invariant($"({cellLat / 2.0},{cellLng / 2.0},{(cellLat + 1) / 2.0},{(cellLng + 1) / 2.0})");
+
+    private static PoiItem MapElement(OverpassElement e, string poiType)
+    {
+        var lat = e.Type == "node" ? e.Lat : e.Center?.Lat ?? 0;
+        var lng = e.Type == "node" ? e.Lon : e.Center?.Lon ?? 0;
+        var meta = e.Tags is { Count: > 0 } ? JsonSerializer.Serialize(e.Tags) : null;
+        var (cellLat, cellLng) = TileHelper.CellOf(lat, lng);
+        return new PoiItem
+        {
+            Source = PoiCacheDefaults.OverpassSource,
+            PoiType = poiType,
+            ExternalId = $"{e.Type}/{e.Id}",
+            Latitude = lat,
+            Longitude = lng,
+            Name = e.Tags?.GetValueOrDefault("name"),
+            Brand = ExtractBrand(e.Tags),
+            MetaJson = meta,
+            // Tile coords derived from the element's own position, not the queried tile.
+            // This prevents duplicate-key violations when the same border element appears
+            // in two adjacent tile queries.
+            CellLat = cellLat,
+            CellLng = cellLng,
+        };
+    }
+
+    // OSM tags the chain as "brand" for branded stations and "operator" for the rest; the map's
+    // brand filter treats them the same way.
+    private static string? ExtractBrand(Dictionary<string, string>? tags)
+    {
+        var brand = (tags?.GetValueOrDefault("brand") ?? tags?.GetValueOrDefault("operator"))?.Trim();
+        if (string.IsNullOrEmpty(brand)) return null;
+        return brand.Truncate(PoiItemLimits.BrandMaxLength);
+    }
+
+    private sealed class OverpassResponse
+    {
+        [JsonPropertyName("elements")] public OverpassElement[] Elements { get; init; } = [];
+    }
+
+    private sealed class OverpassElement
+    {
+        [JsonPropertyName("type")] public string Type { get; init; } = string.Empty;
+        [JsonPropertyName("id")] public long Id { get; init; }
+        [JsonPropertyName("lat")] public double Lat { get; init; }
+        [JsonPropertyName("lon")] public double Lon { get; init; }
+        [JsonPropertyName("center")] public OverpassCenter? Center { get; init; }
+        [JsonPropertyName("tags")] public Dictionary<string, string>? Tags { get; init; }
+    }
+
+    private sealed class OverpassCenter
+    {
+        [JsonPropertyName("lat")] public double Lat { get; init; }
+        [JsonPropertyName("lon")] public double Lon { get; init; }
+    }
+}

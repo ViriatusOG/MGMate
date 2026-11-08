@@ -2,11 +2,11 @@
 
 ## Commitment
 
-GarageStack is an open-source community project that aims to be usable by as many people as possible. Accessibility is important, and improvements will be made where practical and within the project's available time and resources.
+MGMate is an open-source community project that aims to be usable by as many people as possible. Accessibility is important, and improvements will be made where practical and within the project's available time and resources.
 
 ## Current Status
 
-At this time, accessibility has not been a primary focus during development. As a result, GarageStack has not undergone a formal accessibility review and may not fully conform to accessibility standards such as WCAG 2.1 or WCAG 2.2.
+At this time, accessibility has not been a primary focus during development. As a result, MGMate has not undergone a formal accessibility review and may not fully conform to accessibility standards such as WCAG 2.1 or WCAG 2.2.
 
 Known limitations may include:
 
@@ -21,7 +21,7 @@ Accessibility improvements are implemented on a best-effort basis by project con
 
 ## Feedback and Reporting Issues
 
-If you encounter an accessibility issue while using GarageStack, please open a GitHub Issue and include:
+If you encounter an accessibility issue while using MGMate, please open a GitHub Issue and include:
 
 - A description of the problem.
 - Steps to reproduce it.

@@ -1,0 +1,114 @@
+using System.Text.Json;
+using MGMate.Core.Helpers;
+using MGMate.Core.Interfaces;
+using MGMate.Core.Models;
+using MGMate.Data.Extensions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace MGMate.Data.Repositories;
+
+public class VehicleRepository(AppDbContext db, ILogger<VehicleRepository>? logger = null) : IVehicleRepository
+{
+    // track: false for read-only lookups so EF doesn't snapshot the entity for change detection;
+    // track: true when the caller may mutate and save the returned entity.
+    private Task<Vehicle?> FindByVinAsync(string vin, bool track, CancellationToken ct)
+    {
+        var query = track ? db.Vehicles : db.Vehicles.AsNoTracking();
+        return query.FirstOrDefaultAsync(v => v.Vin == vin, ct);
+    }
+
+    public async Task<IReadOnlyList<Vehicle>> GetAllAsync(CancellationToken ct = default) =>
+        await db.Vehicles.AsNoTracking().OrderBy(v => v.Id).ToListAsync(ct);
+
+    public Task<Vehicle?> GetByVinAsync(string vin, CancellationToken ct = default) =>
+        FindByVinAsync(vin, track: false, ct);
+
+    public async Task<Vehicle> GetOrCreateByVinAsync(string vin, string? saicUser = null, CancellationToken ct = default)
+    {
+        var vehicle = await FindByVinAsync(vin, track: true, ct);
+        if (vehicle is not null)
+        {
+            if (saicUser is not null && vehicle.SaicUser != saicUser)
+            {
+                vehicle.SaicUser = saicUser;
+                await db.SaveChangesAsync(ct);
+            }
+            return vehicle;
+        }
+
+        vehicle = new Vehicle { Vin = vin, SaicUser = saicUser };
+        db.Vehicles.Add(vehicle);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.IsUniqueViolation())
+        {
+            // The API and Worker can both call GetOrCreateByVinAsync for a brand-new VIN at
+            // nearly the same time (e.g. on startup); the loser of that race hits the unique
+            // constraint on Vin here. Forget our failed insert and read back the winner's row.
+            db.ChangeTracker.Clear();
+            vehicle = await FindByVinAsync(vin, track: true, ct)
+                ?? throw new InvalidOperationException($"Unique-constraint violation on VIN {LogRedaction.Vin(vin)} but no row found on retry.");
+        }
+        return vehicle;
+    }
+
+    public async Task SetModelAsync(int vehicleId, string model, CancellationToken ct = default)
+    {
+        var vehicle = await db.Vehicles.FindAsync([vehicleId], ct);
+        if (vehicle is null || vehicle.Model == model) return;
+        vehicle.Model = model;
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task SetParkedAsync(
+        int vehicleId, DateTime parkedAt, double? latitude, double? longitude, CancellationToken ct = default)
+    {
+        var vehicle = await db.Vehicles.FindAsync([vehicleId], ct);
+        // The same parking can be stored twice: once when the engine stops, again when that poll's
+        // GPS fix follows (see TelemetryHandler). Only an exact repeat is skipped.
+        if (vehicle is null
+            || (vehicle.LastParkedAt == parkedAt && vehicle.ParkedLatitude == latitude && vehicle.ParkedLongitude == longitude))
+            return;
+        vehicle.LastParkedAt = parkedAt;
+        vehicle.ParkedLatitude = latitude;
+        vehicle.ParkedLongitude = longitude;
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task SetLastMessageIdAsync(int vehicleId, string messageId, CancellationToken ct = default)
+    {
+        var vehicle = await db.Vehicles.FindAsync([vehicleId], ct);
+        if (vehicle is null || vehicle.LastMessageId == messageId) return;
+        vehicle.LastMessageId = messageId;
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task SetLicensePlateAsync(int vehicleId, string? licensePlate, CancellationToken ct = default)
+    {
+        var vehicle = await db.Vehicles.FindAsync([vehicleId], ct);
+        if (vehicle is null || vehicle.LicensePlate == licensePlate) return;
+        vehicle.LicensePlate = licensePlate;
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task SetConfigValueAsync(int vehicleId, string key, string value, CancellationToken ct = default)
+    {
+        var vehicle = await db.Vehicles.FindAsync([vehicleId], ct);
+        if (vehicle is null) return;
+
+        // A malformed blob (there is no schema, the gateway writes free-form values) starts a
+        // fresh dictionary instead of taking the message handler down. That drops whatever else it
+        // held, so say so.
+        var config = SafeJson.TryDeserialize<Dictionary<string, string>>(
+                vehicle.ConfigJson,
+                ex => logger?.LogWarning(ex, "Vehicle {VehicleId} had an unreadable configuration; starting it afresh with {Key}", vehicleId, key))
+            ?? new Dictionary<string, string>();
+
+        config[key] = value;
+        vehicle.ConfigJson = JsonSerializer.Serialize(config);
+        await db.SaveChangesAsync(ct);
+    }
+}

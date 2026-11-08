@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-GarageStack demo launcher.
+MGMate demo launcher.
 Always starts API + Frontend. Also opens an interactive menu pane on the left.
 Without -Menu : sets up env and opens Windows Terminal with all three panes.
 With    -Menu : runs the menu pane (called internally by Windows Terminal).
@@ -9,7 +9,7 @@ param([switch]$Menu)
 
 $ErrorActionPreference = 'Stop'
 $root         = $PSScriptRoot
-$apiPath      = Join-Path $root 'src\GarageStack.Api'
+$apiPath      = Join-Path $root 'src\MGMate.Api'
 $frontendPath = Join-Path $root 'frontend'
 
 function Test-PortOpen([int]$port) {
@@ -59,7 +59,7 @@ if ($Menu) {
         Clear-Host
         Write-Host ''
         Write-Host '  +----------------------------+' -ForegroundColor Yellow
-        Write-Host '  |     GarageStack Demo       |' -ForegroundColor Yellow
+        Write-Host '  |     MGMate Demo       |' -ForegroundColor Yellow
         Write-Host '  +----------------------------+' -ForegroundColor Yellow
         Write-Host ''
         Write-Host '  Status' -ForegroundColor DarkGray
@@ -116,7 +116,7 @@ if ($Menu) {
     }
 
     Write-Host ''
-    Write-Host '  GarageStack Demo' -ForegroundColor Yellow
+    Write-Host '  MGMate Demo' -ForegroundColor Yellow
     Write-Host '  API      -> http://localhost:5000' -ForegroundColor Cyan
     Write-Host '  Frontend -> http://localhost:5173  (login: demo / demo)' -ForegroundColor Cyan
     Write-Host ''
@@ -137,15 +137,15 @@ if ($Menu) {
     # 2. split -V -> menu stays left (28%), API opens right (72%), focus moves to API
     # 3. split -H -> API pane splits top/bottom for Frontend
     $wtArgs = @(
-        'new-tab', '--title', 'GarageStack', '--tabColor', '#10b981',
+        'new-tab', '--title', 'MGMate', '--tabColor', '#10b981',
         '-d', $root, 'pwsh', '-NoExit', '-Command', $cmd,
         ';',
         'split-pane', '-V', '--size', '0.72',
-        '--title', 'GarageStack API (Demo)', '--tabColor', '#f59e0b',
+        '--title', 'MGMate API (Demo)', '--tabColor', '#f59e0b',
         '-d', $apiPath, 'pwsh', '-NoExit', '-Command', 'dotnet run --launch-profile Demo',
         ';',
         'split-pane', '-H',
-        '--title', 'GarageStack Frontend (Demo)', '--tabColor', '#3b82f6',
+        '--title', 'MGMate Frontend (Demo)', '--tabColor', '#3b82f6',
         '-d', $frontendPath, 'pwsh', '-NoExit', '-Command', 'pnpm dev',
         ';',
         'focus-pane', '--target', '0'

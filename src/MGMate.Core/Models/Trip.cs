@@ -1,0 +1,104 @@
+namespace MGMate.Core.Models;
+
+/// <summary>
+/// A finished trip, saved by the Worker once no later fix can extend it. Its fixes are saved with
+/// it, so a trip no longer has to be cut from the raw telemetry every time it is shown. The trip
+/// log adds what only the driver knows (purpose, notes) and what is worth keeping for good once
+/// known (the addresses at either end).
+/// </summary>
+public class Trip
+{
+    public const int NotesMaxLength = 500;
+
+    public long Id { get; set; }
+    public int VehicleId { get; set; }
+    public Vehicle Vehicle { get; set; } = null!;
+
+    public DateTime StartedAt { get; set; }
+    public DateTime EndedAt { get; set; }
+    public double DistanceKm { get; set; }
+    public int PointCount { get; set; }
+
+    /// <summary>
+    /// The trip's points as a JSON array of <see cref="TripPoint"/>, oldest first: the route as it
+    /// is now, edited or not, so everything that draws or counts a trip reads it the same way.
+    /// </summary>
+    public string PointsJson { get; set; } = "[]";
+
+    /// <summary>
+    /// The points as recorded, copied from <see cref="PointsJson"/> on the first edit so the trip
+    /// can be reset. Null for a trip nobody edited.
+    /// </summary>
+    public string? OriginalPointsJson { get; set; }
+
+    /// <summary>When the route was last edited, or null while it is as recorded.</summary>
+    public DateTime? EditedAt { get; set; }
+
+    // The first and last fix, kept beside the fixes so the trip log can list a year of trips
+    // without reading every fix of every one of them.
+    public double StartLatitude { get; set; }
+    public double StartLongitude { get; set; }
+    public double EndLatitude { get; set; }
+    public double EndLongitude { get; set; }
+
+    // Read off the fixes when the trip is saved, so a period of trip summaries (the statistics
+    // page, a year at a time) need not read every fix again. Null on a trip saved before these
+    // existed until housekeeping works them out (ITripRepository.FillSpeedFiguresAsync).
+    public double? MaxSpeedKmh { get; set; }
+    public double? AvgMovingSpeedKmh { get; set; }
+    public int? MovingSpeedSamples { get; set; }
+
+    /// <summary>The odometer when the trip started, or null when the car had not reported one yet.</summary>
+    public double? OdometerStartKm { get; set; }
+
+    /// <summary>The odometer once the car had parked, or null when it reported none.</summary>
+    public double? OdometerEndKm { get; set; }
+
+    /// <summary>The state of charge in percent as the car set off, or null when it had reported none.</summary>
+    public double? SocStartPercent { get; set; }
+
+    /// <summary>The state of charge in percent once the car had parked, or null when it reported none.</summary>
+    public double? SocEndPercent { get; set; }
+
+    /// <summary>
+    /// What the car's own day counter says the trip used, in the counter's unit (see
+    /// <see cref="TripEnergy.CounterUsed"/>), or null when its counters could not be matched to it.
+    /// </summary>
+    public double? EnergyCounterUsed { get; set; }
+
+    /// <summary>The mean outside temperature the car reported while it was driven, in °C.</summary>
+    public double? OutsideTemperature { get; set; }
+
+    /// <summary>
+    /// Whether the energy figures above were read when the trip was saved. False on a trip saved
+    /// before they existed until housekeeping reads them (ITripRepository.FillEnergyAsync).
+    /// </summary>
+    public bool EnergyRead { get; set; }
+
+    /// <summary>
+    /// The address at either end, as a JSON <see cref="PlaceAddress"/>. Null until the trip log
+    /// has looked it up. Kept here rather than in the geocode cache, which expires: a trip log
+    /// kept for the tax year has to show the same address in twelve months.
+    /// </summary>
+    public string? StartPlaceJson { get; set; }
+    public string? EndPlaceJson { get; set; }
+
+    public TripPurpose? Purpose { get; set; }
+
+    /// <summary>
+    /// Whether someone chose <see cref="Purpose"/>, including choosing none. Only trips nobody chose
+    /// for are labelled automatically, and moving home or work re-labels only those.
+    /// </summary>
+    public bool PurposeIsManual { get; set; }
+
+    public string? Notes { get; set; }
+
+    /// <summary>
+    /// Kept out of the map, the statistics, the dashboard and the trip log's totals and export: a
+    /// positioning glitch or a trip nobody wants counted. Hidden rather than deleted, so it can be
+    /// shown again, and so nothing that records trips again ever brings it back unasked.
+    /// </summary>
+    public bool IsHidden { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}

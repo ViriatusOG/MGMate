@@ -42,8 +42,8 @@ self.addEventListener('push', (event) => {
     payload = { body: event.data.text() }
   }
 
-  const title = payload.title ?? 'GarageStack'
-  const tag = payload.category ?? 'garagestack-notification'
+  const title = payload.title ?? 'MGMate'
+  const tag = payload.category ?? 'mgmate-notification'
   // renotify (alert again for a tag that is already showing) is in the Notifications spec and
   // Chromium, but no longer in TypeScript's lib.
   const options: NotificationOptions & { renotify?: boolean } = {

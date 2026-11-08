@@ -12,15 +12,15 @@
 services:
   worker:
     build: !reset null
-    image: "ghcr.io/joszz/garagestack-worker:${PREVIEW_TAG:?Set PREVIEW_TAG to the preview tag, for example pr-123}"
+    image: "ghcr.io/viriatusog/mgmate-worker:${PREVIEW_TAG:?Set PREVIEW_TAG to the preview tag, for example pr-123}"
     pull_policy: always
 
   api:
     build: !reset null
-    image: "ghcr.io/joszz/garagestack-api:${PREVIEW_TAG:?Set PREVIEW_TAG to the preview tag, for example pr-123}"
+    image: "ghcr.io/viriatusog/mgmate-api:${PREVIEW_TAG:?Set PREVIEW_TAG to the preview tag, for example pr-123}"
     pull_policy: always
 
   frontend:
     build: !reset null
-    image: "ghcr.io/joszz/garagestack-frontend:${PREVIEW_TAG:?Set PREVIEW_TAG to the preview tag, for example pr-123}"
+    image: "ghcr.io/viriatusog/mgmate-frontend:${PREVIEW_TAG:?Set PREVIEW_TAG to the preview tag, for example pr-123}"
     pull_policy: always

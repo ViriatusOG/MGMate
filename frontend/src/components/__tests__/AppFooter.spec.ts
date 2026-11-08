@@ -111,24 +111,24 @@ describe('AppFooter', () => {
 
   it('separates the project name and version with a space', () => {
     appVersion.value = 'v0.5.0'
-    expect(mountFooter().find('.app-footer__copyright').text()).toBe('© 2026 GarageStack v0.5.0')
+    expect(mountFooter().find('.app-footer__copyright').text()).toBe('© 2026 MGMate v0.5.0')
   })
 
   it('shows only the project name when no version was injected', () => {
-    expect(mountFooter().find('.app-footer__copyright').text()).toBe('© 2026 GarageStack')
+    expect(mountFooter().find('.app-footer__copyright').text()).toBe('© 2026 MGMate')
   })
 
   it('links to a newer release when the API found one', async () => {
     update.answer = {
       updateAvailable: true,
       latestVersion: '0.9.3',
-      releaseUrl: 'https://github.com/joszz/GarageStack/releases/tag/v0.9.3',
+      releaseUrl: 'https://github.com/ViriatusOG/MGMate/releases/tag/v0.9.3',
     }
     const wrapper = mountFooter()
     await flushPromises()
 
     const link = wrapper.find('a.app-footer__update')
-    expect(link.attributes('href')).toBe('https://github.com/joszz/GarageStack/releases/tag/v0.9.3')
+    expect(link.attributes('href')).toBe('https://github.com/ViriatusOG/MGMate/releases/tag/v0.9.3')
     expect(link.attributes('rel')).toContain('noopener')
   })
 

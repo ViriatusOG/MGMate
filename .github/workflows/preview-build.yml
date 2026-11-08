@@ -66,7 +66,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          MARKER='<!-- garagestack-preview-build -->'
+          MARKER='<!-- mgmate-preview-build -->'
           SHORT="${HEAD_SHA:0:7}"
           DOCS="https://github.com/$REPO/blob/main/documentation/PREVIEW_BUILDS.md"
           BACKUP="https://github.com/$REPO/blob/main/README.md#backup-and-restore"
@@ -76,7 +76,7 @@ jobs:
           # release, every migration counts.
           LATEST=$(gh api "repos/$REPO/releases/latest" --jq .tag_name 2>/dev/null || true)
           BASE="${LATEST:-$(git hash-object -t tree /dev/null)}"
-          MIGRATIONS=$(git diff --name-only "$BASE" HEAD -- src/GarageStack.Data/Migrations/ | wc -l)
+          MIGRATIONS=$(git diff --name-only "$BASE" HEAD -- src/MGMate.Data/Migrations/ | wc -l)
 
           {
             echo "$MARKER"
@@ -100,16 +100,16 @@ jobs:
             if [ -n "$LATEST" ]; then
               echo "> **Update to the latest release (\`${LATEST#v}\`) first** if you run an older version, as a normal update. The preview is built on top of it, the database warning on this comment compares with it, and going back means going back to it."
             fi
-            echo "> Switch where you always run GarageStack: the same folder, Portainer stack or Unraid container. Compose names the database volume after the folder or stack, so starting from anywhere else runs on a new, empty database."
+            echo "> Switch where you always run MGMate: the same folder, Portainer stack or Unraid container. Compose names the database volume after the folder or stack, so starting from anywhere else runs on a new, empty database."
             echo "> Don't use \`docker compose down -v\` or \`docker volume prune\` while testing. A [backup]($BACKUP) first never hurts."
             echo
             echo "**All-in-one or Unraid:** change the image to"
             echo
             echo '```'
-            echo "ghcr.io/$OWNER/garagestack:pr-$PR"
+            echo "ghcr.io/$OWNER/mgmate:pr-$PR"
             echo '```'
             echo
-            echo "**Docker Compose with the published images** (your own compose file with \`garagestack-api\`, \`garagestack-worker\` and \`garagestack-frontend\`): change the tag of those three images to \`pr-$PR\`, then"
+            echo "**Docker Compose with the published images** (your own compose file with \`mgmate-api\`, \`mgmate-worker\` and \`mgmate-frontend\`): change the tag of those three images to \`pr-$PR\`, then"
             echo
             echo '```sh'
             echo "docker compose pull"

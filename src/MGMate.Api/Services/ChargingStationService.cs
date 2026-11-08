@@ -1,0 +1,92 @@
+using MGMate.Core.Configuration;
+using MGMate.Core.Helpers;
+using MGMate.Core.Interfaces;
+using MGMate.Core.Models;
+using MGMate.Data.Services;
+
+namespace MGMate.Api.Services;
+
+public sealed record ChargingStationDto(
+    int Id,
+    string Title,
+    double Latitude,
+    double Longitude,
+    string? AddressLine,
+    string? Town,
+    string? Operator,
+    bool? IsOperational,
+    int? NumberOfPoints,
+    IReadOnlyList<ConnectorDto> Connectors);
+
+public sealed record ConnectorDto(string? Type, double? PowerKw, int? Quantity);
+
+public sealed class ChargingStationService(
+    IPoiRepository repository,
+    OcmApiClient ocmClient,
+    ILogger<ChargingStationService> logger)
+{
+    private const string Source = PoiCacheDefaults.OcmSource;
+    private const string PoiType = PoiCacheDefaults.ChargingPoiType;
+
+    public async Task<IReadOnlyList<ChargingStationDto>> GetStationsAsync(
+        double lat, double lng, int distanceKm,
+        int minPowerKw = 0, int maxPowerKw = 0,
+        CancellationToken ct = default)
+    {
+        if (!ocmClient.IsConfigured) return [];
+
+        // Cap on-demand fetches to the 1 tile closest to the viewport centre so the API
+        // never takes 80+ seconds on a cold cache. The Worker fills remaining tiles in the background.
+        await PoiTileFetcher.RefreshAsync(
+            repository, Source, PoiType, lat, lng, distanceKm, PoiTileFetcher.DefaultMaxOnDemandTiles,
+            ocmClient.FetchChargingStationsAsync,
+            (ex, cellLat, cellLng) => logger.LogWarning(ex, "On-demand OCM fetch failed for charging ({CellLat},{CellLng})",
+                cellLat, cellLng),
+            ct);
+
+        var (minLat, maxLat, minLng, maxLng) = TileHelper.ComputeBounds(lat, lng, distanceKm);
+
+        var pois = await repository.GetPoisInBoundsAsync(Source, PoiType, minLat, minLng, maxLat, maxLng, ct);
+        var stations = pois.Select(MapToDto).ToList();
+
+        return ApplyPowerFilter(stations, minPowerKw, maxPowerKw);
+    }
+
+    private ChargingStationDto MapToDto(PoiItem p)
+    {
+        var meta = SafeJson.TryDeserialize<OcmApiClient.OcmMeta>(p.MetaJson,
+            ex => logger.LogWarning(ex, "Failed to parse OCM meta JSON for POI {ExternalId}", p.ExternalId));
+
+        var connectors = meta?.Connectors
+            .Select(c => new ConnectorDto(c.Type, c.PowerKw, c.Quantity))
+            .ToList() ?? (IReadOnlyList<ConnectorDto>)[];
+
+        // Reconstruct the OCM integer ID from ExternalId ("ocm/12345")
+        var ocmId = 0;
+        if (p.ExternalId.StartsWith("ocm/", StringComparison.Ordinal))
+            int.TryParse(p.ExternalId[4..], out ocmId);
+
+        return new ChargingStationDto(
+            ocmId,
+            p.Name ?? string.Empty,
+            p.Latitude,
+            p.Longitude,
+            meta?.AddressLine,
+            meta?.Town,
+            meta?.Operator,
+            meta?.IsOperational,
+            meta?.NumberOfPoints,
+            connectors);
+    }
+
+    private static IReadOnlyList<ChargingStationDto> ApplyPowerFilter(
+        List<ChargingStationDto> stations, int minPowerKw, int maxPowerKw)
+    {
+        IEnumerable<ChargingStationDto> filtered = stations;
+        if (minPowerKw > 0)
+            filtered = filtered.Where(s => s.Connectors.Any(c => c.PowerKw >= minPowerKw));
+        if (maxPowerKw > 0)
+            filtered = filtered.Where(s => s.Connectors.Any(c => c.PowerKw == null || c.PowerKw <= maxPowerKw));
+        return filtered.ToList();
+    }
+}

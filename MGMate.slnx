@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MGMate.Api/MGMate.Api.csproj" />
+    <Project Path="src/MGMate.Core/MGMate.Core.csproj" />
+    <Project Path="src/MGMate.Data/MGMate.Data.csproj" />
+    <Project Path="src/MGMate.Tests/MGMate.Tests.csproj" />
+    <Project Path="src/MGMate.Worker/MGMate.Worker.csproj" />
+  </Folder>
+</Solution>

@@ -11,4 +11,4 @@ for _ in $(seq 1 30); do
     sleep 1
 done
 
-echo "[garagestack] mosquitto did not become ready within 30s, starting anyway" >&2
+echo "[mgmate] mosquitto did not become ready within 30s, starting anyway" >&2

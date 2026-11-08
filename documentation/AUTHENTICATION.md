@@ -1,11 +1,11 @@
 # Authentication
 
-GarageStack has two ways to sign in:
+MGMate has two ways to sign in:
 
-1. **OpenID Connect (OIDC)** -- delegate sign-in to your own identity provider (Authentik, Authelia, Keycloak, Pocket ID, Zitadel, Google, ...). Recommended: user management, password policy, and two-factor stay where they belong, and GarageStack never sees a password.
+1. **OpenID Connect (OIDC)** -- delegate sign-in to your own identity provider (Authentik, Authelia, Keycloak, Pocket ID, Zitadel, Google, ...). Recommended: user management, password policy, and two-factor stay where they belong, and MGMate never sees a password.
 2. **Built-in password login** -- a single username and password, meant as a fallback for installs that have no identity provider.
 
-**Setting `OIDC_AUTHORITY` switches GarageStack to OIDC and turns the password login off**, so an SSO install has one way in by default. Set `AUTH_PASSWORD_LOGIN_ENABLED=true` to keep both available -- see [Running both at once](#running-both-at-once).
+**Setting `OIDC_AUTHORITY` switches MGMate to OIDC and turns the password login off**, so an SSO install has one way in by default. Set `AUTH_PASSWORD_LOGIN_ENABLED=true` to keep both available -- see [Running both at once](#running-both-at-once).
 
 Either way the result is the same: an encrypted, HTTP-only session cookie. Logging out revokes that session server-side, not just in the browser, so a copied cookie stops working immediately.
 
@@ -15,7 +15,7 @@ Either way the result is the same: an encrypted, HTTP-only session cookie. Loggi
 
 1. **Create a client (application) at your provider.** It needs the authorization code flow with PKCE, which is the default for every provider listed below.
 
-2. **Register the redirect URI.** It is always your GarageStack URL plus a fixed path:
+2. **Register the redirect URI.** It is always your MGMate URL plus a fixed path:
 
    ```
    https://garage.example.com/api/auth/oidc/callback
@@ -26,19 +26,19 @@ Either way the result is the same: an encrypted, HTTP-only session cookie. Loggi
 3. **Fill in the variables** in `.env` (Docker Compose) or as container environment variables (all-in-one / Unraid):
 
    ```bash
-   OIDC_AUTHORITY=https://auth.example.com/application/o/garagestack/
+   OIDC_AUTHORITY=https://auth.example.com/application/o/mgmate/
    OIDC_CLIENT_ID=<from your provider>
    OIDC_CLIENT_SECRET=<from your provider>
    OIDC_PROVIDER_NAME=Authentik
-   OIDC_ALLOWED_GROUPS=garagestack-users
+   OIDC_ALLOWED_GROUPS=mgmate-users
    ```
 
-4. **Restart GarageStack.** The login page now shows a single "Sign in with ..." button.
+4. **Restart MGMate.** The login page now shows a single "Sign in with ..." button.
 
 The API logs a line at startup confirming what it picked up:
 
 ```
-Authentication: OIDC via https://auth.example.com/application/o/garagestack/ (client garagestack, auto-login False)
+Authentication: OIDC via https://auth.example.com/application/o/mgmate/ (client mgmate, auto-login False)
 ```
 
 ---
@@ -52,11 +52,11 @@ Authentication: OIDC via https://auth.example.com/application/o/garagestack/ (cl
 | `OIDC_CLIENT_SECRET` | _(empty)_ | Client secret. Leave empty for a public client (PKCE only). |
 | `OIDC_SCOPES` | `openid profile email` | Space-separated scopes. Add the scope carrying group membership if your provider needs one (`groups` on Authelia and Pocket ID). `openid` is added automatically when missing. |
 | `OIDC_PROVIDER_NAME` | `SSO` | Name on the sign-in button ("Sign in with Authentik"). |
-| `OIDC_AUTO_LOGIN` | `false` | Skip the GarageStack login page and go straight to the provider. |
+| `OIDC_AUTO_LOGIN` | `false` | Skip the MGMate login page and go straight to the provider. |
 | `OIDC_ALLOWED_GROUPS` | _(empty)_ | Comma-separated groups allowed to sign in. Empty means no group check. |
 | `OIDC_ALLOWED_EMAILS` | _(empty)_ | Comma-separated email addresses allowed to sign in. Empty means no email check. |
 | `OIDC_GROUPS_CLAIM` | `groups` | Claim that `OIDC_ALLOWED_GROUPS` is matched against. |
-| `OIDC_REDIRECT_URI` | _(derived)_ | Explicit redirect URI, for deployments where GarageStack cannot work out its own public URL. Must end in `/api/auth/oidc/callback`. |
+| `OIDC_REDIRECT_URI` | _(derived)_ | Explicit redirect URI, for deployments where MGMate cannot work out its own public URL. Must end in `/api/auth/oidc/callback`. |
 | `OIDC_REQUIRE_HTTPS_METADATA` | `true` | Set to `false` only for a provider served over plain HTTP on your LAN. |
 | `AUTH_USERNAME` | _(MG account)_ | Username for the built-in password login. Falls back to `SAIC_USER`. |
 | `AUTH_PASSWORD` | _(MG account)_ | Password for the built-in password login. Falls back to `SAIC_PASSWORD`. |
@@ -70,15 +70,15 @@ Authentication: OIDC via https://auth.example.com/application/o/garagestack/ (cl
 
 ## Restrict who can sign in
 
-> **This matters.** Without a restriction, **every account your provider accepts** can sign in to GarageStack -- and GarageStack can unlock your car, start climate control and see where it has been. With a public provider such as Google, "every account" means every Google account on the internet.
+> **This matters.** Without a restriction, **every account your provider accepts** can sign in to MGMate -- and MGMate can unlock your car, start climate control and see where it has been. With a public provider such as Google, "every account" means every Google account on the internet.
 
 There are two places to restrict access, and using either one is enough:
 
-- **At the provider** (preferred). Authentik binds a group or policy to the application, Authelia has `authorization_policy` per client, Keycloak has client roles. GarageStack then only ever sees users the provider already approved.
-- **In GarageStack**, with `OIDC_ALLOWED_GROUPS` and/or `OIDC_ALLOWED_EMAILS`.
+- **At the provider** (preferred). Authentik binds a group or policy to the application, Authelia has `authorization_policy` per client, Keycloak has client roles. MGMate then only ever sees users the provider already approved.
+- **In MGMate**, with `OIDC_ALLOWED_GROUPS` and/or `OIDC_ALLOWED_EMAILS`.
 
 ```bash
-OIDC_ALLOWED_GROUPS=garagestack-users,admins
+OIDC_ALLOWED_GROUPS=mgmate-users,admins
 OIDC_ALLOWED_EMAILS=owner@example.com
 ```
 
@@ -89,7 +89,7 @@ Details of the check:
 - An allow-listed email is refused if the provider explicitly reports `email_verified: false`. Providers that omit the claim entirely -- most self-hosted ones -- are taken at their word.
 - With both lists empty, the API logs a warning at every start.
 
-A rejected user lands back on the login page with "This account is not allowed to use GarageStack", and the reason is logged:
+A rejected user lands back on the login page with "This account is not allowed to use MGMate", and the reason is logged:
 
 ```
 OIDC sign-in denied for mallory: groups [photos] do not match OIDC_ALLOWED_GROUPS
@@ -99,9 +99,9 @@ OIDC sign-in denied for mallory: groups [photos] do not match OIDC_ALLOWED_GROUP
 
 ## Auto-login
 
-With `OIDC_AUTO_LOGIN=true` the login page is skipped: opening GarageStack goes straight to the provider and, while the provider's own session is still valid, straight back in without a single click.
+With `OIDC_AUTO_LOGIN=true` the login page is skipped: opening MGMate goes straight to the provider and, while the provider's own session is still valid, straight back in without a single click.
 
-Logging out still works as you would expect. GarageStack ends its own session and returns you to the login page with auto-login suppressed for that visit, so you are not signed straight back in. Your provider session is left alone -- log out there (or in another app that supports single logout) to end it everywhere.
+Logging out still works as you would expect. MGMate ends its own session and returns you to the login page with auto-login suppressed for that visit, so you are not signed straight back in. Your provider session is left alone -- log out there (or in another app that supports single logout) to end it everywhere.
 
 ---
 
@@ -119,9 +119,9 @@ The exact wording differs per version, but every provider needs the same three t
 3. The provider page shows **OpenID Configuration Issuer** -- that value is `OIDC_AUTHORITY`.
 
 ```bash
-OIDC_AUTHORITY=https://auth.example.com/application/o/garagestack/
+OIDC_AUTHORITY=https://auth.example.com/application/o/mgmate/
 OIDC_PROVIDER_NAME=Authentik
-OIDC_ALLOWED_GROUPS=garagestack-users
+OIDC_ALLOWED_GROUPS=mgmate-users
 ```
 
 Authentik's default `profile` scope mapping emits a `groups` claim. If yours was customised and no groups arrive, add a scope mapping that returns them, or restrict access with the application's policy bindings instead.
@@ -134,9 +134,9 @@ In `configuration.yml`:
 identity_providers:
   oidc:
     clients:
-      - client_id: garagestack
-        client_name: GarageStack
-        client_secret: '$pbkdf2-sha512$...'   # the hash; GarageStack gets the plaintext
+      - client_id: mgmate
+        client_name: MGMate
+        client_secret: '$pbkdf2-sha512$...'   # the hash; MGMate gets the plaintext
         public: false
         authorization_policy: two_factor
         require_pkce: true
@@ -159,27 +159,27 @@ authelia crypto hash generate pbkdf2 --variant sha512 --random --random.length 7
 OIDC_AUTHORITY=https://auth.example.com
 OIDC_SCOPES=openid profile email groups
 OIDC_PROVIDER_NAME=Authelia
-OIDC_ALLOWED_GROUPS=garagestack-users
+OIDC_ALLOWED_GROUPS=mgmate-users
 ```
 
-Authelia keeps ID token claims minimal on recent versions; GarageStack reads the userinfo endpoint as well, so the `groups` scope is all that is needed.
+Authelia keeps ID token claims minimal on recent versions; MGMate reads the userinfo endpoint as well, so the `groups` scope is all that is needed.
 
 ### Keycloak
 
 1. **Clients > Create client**: client type OpenID Connect, **Client authentication** on, **Standard flow** enabled.
 2. Valid redirect URIs: `https://garage.example.com/api/auth/oidc/callback`
-3. For groups, add a **Group Membership** mapper on a client scope with token claim name `groups` and "Full group path" off (otherwise the values arrive as `/garagestack-users`).
+3. For groups, add a **Group Membership** mapper on a client scope with token claim name `groups` and "Full group path" off (otherwise the values arrive as `/mgmate-users`).
 
 ```bash
 OIDC_AUTHORITY=https://keycloak.example.com/realms/home
 OIDC_PROVIDER_NAME=Keycloak
-OIDC_ALLOWED_GROUPS=garagestack-users
+OIDC_ALLOWED_GROUPS=mgmate-users
 ```
 
 ### Pocket ID
 
 1. **OIDC Clients > Add client**, callback URL `https://garage.example.com/api/auth/oidc/callback`.
-2. Allow the client for the group you want, and request the `groups` scope if you also want to check groups in GarageStack.
+2. Allow the client for the group you want, and request the `groups` scope if you also want to check groups in MGMate.
 
 ```bash
 OIDC_AUTHORITY=https://id.example.com
@@ -228,8 +228,8 @@ Configuring OIDC normally turns the password login off. `AUTH_PASSWORD_LOGIN_ENA
 | `false` | Password login is off, whether or not OIDC is configured |
 
 ```bash
-OIDC_AUTHORITY=https://auth.example.com/application/o/garagestack/
-OIDC_CLIENT_ID=garagestack
+OIDC_AUTHORITY=https://auth.example.com/application/o/mgmate/
+OIDC_CLIENT_ID=mgmate
 OIDC_CLIENT_SECRET=...
 AUTH_PASSWORD_LOGIN_ENABLED=true
 AUTH_USERNAME=breakglass
@@ -241,10 +241,10 @@ The login page then shows the "Sign in with ..." button, an "or" divider, and th
 Worth keeping in mind before switching this on:
 
 - It is a second door your identity provider knows nothing about, so none of its policies apply to it: no MFA, no account lockout, no central revocation. Give it a long, dedicated password rather than reusing the MG account.
-- It stays reachable for anyone who can reach GarageStack, which is exactly why it is useful as break-glass access, and exactly why it is off by default.
+- It stays reachable for anyone who can reach MGMate, which is exactly why it is useful as break-glass access, and exactly why it is off by default.
 - The API logs a warning at every start while both are enabled.
 
-The usual reason to want it: your identity provider runs on the same machine as GarageStack, and you would rather not lose access to the car when that container is down.
+The usual reason to want it: your identity provider runs on the same machine as MGMate, and you would rather not lose access to the car when that container is down.
 
 ---
 
@@ -257,7 +257,7 @@ The usual reason to want it: your identity provider runs on the same machine as 
 | Lifetime | `AUTH_SESSION_LIFETIME_HOURS` (default 7 days) for OIDC; 12 hours or 30 days for the password login |
 | Logout | Deletes the cookie **and** records the session as revoked in the database, so a copied cookie is refused on its next request |
 
-`AUTH_COOKIE_SECURE` defaults to `auto`: the cookie is `Secure` whenever the browser reaches GarageStack over HTTPS, including through a TLS-terminating proxy that sends `X-Forwarded-Proto`, and plain-HTTP LAN installs still work. Set `true` only if GarageStack is never reached over plain HTTP.
+`AUTH_COOKIE_SECURE` defaults to `auto`: the cookie is `Secure` whenever the browser reaches MGMate over HTTPS, including through a TLS-terminating proxy that sends `X-Forwarded-Proto`, and plain-HTTP LAN installs still work. Set `true` only if MGMate is never reached over plain HTTP.
 
 ### Settings belong to the account
 
@@ -285,7 +285,7 @@ Before this change, the login form checked your MG cloud credentials and issued 
 
 ### "Invalid redirect URI" / "redirect_uri did not match" at the provider
 
-GarageStack derives the redirect URI from the incoming request. Behind a reverse proxy that does not forward the original host and scheme, it can get this wrong. Check the URI the provider logs, then either fix the proxy headers (`Host`, `X-Forwarded-Proto`) or set it explicitly:
+MGMate derives the redirect URI from the incoming request. Behind a reverse proxy that does not forward the original host and scheme, it can get this wrong. Check the URI the provider logs, then either fix the proxy headers (`Host`, `X-Forwarded-Proto`) or set it explicitly:
 
 ```bash
 OIDC_REDIRECT_URI=https://garage.example.com/api/auth/oidc/callback
@@ -295,18 +295,18 @@ The bundled nginx already forwards the right headers, including the port.
 
 ### Back at the login page with "Single sign-on failed", and the API log shows `invalid_client`
 
-The provider refused GarageStack's own credentials, before any user was involved. Two causes:
+The provider refused MGMate's own credentials, before any user was involved. Two causes:
 
 - **The client authentication method.** ASP.NET Core sends `client_id`/`client_secret` in the request body (`client_secret_post`). Providers that expect HTTP Basic (`client_secret_basic`) and enforce it, Authelia among them, answer `invalid_client`. Set the client to `client_secret_post`.
-- **The secret itself.** Providers that store a hash (again, Authelia) need the hash in their config and the plaintext in `OIDC_CLIENT_SECRET`. Pasting the hash into GarageStack fails exactly this way.
+- **The secret itself.** Providers that store a hash (again, Authelia) need the hash in their config and the plaintext in `OIDC_CLIENT_SECRET`. Pasting the hash into MGMate fails exactly this way.
 
 The provider's own log names which of the two it was. If the stack trace mentions `PushAuthorizationRequest`, it failed at the pushed-authorization endpoint, which is simply the first call the handler makes; the cause is the same.
 
 ### Back at the login page with "Single sign-on failed"
 
-The callback did not validate. The API log has the reason. Common causes: the correlation cookie expired (the sign-in took longer than 15 minutes), the server clock is off by more than a few minutes, or `AUTH_COOKIE_SECURE=true` while GarageStack is served over plain HTTP, which makes the browser drop the cookies.
+The callback did not validate. The API log has the reason. Common causes: the correlation cookie expired (the sign-in took longer than 15 minutes), the server clock is off by more than a few minutes, or `AUTH_COOKIE_SECURE=true` while MGMate is served over plain HTTP, which makes the browser drop the cookies.
 
-### "This account is not allowed to use GarageStack"
+### "This account is not allowed to use MGMate"
 
 Authentication succeeded, authorization did not. The log line names the account and the groups that were seen. For `OIDC_ALLOWED_EMAILS` it says whether the provider sent an email claim at all, but it never logs the address itself; compare the account's email at the provider with the allow-list. If the provider sends no groups at all, either add a group claim (see your provider above) or switch to `OIDC_ALLOWED_EMAILS`.
 

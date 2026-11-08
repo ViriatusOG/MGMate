@@ -1,0 +1,87 @@
+using System.Globalization;
+using MGMate.Core.Configuration;
+using MGMate.Core.Interfaces;
+using MGMate.Data.Extensions;
+using MGMate.Worker.Mqtt;
+using MGMate.Worker.Services;
+using Serilog;
+
+Log.Logger = HostingExtensions.CreateBootstrapLogger();
+
+try
+{
+    var builder = Host.CreateApplicationBuilder(args);
+    builder.Configuration.AddMGMateEnvironment();
+
+    builder.Services.AddMGMateSerilog(builder.Configuration, "worker");
+
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("DefaultConnection is not configured.");
+
+    // Push notification titles and bodies come from Resources/NotificationStrings*.resx. The
+    // Worker has no browser request to take a language from, so the language is a deployment
+    // setting (NOTIFICATION_LANGUAGE, English unless it says otherwise). Only the UI culture is
+    // changed: number and date parsing of gateway payloads stays culture-invariant.
+    ApplyNotificationCulture(builder.Configuration.TextOrDefault("Notifications:Culture", "en"));
+    builder.Services.AddLocalization(opts => opts.ResourcesPath = "Resources");
+
+    builder.Services.AddMGMateData(connectionString);
+    builder.Services.Configure<MqttOptions>(builder.Configuration.GetSection(MqttOptions.SectionName));
+    builder.Services.AddTyrePressureThresholds(builder.Configuration);
+    builder.Services.AddAlertThresholds(builder.Configuration);
+    builder.Services.AddSingleton(VapidOptions.From(builder.Configuration));
+    builder.Services.AddSingleton<IPushSender, PushSenderService>();
+    builder.Services.AddSingleton<MqttConnectionState>();
+    builder.Services.AddHostedService<MqttConsumerService>();
+    builder.Services.AddHostedService<WorkerHeartbeatService>();
+    builder.Services.AddHostedService<PushNotificationCheckService>();
+    builder.Services.AddHostedService<MaintenanceCheckService>();
+    builder.Services.AddHostedService<TyreTrendCheckService>();
+    builder.Services.AddHostedService<PoiPreCachingService>();
+    builder.Services.AddHostedService<TripRecorderService>();
+    builder.Services.AddHostedService<ChargeRecorderService>();
+    // The Dutch registration's APK, recalls and insurance; stops at once unless RDW_ENABLED is set.
+    builder.Services.AddHostedService<RdwSyncService>();
+
+    // Climate schedules: the Worker decides when, the Api sends the commands (see VehicleCommandClient).
+    builder.Services.AddSingleton(TimeProvider.System);
+    builder.Services.AddSingleton<CommandAnswerWaiter>();
+    builder.Services.AddSingleton<IVehicleCommandClient, VehicleCommandClient>();
+    builder.Services.AddSingleton<ClimateScheduleRunner>();
+    builder.Services.AddHostedService<ClimateScheduleService>();
+
+    var retention = TelemetryRetentionOptions.From(builder.Configuration);
+    if (retention.FullDetailDays is { } fullDetailDays)
+        Log.Information("Telemetry keeps full detail for {Days} days, then is compacted into quarter-hour rows", fullDetailDays);
+    else
+        Log.Information("Telemetry compaction is off; every row is kept");
+    builder.Services.AddSingleton(retention);
+    builder.Services.AddHostedService<HousekeepingService>();
+
+    var host = builder.Build();
+
+    host.Run();
+}
+catch (Exception ex) when (ex is not HostAbortedException)
+{
+    Log.Fatal(ex, "Worker terminated unexpectedly");
+    Environment.ExitCode = 1;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
+
+static void ApplyNotificationCulture(string cultureName)
+{
+    try
+    {
+        var culture = CultureInfo.GetCultureInfo(cultureName);
+        CultureInfo.DefaultThreadCurrentUICulture = culture;
+        Log.Information("Notification language: {Culture}", culture.Name);
+    }
+    catch (CultureNotFoundException)
+    {
+        Log.Warning("NOTIFICATION_LANGUAGE '{Culture}' is not a known culture; notifications stay in English", cultureName);
+    }
+}

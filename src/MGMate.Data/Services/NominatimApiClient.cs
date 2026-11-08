@@ -1,0 +1,146 @@
+using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using MGMate.Core.Configuration;
+using MGMate.Core.Helpers;
+using MGMate.Core.Models;
+using Microsoft.Extensions.Logging;
+
+namespace MGMate.Data.Services;
+
+/// <summary>
+/// Reverse geocoding against Nominatim (OpenStreetMap's own geocoder, or a self-hosted instance
+/// via <see cref="GeocodingOptions.BaseUrl"/>). The public instance allows at most one request
+/// per second and expects answers to be cached, which is why every caller goes through
+/// <see cref="MGMate.Core.Interfaces.IGeocodeRepository"/> first and only reaches this
+/// client for a coordinate nothing has asked about yet.
+/// </summary>
+public sealed class NominatimApiClient(
+    IHttpClientFactory httpClientFactory,
+    GeocodingOptions options,
+    ILogger<NominatimApiClient> logger)
+{
+    public const string HttpClientName = "nominatim";
+
+    // Singleton-level gate: one request in flight at a time, at most one per MinInterval.
+    private readonly UpstreamRateGate _gate = new();
+
+    // The public instance's ceiling is one request per second; the margin keeps a clock that
+    // rounds the wrong way from turning into a 429.
+    private static readonly TimeSpan MinInterval = TimeSpan.FromMilliseconds(1100);
+
+    // A caller is a browser waiting on a map or a trip list, so it never queues behind more than
+    // a couple of other lookups: past that the request returns what it has and the client asks
+    // again for the rest.
+    private static readonly TimeSpan GateTimeout = TimeSpan.FromSeconds(4);
+    private static readonly TimeSpan RetryAfter429 = TimeSpan.FromSeconds(60);
+
+    /// <summary>Whether this deployment lets coordinates go to a geocoder at all (<see cref="GeocodingOptions.Enabled"/>).</summary>
+    public bool IsEnabled => options.Enabled;
+
+    private string BaseUrl => options.BaseUrl.TrimEnd('/');
+
+    /// <summary>
+    /// Looks up one coordinate. Returns <see cref="PlaceAddress.Empty"/> when upstream answered
+    /// but knows no place there (a cacheable answer), and null when we could not ask at all -
+    /// the gate was held, a backoff window was open, or the request failed - so the caller
+    /// leaves the coordinate unresolved rather than caching a blank.
+    /// </summary>
+    public async Task<PlaceAddress?> ReverseAsync(
+        double lat, double lng, string precision, string language, CancellationToken ct = default)
+    {
+        if (!IsEnabled) return null;
+
+        using var entry = await _gate.TryEnterAsync(GateTimeout, failWhenBackingOff: true, ct);
+        if (!entry.Entered)
+        {
+            logger.LogDebug("Nominatim refused ({Refusal}), leaving {Precision} lookup unresolved", entry.Refusal, precision);
+            return null;
+        }
+
+        try
+        {
+            var url = BuildReverseUrl(lat, lng, precision, language);
+            var client = httpClientFactory.CreateClient(HttpClientName);
+            using var answer = await _gate.SendAsync(
+                token => client.GetAsync(url, token), MinInterval, honourBackoff: true, RetryAfter429, ct);
+            var response = answer.Response;
+
+            if (answer.Backoff is { } backoff)
+            {
+                logger.LogDebug("Nominatim {Status}, backing off {Seconds}s",
+                    (int)response.StatusCode, (int)backoff.TotalSeconds);
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            await using var stream = await response.Content.ReadAsStreamAsync(ct);
+            var result = await JsonSerializer.DeserializeAsync<NominatimReverseResponse>(stream, cancellationToken: ct);
+            return result is null ? PlaceAddress.Empty : MapResponse(result);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Coordinates stay out of the log: a failing geocoder is worth knowing about, the
+            // car's position is not worth writing to disk on every retry.
+            logger.LogWarning(ex, "Nominatim reverse lookup failed for a {Precision} coordinate", precision);
+            return null;
+        }
+    }
+
+    // Every value here is either a number formatted invariantly or, for the language, one of the
+    // two codes GeocodeDefaults allows, so nothing needs escaping into the query string.
+    private string BuildReverseUrl(double lat, double lng, string precision, string language)
+    {
+        var invariant = CultureInfo.InvariantCulture;
+        var zoom = GeocodePrecisionPolicy.ZoomFor(precision).ToString(invariant);
+        return $"{BaseUrl}/reverse?format=jsonv2&lat={lat.ToString("G9", invariant)}" +
+               $"&lon={lng.ToString("G9", invariant)}" +
+               $"&zoom={zoom}&addressdetails=1&accept-language={language}";
+    }
+
+    // OSM tags the settlement under whichever of these fits its size, so the first one present
+    // is the name a driver would recognise; the administrative fallbacks keep rural coordinates
+    // from coming back nameless.
+    private static readonly string[] CityKeys =
+    [
+        "city", "town", "village", "hamlet", "municipality", "suburb", "city_district", "county",
+    ];
+
+    private static PlaceAddress MapResponse(NominatimReverseResponse response)
+    {
+        // Nominatim answers an unmappable coordinate with {"error": ...} and no address, which is
+        // a real answer worth caching, not a failure.
+        if (response.Error is not null) return PlaceAddress.Empty;
+
+        var address = response.Address;
+        return new PlaceAddress(
+            Clean(response.DisplayName, GeocodeCacheLimits.DisplayNameMaxLength),
+            Clean(Tag(address, "road"), GeocodeCacheLimits.NameMaxLength),
+            Clean(Tag(address, "house_number"), GeocodeCacheLimits.NameMaxLength),
+            Clean(CityKeys.Select(k => Tag(address, k)).FirstOrDefault(v => !string.IsNullOrWhiteSpace(v)),
+                GeocodeCacheLimits.NameMaxLength),
+            Clean(Tag(address, "postcode"), GeocodeCacheLimits.PostcodeMaxLength),
+            Clean(Tag(address, "country_code"), GeocodeCacheLimits.CountryCodeMaxLength));
+    }
+
+    private static string? Tag(Dictionary<string, string>? address, string key) =>
+        address?.GetValueOrDefault(key);
+
+    private static string? Clean(string? value, int maxLength)
+    {
+        var trimmed = value?.Trim();
+        if (string.IsNullOrEmpty(trimmed)) return null;
+        return trimmed.Truncate(maxLength);
+    }
+
+    private sealed class NominatimReverseResponse
+    {
+        [JsonPropertyName("display_name")] public string? DisplayName { get; init; }
+        [JsonPropertyName("address")] public Dictionary<string, string>? Address { get; init; }
+
+        // Typed as an element because the field is a plain string on some instances and an
+        // object on others; we only ever check whether it is there at all.
+        [JsonPropertyName("error")] public JsonElement? Error { get; init; }
+    }
+}

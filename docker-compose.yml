@@ -1,8 +1,8 @@
-# Compose puts the project name in front of every volume and network (garagestack_postgres_data).
+# Compose puts the project name in front of every volume and network (mgmate_postgres_data).
 # Without this line it takes the folder's name, so the same file run from another folder (a fresh
 # clone, a renamed directory) starts on new, empty volumes. An install that began in a folder with
 # another name keeps its volumes by setting COMPOSE_PROJECT_NAME in .env, see "Updating" in README.md.
-name: garagestack
+name: mgmate
 
 # Settings both .NET services need. Compose reads .env for ${...} interpolation on its own, so
 # every value a container gets is listed explicitly here: no env_file, and no secret reaching a
@@ -10,7 +10,7 @@ name: garagestack
 # never sees the notification language).
 #
 # The variables go through under the names .env uses; the services map each one onto its setting
-# (src/GarageStack.Core/Configuration/EnvironmentAliases.cs). Unset ones arrive empty, which the
+# (src/MGMate.Core/Configuration/EnvironmentAliases.cs). Unset ones arrive empty, which the
 # services read as "use the default", so the defaults live in the app and are not restated here.
 # The few defaults below are this deployment's own: its service names and plain HTTP.
 x-dotnet-environment: &dotnet-environment
@@ -117,7 +117,7 @@ services:
     profiles:
       - bundled-postgres
     image: postgres:18-alpine
-    container_name: garagestack-postgres
+    container_name: mgmate-postgres
     restart: unless-stopped
     mem_limit: 512m
     cpus: 1.0
@@ -137,16 +137,16 @@ services:
   worker:
     build:
       context: .
-      dockerfile: src/GarageStack.Worker/Dockerfile
+      dockerfile: src/MGMate.Worker/Dockerfile
       args:
         APP_VERSION: "${APP_VERSION:-0.0.0-local}"
-    container_name: garagestack-worker
+    container_name: mgmate-worker
     restart: unless-stopped
     mem_limit: 256m
     cpus: 0.5
     logging: *logging
     labels:
-      net.unraid.docker.icon: "https://raw.githubusercontent.com/joszz/garagestack/main/frontend/public/pwa-192x192.png"
+      net.unraid.docker.icon: "https://raw.githubusercontent.com/ViriatusOG/MGMate/main/frontend/public/pwa-192x192.png"
     depends_on:
       postgres:
         condition: service_healthy
@@ -172,16 +172,16 @@ services:
   api:
     build:
       context: .
-      dockerfile: src/GarageStack.Api/Dockerfile
+      dockerfile: src/MGMate.Api/Dockerfile
       args:
         APP_VERSION: "${APP_VERSION:-0.0.0-local}"
-    container_name: garagestack-api
+    container_name: mgmate-api
     restart: unless-stopped
     mem_limit: 512m
     cpus: 1.0
     logging: *logging
     labels:
-      net.unraid.docker.icon: "https://raw.githubusercontent.com/joszz/garagestack/main/frontend/public/pwa-192x192.png"
+      net.unraid.docker.icon: "https://raw.githubusercontent.com/ViriatusOG/MGMate/main/frontend/public/pwa-192x192.png"
     depends_on:
       postgres:
         condition: service_healthy
@@ -250,13 +250,13 @@ services:
         MAP_STYLE_DARK: "${MAP_STYLE_DARK:-}"
         MAP_STYLE_LIGHT: "${MAP_STYLE_LIGHT:-}"
         MAP_STYLE_COLORFUL: "${MAP_STYLE_COLORFUL:-}"
-    container_name: garagestack-frontend
+    container_name: mgmate-frontend
     restart: unless-stopped
     mem_limit: 128m
     cpus: 0.5
     logging: *logging
     labels:
-      net.unraid.docker.icon: "https://raw.githubusercontent.com/joszz/garagestack/main/frontend/public/pwa-192x192.png"
+      net.unraid.docker.icon: "https://raw.githubusercontent.com/ViriatusOG/MGMate/main/frontend/public/pwa-192x192.png"
       net.unraid.docker.webui: "http://[IP]:[PORT:80]/"
     depends_on:
       api:

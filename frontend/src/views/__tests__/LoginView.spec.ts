@@ -217,7 +217,7 @@ describe('LoginView', () => {
 
     const wrapper = await mountLogin(oidcConfig)
 
-    expect(wrapper.text()).toContain('This account is not allowed to use GarageStack')
+    expect(wrapper.text()).toContain('This account is not allowed to use MGMate')
   })
 
   it('explains a failed single sign-on attempt', async () => {

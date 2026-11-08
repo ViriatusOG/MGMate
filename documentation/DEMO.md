@@ -1,6 +1,6 @@
 # Demo Mode
 
-Demo mode runs GarageStack with realistic fake data and requires no MG iSmart credentials, no database, and no MQTT broker.
+Demo mode runs MGMate with realistic fake data and requires no MG iSmart credentials, no database, and no MQTT broker.
 
 ## What you get
 
@@ -39,7 +39,7 @@ The script auto-creates `frontend/.env.development.local` from the example file 
 **Backend:**
 
 ```bash
-cd src/GarageStack.Api
+cd src/MGMate.Api
 dotnet run --launch-profile Demo
 ```
 

@@ -1,0 +1,516 @@
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using MGMate.Core.Helpers;
+using MGMate.Core.Interfaces;
+using MGMate.Core.Models;
+using MGMate.Data.Extensions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+
+namespace MGMate.Data.Repositories;
+
+// logger/cache are optional (DI always supplies both) so existing tests can keep
+// constructing this directly with just a DbContext. time is the clock "the last week" and
+// "today" are measured by: the system's, or a test's fixed one.
+public class TelemetryRepository(
+    AppDbContext db,
+    ILogger<TelemetryRepository>? logger = null,
+    IMemoryCache? cache = null,
+    TimeProvider? time = null) : ITelemetryRepository
+{
+    private DateTime UtcNow => (time ?? TimeProvider.System).GetUtcNow().UtcDateTime;
+
+    // GetMergedLatestAsync scans up to 200 rows (plus up to 2 fallback queries) and runs on
+    // every /status, /widget/status and SignalR-broadcast call. A write
+    // (AddAsync/MergeIntoAsync) always invalidates the entry immediately via NotifyUpdatedAsync,
+    // so this short TTL only bounds staleness for the rare case nothing has written new
+    // telemetry at all - its real job is absorbing bursts of reads between writes (multiple
+    // browser tabs, homepage widget polling, etc).
+    private static readonly TimeSpan MergedLatestCacheTtl = TimeSpan.FromSeconds(5);
+
+    private static string LatestCacheKey(int vehicleId) => $"telemetry-latest/{vehicleId}";
+
+    // Defensive cap on raw row counts for GetGpsFixesAsync. Endpoints already cap
+    // the requestable window to 90 days, the trip recorder reads a week at a time, and GPS rows
+    // arrive roughly once/minute while driving, so this is far above any realistic heavy-user
+    // volume - it exists purely to bound worst-case memory rather than to affect normal queries.
+    private const int MaxRawRowsPerQuery = 200_000;
+
+    /// <summary>
+    /// Builds "any of these fields is set" as an expression tree EF can translate to SQL.
+    /// Non-nullable properties are left out: they always have a value, so they say nothing about
+    /// whether a row carries telemetry.
+    /// </summary>
+    private static Expression<Func<TelemetrySnapshot, bool>> AnyFieldSet(IEnumerable<PropertyInfo> properties)
+    {
+        var snapshot = Expression.Parameter(typeof(TelemetrySnapshot), "s");
+        var conditions = properties
+            .Where(p => !p.PropertyType.IsValueType || Nullable.GetUnderlyingType(p.PropertyType) is not null)
+            .Select(p => (Expression)Expression.NotEqual(
+                Expression.Property(snapshot, p),
+                Expression.Constant(null, p.PropertyType)));
+
+        return Expression.Lambda<Func<TelemetrySnapshot, bool>>(
+            conditions.Aggregate(Expression.OrElse), snapshot);
+    }
+
+    // Daily counters reset at midnight - a stale value from a prior day must not be carried
+    // forward into "today's" merged snapshot, so these two are merged with an extra date guard.
+    private static readonly HashSet<string> DailyCounterFields =
+    [
+        nameof(TelemetrySnapshot.MileageOfTheDay), nameof(TelemetrySnapshot.PowerUsageOfDay),
+    ];
+
+    // A row is worth reading when any mergeable field carries a value. Derived from the model for
+    // the same reason the merge loops are: hand-listing seventy fields here means a new telemetry
+    // field is silently treated as empty until someone remembers to add it.
+    private static readonly Expression<Func<TelemetrySnapshot, bool>> HasData =
+        AnyFieldSet(TelemetryFields.Mergeable);
+
+    // Chart history excludes GPS-only rows: latitude/longitude arrive every minute during driving
+    // and inflate the row count, causing the stride downsampler to skip the sparser fuel/EV/kWh
+    // rows. GPS data for routes belongs to the trips endpoint, not chart history. The fields that
+    // count are exactly the ones TelemetryHistoryPoint carries, read from that type so the two
+    // cannot drift apart.
+    private static readonly Expression<Func<TelemetrySnapshot, bool>> HasChartData =
+        AnyFieldSet(typeof(TelemetryHistoryPoint)
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Select(p => typeof(TelemetrySnapshot).GetProperty(p.Name)
+                ?? throw new InvalidOperationException(
+                    $"TelemetryHistoryPoint.{p.Name} has no matching TelemetrySnapshot property.")));
+
+    public async Task<long> AddAsync(TelemetrySnapshot snapshot, CancellationToken ct = default)
+    {
+        db.TelemetrySnapshots.Add(snapshot);
+        await db.SaveChangesAsync(ct);
+        await NotifyUpdatedAsync(snapshot.VehicleId, ct);
+        return snapshot.Id;
+    }
+
+    public async Task MergeIntoAsync(long rowId, TelemetrySnapshot patch, CancellationToken ct = default)
+    {
+        // Every MQTT message of a poll lands here, so the row is not read first: a stand-in with
+        // only its key is attached, the patch's fields are set on it, and the UPDATE writes exactly
+        // those (last write wins per field). Every telemetry field is nullable, so a field the
+        // stand-in leaves empty is one the patch did not carry, and stays as the row has it.
+        var row = db.TelemetrySnapshots.Local.FirstOrDefault(s => s.Id == rowId);
+        if (row is null)
+        {
+            row = new TelemetrySnapshot { Id = rowId, VehicleId = patch.VehicleId };
+            db.TelemetrySnapshots.Attach(row);
+        }
+        TelemetryFields.ApplyNonNullFields(row, patch);
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // The row is gone (nothing deletes recent telemetry, but a merge must never lose a
+            // message): the patch becomes a row of its own.
+            db.Entry(row).State = EntityState.Detached;
+            db.TelemetrySnapshots.Add(patch);
+            await db.SaveChangesAsync(ct);
+        }
+
+        await NotifyUpdatedAsync(patch.VehicleId, ct);
+    }
+
+    private async Task NotifyUpdatedAsync(int vehicleId, CancellationToken ct)
+    {
+        // Always invalidate, relational or not - GetMergedLatestAsync's cache must never
+        // outlive the write that just happened, since TelemetryNotificationService reads
+        // through this same cache to build the "live" SignalR broadcast.
+        cache?.Remove(LatestCacheKey(vehicleId));
+
+        try
+        {
+            await db.Database.NotifyAsync(PgChannels.TelemetryUpdated, vehicleId.ToString(), ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The telemetry row itself is already saved at this point, so this only means
+            // live SignalR/dashboard updates are delayed until the next poll, not data loss.
+            logger?.LogWarning(ex, "Failed to notify telemetry_updated for vehicleId={VehicleId}", vehicleId);
+        }
+    }
+
+    public async Task<TelemetrySnapshot?> GetMergedLatestAsync(int vehicleId, CancellationToken ct = default)
+    {
+        var cacheKey = LatestCacheKey(vehicleId);
+        if (cache is not null && cache.TryGetValue(cacheKey, out TelemetrySnapshot? cached))
+            return cached;
+
+        var since = UtcNow.AddDays(-7);
+        var rows = await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= since)
+            .Where(HasData)
+            .OrderByDescending(s => s.RecordedAt)
+            .Take(200)
+            .ToListAsync(ct);
+
+        if (rows.Count == 0) return null;
+
+        var todayStart = UtcNow.Date;
+        var merged = new TelemetrySnapshot { VehicleId = vehicleId, RecordedAt = rows[0].RecordedAt };
+        foreach (var row in rows)
+        {
+            TelemetryFields.ApplyFirstNonNullFields(merged, row, skip: DailyCounterFields);
+
+            // Daily counters are only meaningful from today - don't carry yesterday's values forward
+            if (row.RecordedAt >= todayStart)
+            {
+                merged.MileageOfTheDay ??= row.MileageOfTheDay;
+                merged.PowerUsageOfDay ??= row.PowerUsageOfDay;
+            }
+        }
+
+        // If the MG API still reports a journey distance but the engine is off,
+        // the trip has ended and the firmware just hasn't cleared the field yet.
+        // The 5-minute guard on speed handles the red-light case (speed=0 but
+        // engine still running - no EngineRunning row arrives during a stop).
+        if (merged.CurrentJourneyDistance is > 0)
+        {
+            var lastSpeedRow = rows.FirstOrDefault(r => r.Speed != null);
+            var engineOff = merged.EngineRunning == false;
+            var stationary = lastSpeedRow is { Speed: <= 0 } && UtcNow - lastSpeedRow.RecordedAt > TripSegmenter.ParkThreshold;
+            if (engineOff || stationary)
+                merged.CurrentJourneyDistance = null;
+        }
+
+        // GPS rows are sparse: the 200-row window may be filled with non-location
+        // topics published while the car is parked. Fall back to the most recent
+        // row that has coordinates - the partial index makes this cheap.
+        if (merged.Latitude == null)
+        {
+            var loc = await GetLatestPositionAsync(vehicleId, ct);
+            if (loc != null)
+            {
+                merged.Latitude = loc.Latitude;
+                merged.Longitude = loc.Longitude;
+                merged.Heading ??= loc.Heading;
+            }
+        }
+
+        // Charging/heating schedule fields are set only when the user changes a schedule
+        // and may not appear in the most-recent 200 rows. Fall back to the last row
+        // that holds any scheduling data so the dashboard keeps showing those cards.
+        if (merged.ChargingScheduleMode == null && merged.ChargingScheduleStartTime == null
+            && merged.BatteryHeatingScheduleMode == null && merged.BatteryHeatingScheduleStartTime == null)
+        {
+            var sched = await db.TelemetrySnapshots
+                .Where(s => s.VehicleId == vehicleId
+                    && (s.ChargingScheduleMode != null || s.ChargingScheduleStartTime != null
+                        || s.ChargingScheduleEndTime != null || s.BatteryHeatingScheduleMode != null
+                        || s.BatteryHeatingScheduleStartTime != null))
+                .OrderByDescending(s => s.RecordedAt)
+                .Select(s => new
+                {
+                    s.ChargingScheduleMode,
+                    s.ChargingScheduleStartTime,
+                    s.ChargingScheduleEndTime,
+                    s.BatteryHeatingScheduleMode,
+                    s.BatteryHeatingScheduleStartTime,
+                })
+                .FirstOrDefaultAsync(ct);
+
+            if (sched != null)
+            {
+                merged.ChargingScheduleMode ??= sched.ChargingScheduleMode;
+                merged.ChargingScheduleStartTime ??= sched.ChargingScheduleStartTime;
+                merged.ChargingScheduleEndTime ??= sched.ChargingScheduleEndTime;
+                merged.BatteryHeatingScheduleMode ??= sched.BatteryHeatingScheduleMode;
+                merged.BatteryHeatingScheduleStartTime ??= sched.BatteryHeatingScheduleStartTime;
+            }
+        }
+
+        cache?.Set(cacheKey, merged, MergedLatestCacheTtl);
+        return merged;
+    }
+
+    // A finished day's statistics cannot change: every row is stamped when it arrives, so no row
+    // lands on a day that has ended. The margin covers the merge window, which folds messages
+    // arriving just after midnight into a row stamped before it; compaction folds old rows but
+    // keeps each day's figures. The expiry only bounds how long an idle period stays in memory.
+    private static readonly TimeSpan DayFinishedMargin = TimeSpan.FromHours(1);
+    private static readonly TimeSpan DailyStatCacheTtl = TimeSpan.FromDays(7);
+
+    private static string DailyStatCacheKey(int vehicleId, TimeZoneInfo zone, DateOnly date) =>
+        $"daily-stat/{vehicleId}/{zone.Id}/{date:yyyy-MM-dd}";
+
+    public async Task<IReadOnlyList<DailyStat>> GetDailyStatsAsync(
+        int vehicleId, DateOnly from, DateOnly to, TimeZoneInfo zone, DateOnly today, CancellationToken ct = default)
+    {
+        if (cache is null) return await ReadDailyStatsAsync(vehicleId, from, to, zone, today, ct);
+
+        // Finished days come from the cache, and only the span from the first day it lacks to the
+        // last is read: a statistics page opened again reads today (and, for an hour after
+        // midnight, yesterday) rather than the whole period.
+        var last = to < today ? to : today;
+        var finishedBefore = UtcNow - DayFinishedMargin;
+        bool IsFinished(DateOnly date) => ZoneTime.StartOfDay(date.AddDays(1), zone) <= finishedBefore;
+
+        var byDate = new SortedDictionary<DateOnly, DailyStat>();
+        DateOnly? firstMissing = null, lastMissing = null;
+        for (var date = from; date <= last; date = date.AddDays(1))
+        {
+            if (IsFinished(date) && cache.TryGetValue(DailyStatCacheKey(vehicleId, zone, date), out DailyStat? hit) && hit is not null)
+            {
+                byDate[date] = hit;
+                continue;
+            }
+            firstMissing ??= date;
+            lastMissing = date;
+        }
+
+        if (firstMissing is { } readFrom && lastMissing is { } readTo)
+        {
+            // A day the cache held inside the span is read again too; the fresh answer wins.
+            foreach (var day in await ReadDailyStatsAsync(vehicleId, readFrom, readTo, zone, today, ct))
+            {
+                if (IsFinished(day.Date))
+                    cache.Set(DailyStatCacheKey(vehicleId, zone, day.Date), day, DailyStatCacheTtl);
+                byDate[day.Date] = day;
+            }
+        }
+
+        return [.. byDate.Values];
+    }
+
+    private async Task<IReadOnlyList<DailyStat>> ReadDailyStatsAsync(
+        int vehicleId, DateOnly from, DateOnly to, TimeZoneInfo zone, DateOnly today, CancellationToken ct)
+    {
+        var builder = new DailyStatsBuilder(zone, from, to, today);
+        var (start, end) = DailyStatsBuilder.UtcRange(from, to < today ? to : today, zone);
+
+        // Streamed in arrival order rather than loaded: a year is a few hundred thousand rows, each
+        // folded into its day as it arrives. Only the chart fields are read (TelemetryHistoryPoint),
+        // which the partial chart index covers.
+        var readings = db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= start && s.RecordedAt < end)
+            .Where(HasChartData)
+            .OrderBy(s => s.RecordedAt)
+            .Select(TelemetryHistoryPoint.Projection)
+            .AsAsyncEnumerable();
+
+        await foreach (var reading in readings.WithCancellation(ct))
+            builder.Add(reading);
+
+        return builder.Build();
+    }
+
+    public Task<PositionFix?> GetLatestPositionAsync(int vehicleId, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.Latitude != null && s.Longitude != null)
+            .OrderByDescending(s => s.RecordedAt)
+            .Select(s => new PositionFix(s.Latitude!.Value, s.Longitude!.Value, s.Heading))
+            .FirstOrDefaultAsync(ct);
+
+    public async Task<IReadOnlyList<TripPoint>> GetGpsFixesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default)
+    {
+        // Includes speed=0 fixes: the trip splitter needs them to see the car parked between
+        // back-to-back trips. Ordered newest-first with a cap, then reversed back to chronological
+        // order below: if the cap is ever hit, it's the oldest rows in the range that get dropped,
+        // not the newest - recent trips matter more to users than the tail of a 90-day window.
+        var fixes = await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt < to
+                        && s.Latitude != null && s.Longitude != null)
+            .OrderByDescending(s => s.RecordedAt)
+            .Select(s => new TripPoint(s.RecordedAt, s.Latitude!.Value, s.Longitude!.Value, s.Speed, null))
+            .Take(MaxRawRowsPerQuery)
+            .ToListAsync(ct);
+
+        if (fixes.Count == MaxRawRowsPerQuery)
+            logger?.LogWarning(
+                "GetGpsFixesAsync hit the {Cap}-row cap for vehicleId={VehicleId} ({From} to {To}); oldest rows in range were dropped",
+                MaxRawRowsPerQuery, vehicleId, from, to);
+
+        fixes.Reverse();
+        return fixes;
+    }
+
+    public Task<DateTime?> GetFirstGpsFixAtAsync(int vehicleId, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.Latitude != null && s.Longitude != null)
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => (DateTime?)s.RecordedAt)
+            .FirstOrDefaultAsync(ct);
+
+    public Task<TripPoint?> GetLastGpsFixBeforeAsync(int vehicleId, DateTime before, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt < before && s.Latitude != null && s.Longitude != null)
+            .OrderByDescending(s => s.RecordedAt)
+            .Select(s => new TripPoint(s.RecordedAt, s.Latitude!.Value, s.Longitude!.Value, s.Speed, null))
+            .FirstOrDefaultAsync(ct);
+
+    public async Task<IReadOnlyList<DateTime>> GetReportTimesAsync(
+        int vehicleId, DateTime after, DateTime before, int limit, CancellationToken ct = default) =>
+        await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt > after && s.RecordedAt < before)
+            .OrderByDescending(s => s.RecordedAt)
+            .Select(s => s.RecordedAt)
+            .Take(limit)
+            .ToListAsync(ct);
+
+    // Newest first rather than a MAX: this walks the (VehicleId, RecordedAt) index backwards and
+    // stops at the first row carrying a reading, where MAX would read every row before `at`.
+    public Task<double?> GetOdometerAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt <= at && s.OdometerKm != null)
+            .OrderByDescending(s => s.RecordedAt)
+            .Select(s => s.OdometerKm)
+            .FirstOrDefaultAsync(ct);
+
+    public Task<TimedReading?> GetSocAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt <= at && s.EvSocPercent != null)
+            .OrderByDescending(s => s.RecordedAt)
+            .Select(s => new TimedReading(s.RecordedAt, s.EvSocPercent!.Value))
+            .FirstOrDefaultAsync(ct);
+
+    public Task<double?> GetMeanOutsideTemperatureAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt <= to && s.ExteriorTemperature != null)
+            .AverageAsync(s => s.ExteriorTemperature, ct);
+
+    public async Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt < to
+                        && (s.IsCharging != null || s.EvSocPercent != null || s.HvPower != null))
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => new ChargeSample(
+                s.RecordedAt, s.IsCharging, s.EvSocPercent, s.HvPower, s.ChargingType,
+                s.Latitude, s.Longitude, s.OdometerKm, s.ChargingStopReason, s.SocTargetPercent, s.ExteriorTemperature,
+                s.ObcPowerSinglePhase, s.ObcPowerThreePhase))
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt <= to
+                        && (s.Speed != null || s.EvSocPercent != null || s.HvPower != null
+                            || s.Elevation != null || s.ExteriorTemperature != null || s.ClimateOn != null
+                            || s.ElectricRangeKm != null))
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => new TripTelemetryPoint(
+                s.RecordedAt, s.Speed, s.EvSocPercent, s.HvPower, s.Elevation, s.ExteriorTemperature, s.ClimateOn,
+                s.ElectricRangeKm))
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<ActivitySample>> GetActivitySamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
+        await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt < to)
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => new ActivitySample(
+                s.RecordedAt,
+                s.IsLocked,
+                s.DriverDoorOpen == null && s.PassengerDoorOpen == null && s.RearLeftDoorOpen == null
+                    && s.RearRightDoorOpen == null && s.TrunkOpen == null && s.BonnetOpen == null
+                    ? null
+                    : s.DriverDoorOpen == true || s.PassengerDoorOpen == true || s.RearLeftDoorOpen == true
+                      || s.RearRightDoorOpen == true || s.TrunkOpen == true || s.BonnetOpen == true,
+                s.ChargerConnected,
+                s.IsCharging,
+                s.ClimateOn,
+                s.EngineRunning,
+                s.EvSocPercent))
+            .ToListAsync(ct);
+
+    public Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.IsCharging == true)
+            .OrderBy(s => s.RecordedAt)
+            .Select(s => (DateTime?)s.RecordedAt)
+            .FirstOrDefaultAsync(ct);
+
+    // Both counters arrive in the same poll, so the row that carries the energy carries the distance.
+    public Task<DayCounterReading?> GetDayCountersAtAsync(int vehicleId, DateTime at, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt <= at && s.PowerUsageOfDay != null)
+            .OrderByDescending(s => s.RecordedAt)
+            .Select(s => new DayCounterReading(s.RecordedAt, s.PowerUsageOfDay!.Value, s.MileageOfTheDay))
+            .FirstOrDefaultAsync(ct);
+
+    public async Task<IReadOnlyList<StatusReading>> GetStatusReadingsAsync(int vehicleId, int count, CancellationToken ct = default)
+    {
+        // Twice the rows asked for: a delivered-again poll takes a row of its own, folded away below.
+        var rows = await db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.IsLocked != null)
+            .OrderByDescending(s => s.RecordedAt)
+            .Take(count * 2)
+            .ToListAsync(ct);
+
+        // The gateway stamps every poll (LastVehicleStateAt), and a poll delivered again carries the
+        // stamp of the one it repeats, so the stamp tells an old poll in a new row from a new poll.
+        return [.. rows
+            .GroupBy(r => r.LastVehicleStateAt ?? r.RecordedAt)
+            .Select(poll => poll.MinBy(r => r.RecordedAt)!)
+            .OrderByDescending(r => r.RecordedAt)
+            .Take(count)
+            .Select(r => new StatusReading(r.RecordedAt, r))];
+    }
+
+    // A charge poll always says whether the car is charging, and its stop reason, if any, arrives
+    // within the same few seconds, so it lands on the same row.
+    public Task<string?> GetChargingStopReasonAsync(int vehicleId, CancellationToken ct = default) =>
+        db.TelemetrySnapshots
+            .AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId && s.IsCharging != null)
+            .OrderByDescending(s => s.RecordedAt)
+            .Select(s => s.ChargingStopReason)
+            .FirstOrDefaultAsync(ct);
+
+    // Ordered on the group before projecting: EF cannot translate an OrderBy on a property of a
+    // record built through its constructor, so sorting after the Select fails at runtime.
+    // An iterator rather than the query itself, so the token reaches the query: returned as is, a
+    // caller's token never did, and an export kept reading every row after the browser had gone.
+    public async IAsyncEnumerable<TelemetrySnapshot> StreamAllAsync(
+        int vehicleId, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var rows = db.TelemetrySnapshots.AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId)
+            .OrderBy(s => s.RecordedAt).ThenBy(s => s.Id)
+            .AsAsyncEnumerable()
+            .WithCancellation(ct);
+        await foreach (var row in rows)
+            yield return row;
+    }
+
+    public async Task<VehicleAggregateStats> GetAggregateStatsAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default)
+    {
+        // Single grouped query instead of two round-trips: total count and the
+        // ClimateOn == true count are both conditional aggregates over the same filtered set.
+        var agg = await db.TelemetrySnapshots
+            .Where(s => s.VehicleId == vehicleId && s.RecordedAt >= from && s.RecordedAt <= to && s.ClimateOn != null)
+            .GroupBy(s => 1)
+            .Select(g => new { Known = g.Count(), On = g.Count(s => s.ClimateOn == true) })
+            .FirstOrDefaultAsync(ct);
+
+        var climateKnown = agg?.Known ?? 0;
+        var climateOn = agg?.On ?? 0;
+
+        return new VehicleAggregateStats(
+            ClimateUsagePct: climateKnown > 0 ? (int)Math.Round((double)climateOn / climateKnown * 100) : null,
+            ClimateOnSnapshots: climateOn,
+            TotalClimateSnapshots: climateKnown
+        );
+    }
+}

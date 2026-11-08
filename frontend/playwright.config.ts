@@ -17,7 +17,7 @@ const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:8080'
 // The same deployment under a name that is not localhost. Browsers treat localhost as a secure
 // origin, so a policy that only breaks plain HTTP on a LAN address (upgrade-insecure-requests
 // once blanked every such install) never shows up there.
-const insecureHost = 'garagestack.test'
+const insecureHost = 'mgmate.test'
 const insecureURL = new URL(baseURL)
 const insecureTarget = insecureURL.hostname
 insecureURL.hostname = insecureHost

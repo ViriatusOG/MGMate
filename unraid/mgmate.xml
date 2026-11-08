@@ -1,0 +1,716 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <!-- This template exists twice: unraid/mgmate.xml in ViriatusOG/MGMate, and
+       templates/mgmate.xml in ViriatusOG/unraid-community-apps, the copy Community Apps installs
+       from. Change the first, then copy it over the second in the same sitting, keeping only that
+       copy's own TemplateURL. See "Unraid Community Apps" in ViriatusOG/MGMate's
+       documentation/RELEASING.md. -->
+
+  <Name>MGMate</Name>
+  <Repository>ghcr.io/viriatusog/mgmate:latest</Repository>
+  <Registry>https://ghcr.io/</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/ViriatusOG/MGMate/issues</Support>
+  <Project>https://github.com/ViriatusOG/MGMate</Project>
+  <Overview>
+    MGMate is an open-source, self-hosted dashboard for MG / SAIC electric, plug-in hybrid and hybrid cars.
+    It connects to the MG iSmart cloud through the SAIC MQTT Gateway and keeps everything in its own embedded
+    PostgreSQL database. Features: a live dashboard; remote commands (climate, lock, boot, horn and lights, and on
+    a plug-in car charging, the charge target, cable lock, battery heating and their schedules); climate schedules;
+    energy statistics over any period; trips drawn on the roads they took, with heatmaps and speed limits; a trip
+    log for the taxman with automatic commutes and CSV export; maintenance reminders; tyre history with a
+    slow-puncture alert; push notifications, among them the car moving while parked; charging station, fuel
+    station, service area and speed camera map layers; kilometres or miles and the other units by region; Home
+    Assistant through MQTT discovery; single sign-on through any OpenID Connect provider; read-only API tokens; a
+    full data export; a log viewer; and a Homepage dashboard widget.
+    Everything runs in this one container: no external database or MQTT broker required.
+  </Overview>
+  <Category>Tools: HomeAutomation:</Category>
+  <WebUI>http://[IP]:[PORT:80]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/ViriatusOG/MGMate/main/unraid/mgmate.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/ViriatusOG/MGMate/main/frontend/public/pwa-192x192.png</Icon>
+  <License>MIT</License>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+
+  <!-- ── Ports ──────────────────────────────────────────────────────────────── -->
+
+  <Config
+    Name="Web UI Port"
+    Target="80"
+    Default="8080"
+    Mode="tcp"
+    Description="Host port for the MGMate web interface. Open this in your browser."
+    Type="Port"
+    Display="always"
+    Required="true"
+    Mask="false">8080</Config>
+
+  <Config
+    Name="MQTT Port"
+    Target="1883"
+    Default=""
+    Mode="tcp"
+    Description="Host port for the internal Mosquitto MQTT broker. Leave blank (default) to keep the broker LAN-private. Only set if you need direct MQTT access from other devices, such as Home Assistant (see documentation/HOME_ASSISTANT.md)."
+    Type="Port"
+    Display="advanced"
+    Required="false"
+    Mask="false"></Config>
+
+  <!-- ── Volumes ────────────────────────────────────────────────────────────── -->
+
+  <Config
+    Name="Data Directory"
+    Target="/data"
+    Default="/mnt/user/appdata/mgmate"
+    Mode="rw"
+    Description="Persistent storage for the PostgreSQL database, MQTT data, application logs, and ASP.NET Data Protection keys. Back this up regularly."
+    Type="Path"
+    Display="always"
+    Required="true"
+    Mask="false">/mnt/user/appdata/mgmate</Config>
+
+  <!-- ── Required variables ─────────────────────────────────────────────────── -->
+
+  <Config
+    Name="MG iSmart Email"
+    Target="SAIC_USER"
+    Default=""
+    Mode=""
+    Description="Your MG iSmart account email address. Must be the vehicle OWNER account -- shared or secondary accounts lack the write permissions needed to register alarm switches and will result in API error 1100003. Use a separate account on the MG phone app to avoid session conflicts."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="false"/>
+
+  <Config
+    Name="MG iSmart Password"
+    Target="SAIC_PASSWORD"
+    Default=""
+    Mode=""
+    Description="Your MG iSmart account password."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="true"/>
+
+  <Config
+    Name="MG Region"
+    Target="SAIC_REGION"
+    Default="eu"
+    Mode=""
+    Description="Region your vehicle is registered in: eu (Europe, default), au (Australia/New Zealand), or tr (Turkiye). Automatically mapped to the right API endpoint."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="false">eu</Config>
+
+  <Config
+    Name="Database Password"
+    Target="POSTGRES_PASSWORD"
+    Default=""
+    Mode=""
+    Description="Password for the embedded PostgreSQL database. If left empty a strong random password is auto-generated on first start and saved to /data/.postgres_password inside the data directory. Set explicitly only if you need to connect to the database directly with external tools. Generate with: openssl rand -base64 24"
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true"/>
+
+  <Config
+    Name="App URL"
+    Target="CORS_ORIGIN"
+    Default="http://localhost:8080"
+    Mode=""
+    Description="The exact URL you use to open MGMate in your browser, e.g. http://192.168.1.100:8080. Must match exactly -- wrong value causes login to fail."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="false">http://localhost:8080</Config>
+
+  <!-- ── Single sign-on (OpenID Connect) ────────────────────────────────────── -->
+
+  <Config
+    Name="OIDC Issuer URL"
+    Target="OIDC_AUTHORITY"
+    Default=""
+    Mode=""
+    Description="Optional. Issuer URL of your identity provider (Authentik, Authelia, Keycloak, Pocket ID, ...) -- the URL its /.well-known/openid-configuration sits under. Setting this switches MGMate to single sign-on and disables the built-in password login. Register the redirect URI &lt;App URL&gt;/api/auth/oidc/callback at your provider. See documentation/AUTHENTICATION.md."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="OIDC Client ID"
+    Target="OIDC_CLIENT_ID"
+    Default=""
+    Mode=""
+    Description="Client ID issued by your identity provider for MGMate. Required when OIDC Issuer URL is set."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="OIDC Client Secret"
+    Target="OIDC_CLIENT_SECRET"
+    Default=""
+    Mode=""
+    Description="Client secret issued by your identity provider. Leave empty for a public client that uses PKCE only."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true"/>
+
+  <Config
+    Name="OIDC Allowed Groups"
+    Target="OIDC_ALLOWED_GROUPS"
+    Default=""
+    Mode=""
+    Description="Comma-separated groups allowed to sign in, e.g. mgmate-users. Leave empty only if your provider already restricts who can use this application -- otherwise every account it accepts can sign in and control your car."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="OIDC Allowed Emails"
+    Target="OIDC_ALLOWED_EMAILS"
+    Default=""
+    Mode=""
+    Description="Comma-separated email addresses allowed to sign in. Useful with providers that have no groups. Works alongside OIDC Allowed Groups -- a match on either list grants access."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="OIDC Provider Name"
+    Target="OIDC_PROVIDER_NAME"
+    Default="SSO"
+    Mode=""
+    Description="Name shown on the sign-in button, e.g. Authentik."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">SSO</Config>
+
+  <Config
+    Name="Keep Password Login With OIDC"
+    Target="AUTH_PASSWORD_LOGIN_ENABLED"
+    Default=""
+    Mode=""
+    Description="Set to true to keep the built-in username/password login available alongside single sign-on, e.g. as break-glass access for when your identity provider is down. Leave empty to switch it off automatically once OIDC is configured. Set AUTH_USERNAME and AUTH_PASSWORD to a strong dedicated password if you enable this."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="Login Username"
+    Target="AUTH_USERNAME"
+    Default=""
+    Mode=""
+    Description="Username for the built-in web login. Leave empty to sign in with the MG iSmart email above."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="Login Password"
+    Target="AUTH_PASSWORD"
+    Default=""
+    Mode=""
+    Description="Password for the built-in web login. Leave empty to sign in with the MG iSmart password above. Set a strong dedicated password when the login stays enabled alongside single sign-on."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true"/>
+
+  <Config
+    Name="Secure Session Cookie"
+    Target="AUTH_COOKIE_SECURE"
+    Default="auto"
+    Mode=""
+    Description="auto (recommended) marks the session cookie Secure whenever you open MGMate over HTTPS, also behind a TLS-terminating reverse proxy, and keeps a plain-HTTP LAN install working. true always marks it Secure (plain HTTP then cannot log in); false never does."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">auto</Config>
+
+  <Config
+    Name="Session Lifetime (hours)"
+    Target="AUTH_SESSION_LIFETIME_HOURS"
+    Default="168"
+    Mode=""
+    Description="How long a single sign-on session lasts before the identity provider is consulted again. Signing in again is usually invisible while the provider's own session is still valid."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">168</Config>
+
+  <Config
+    Name="OIDC Auto Login"
+    Target="OIDC_AUTO_LOGIN"
+    Default="false"
+    Mode=""
+    Description="Set to true to skip the MGMate login page and go straight to your identity provider."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">false</Config>
+
+  <Config
+    Name="OIDC Scopes"
+    Target="OIDC_SCOPES"
+    Default="openid profile email"
+    Mode=""
+    Description="Scopes requested from the identity provider. Add the scope that carries group membership if your provider needs one for OIDC Allowed Groups."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">openid profile email</Config>
+
+  <Config
+    Name="OIDC Groups Claim"
+    Target="OIDC_GROUPS_CLAIM"
+    Default="groups"
+    Mode=""
+    Description="Name of the token claim that OIDC Allowed Groups is matched against. Provider-specific; groups covers most."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">groups</Config>
+
+  <Config
+    Name="OIDC Redirect URI"
+    Target="OIDC_REDIRECT_URI"
+    Default=""
+    Mode=""
+    Description="Only needed when MGMate cannot work out its own public URL, e.g. behind several chained reverse proxies. Must be &lt;App URL&gt;/api/auth/oidc/callback. Leave empty otherwise."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="OIDC Require HTTPS Metadata"
+    Target="OIDC_REQUIRE_HTTPS_METADATA"
+    Default="true"
+    Mode=""
+    Description="Set to false only for an identity provider served over plain HTTP on your LAN."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">true</Config>
+
+  <!-- ── Home Assistant ─────────────────────────────────────────────────────── -->
+
+  <Config
+    Name="Home Assistant MQTT Username"
+    Target="HA_MQTT_USERNAME"
+    Default=""
+    Mode=""
+    Description="Optional. Creates a broker login for the Home Assistant MQTT integration, limited to the car's topics. The car then appears in Home Assistant automatically. Also set the MQTT Port above so Home Assistant can reach the broker. See documentation/HOME_ASSISTANT.md."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="Home Assistant MQTT Password"
+    Target="HA_MQTT_PASSWORD"
+    Default=""
+    Mode=""
+    Description="Password for the Home Assistant MQTT login. Required when Home Assistant MQTT Username is set. Generate with: openssl rand -hex 32"
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true"/>
+
+  <!-- ── Optional variables ─────────────────────────────────────────────────── -->
+
+  <Config
+    Name="Internal MQTT Username"
+    Target="MQTT_BROKER_USERNAME"
+    Default="mgmate"
+    Mode=""
+    Description="Login the SAIC gateway, API and Worker use on the bundled Mosquitto broker. Only relevant if you connect other MQTT clients to the exposed MQTT port."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">mgmate</Config>
+
+  <Config
+    Name="Internal MQTT Password"
+    Target="MQTT_BROKER_PASSWORD"
+    Default=""
+    Mode=""
+    Description="Password for the internal broker login. Leave empty to have a random one generated at every start (fine unless external MQTT clients need a stable password). Generate with: openssl rand -hex 32"
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true"/>
+
+  <Config
+    Name="MG API Endpoint Override"
+    Target="SAIC_REST_URI"
+    Default=""
+    Mode=""
+    Description="Optional. Only needed if your region isn't eu, au, or tr -- set directly to your gateway's endpoint."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"></Config>
+
+  <Config
+    Name="VAPID Public Key"
+    Target="VAPID_PUBLIC_KEY"
+    Default=""
+    Mode=""
+    Description="VAPID public key for Web Push notifications. Leave empty to disable push notifications (the rest of the app works fine without them). Generate a key pair with: npx web-push generate-vapid-keys"
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="VAPID Private Key"
+    Target="VAPID_PRIVATE_KEY"
+    Default=""
+    Mode=""
+    Description="VAPID private key for Web Push notifications. Keep this secret."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true"/>
+
+  <Config
+    Name="VAPID Subject"
+    Target="VAPID_SUBJECT"
+    Default=""
+    Mode=""
+    Description="Contact the push services (Google, Mozilla, Apple) receive with every notification: mailto:you@example.com or an https URL. Empty uses CORS_ORIGIN when that is https, otherwise a placeholder; it is never taken from your MG account."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="Notification Language"
+    Target="NOTIFICATION_LANGUAGE"
+    Default="en"
+    Mode=""
+    Description="Language of the push notification texts (Engine started, Door left open, ...): en or nl. Notifications are written by the background worker, which has no browser to take a language from, so this is set per deployment."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">en</Config>
+
+  <Config
+    Name="Update Check"
+    Target="UPDATE_CHECK_ENABLED"
+    Default="true"
+    Mode=""
+    Description="Once a day MGMate asks GitHub for the latest release, and the footer links to it when it is newer. Only the release number is fetched. Set to false to keep MGMate from contacting GitHub."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">true</Config>
+
+  <Config
+    Name="Homepage Widget API Key"
+    Target="WIDGET_API_KEY"
+    Default=""
+    Mode=""
+    Description="Static API key for the read-only /api/widget/{vin}/status endpoint used by the gethomepage.dev Custom API widget. Leave empty to keep the endpoint disabled. Generate with: openssl rand -base64 32"
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true"/>
+
+  <Config
+    Name="Open Charge Map API Key"
+    Target="OPENCHARGEMAP_API_KEY"
+    Default=""
+    Mode=""
+    Description="API key for the EV charging station overlay on the map. Free to obtain at https://openchargemap.org/site/develop -- create an account and generate a key. Leave empty to disable the charging station feature."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true"/>
+
+  <Config
+    Name="RDW Lookups Enabled"
+    Target="RDW_ENABLED"
+    Default="false"
+    Mode=""
+    Description="For a car with a Dutch licence plate: shows the APK expiry date, open recalls and whether the car is insured, from the RDW's open data, and sends notifications about them. The plate, entered under Settings, is the only thing sent (to opendata.rdw.nl); nothing about your account or the car's position goes with it. No API key required. Set to true to switch it on."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">false</Config>
+
+  <Config
+    Name="RDW Refresh Hours"
+    Target="RDW_REFRESH_HOURS"
+    Default="24"
+    Mode=""
+    Description="Hours an RDW lookup is kept before it is asked again. One hour at the least."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">24</Config>
+
+  <Config
+    Name="RDW App Token"
+    Target="RDW_APP_TOKEN"
+    Default=""
+    Mode=""
+    Description="Optional Socrata app token for the RDW's open data, sent as X-App-Token. Without one, requests share the lower rate limit every anonymous caller gets."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true"/>
+
+  <Config
+    Name="Overpass API Base URL"
+    Target="OVERPASS__BASEURL"
+    Default="https://overpass-api.de/api/interpreter"
+    Mode=""
+    Description="Overpass API endpoint used for the fuel station, motorway service area and speed camera overlays. Defaults to the public endpoint -- no API key required. Change this only if you self-host an Overpass instance."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">https://overpass-api.de/api/interpreter</Config>
+
+  <Config
+    Name="Speed Camera Layer Enabled"
+    Target="SPEEDCAMERAS__ENABLED"
+    Default="true"
+    Mode=""
+    Description="Offers a map layer of the speed cameras mapped in OpenStreetMap. No API key required, and the layer stays off until you switch it on in the map's layer panel. Set to false to remove it from the deployment entirely -- do that where showing a driver where the cameras are is restricted, France and Germany among others."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">true</Config>
+
+  <Config
+    Name="Reverse Geocoding Enabled"
+    Target="GEOCODING__ENABLED"
+    Default="true"
+    Mode=""
+    Description="Turns coordinates into place names via OpenStreetMap Nominatim: city names in the trip list and the street the car is parked in. No API key required, and answers are cached for 90 days. Set to false to keep coordinates off a third-party service -- the trip list then shows dates."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">true</Config>
+
+  <Config
+    Name="Nominatim Base URL"
+    Target="GEOCODING__BASEURL"
+    Default="https://nominatim.openstreetmap.org"
+    Mode=""
+    Description="Nominatim endpoint used for those place names. Defaults to the public instance -- no API key required. Change this only if you self-host Nominatim."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">https://nominatim.openstreetmap.org</Config>
+
+  <Config
+    Name="Map Matching Enabled"
+    Target="MAPMATCHING__ENABLED"
+    Default="true"
+    Mode=""
+    Description="Draws a selected trip along the roads it was driven on, snapped onto OpenStreetMap by Valhalla, instead of in straight lines between GPS fixes. No API key required, and snapped trips are cached for 30 days. Set to false to keep trip geometry off a third-party service -- trips are then drawn from their raw fixes."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">true</Config>
+
+  <Config
+    Name="Valhalla Base URL"
+    Target="MAPMATCHING__BASEURL"
+    Default="https://valhalla1.openstreetmap.de"
+    Mode=""
+    Description="Valhalla endpoint used for that snapping. Defaults to the public instance -- no API key required. Change this only if you self-host Valhalla."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">https://valhalla1.openstreetmap.de</Config>
+
+  <Config
+    Name="Tyre Pressure - Low (bar)"
+    Target="TYRE_PRESSURE_LOW_BAR"
+    Default="2.2"
+    Mode=""
+    Description="Tyre pressure (bar) below which a tyre is shown red / triggers a low-pressure alert. Override to match your vehicle's placarded pressure."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">2.2</Config>
+
+  <Config
+    Name="Tyre Pressure - Good (bar)"
+    Target="TYRE_PRESSURE_GOOD_BAR"
+    Default="2.6"
+    Mode=""
+    Description="Tyre pressure (bar) at and above which a tyre is shown green (healthy). Below this and above the low threshold, it is shown orange."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">2.6</Config>
+
+  <Config
+    Name="Tyre Pressure - High (bar)"
+    Target="TYRE_PRESSURE_HIGH_BAR"
+    Default="3.2"
+    Mode=""
+    Description="Tyre pressure (bar) above which a tyre is shown red / triggers an over-inflation alert."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">3.2</Config>
+
+  <Config
+    Name="Tyre Pressure - Slow Puncture Drop (bar)"
+    Target="TYRE_PRESSURE_DROP_BAR"
+    Default="0.15"
+    Mode=""
+    Description="How far one tyre may fall behind the other three over two weeks before it is reported as a possible slow puncture. 0 switches the alert off."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">0.15</Config>
+
+  <Config
+    Name="Alert - Low 12V Battery (V)"
+    Target="AUX_BATTERY_LOW_VOLT"
+    Default="12.0"
+    Mode=""
+    Description="12V battery voltage a parked car is warned below, once several polls in a row show it. 0 switches the alert off."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">12.0</Config>
+
+  <Config
+    Name="Alert - Low Fuel (%)"
+    Target="LOW_FUEL_PERCENT"
+    Default="15"
+    Mode=""
+    Description="Fuel level a hybrid or plug-in hybrid is warned below. 0 switches the alert off."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">15</Config>
+
+  <Config
+    Name="Alert - Low EV Battery (%)"
+    Target="LOW_EV_PERCENT"
+    Default="20"
+    Mode=""
+    Description="Charge level a plug-in car is warned below. 0 switches the alert off."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">20</Config>
+
+  <Config
+    Name="Alert - No Data From the Car (hours)"
+    Target="STALE_DATA_HOURS"
+    Default="48"
+    Mode=""
+    Description="Hours without a report from the car before MGMate warns that data has stopped arriving. Keep it above the gateway's poll of a sleeping car (once a day by default). 0 switches the alert off."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">48</Config>
+
+  <Config
+    Name="HV Battery Capacity (kWh)"
+    Target="HV_BATTERY_CAPACITY_KWH"
+    Default=""
+    Mode=""
+    Description="Usable capacity of the traction battery, in kWh. The MQTT gateway assumes an EV-sized pack rather than reading the real one, so the kWh it reports are far too large on a plain hybrid (an MG HS Hybrid+ carries 1.83 kWh and is reported as 72.5). Leave empty to keep the gateway's figure on a BEV or PHEV and show charge as a percentage only on a hybrid."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"></Config>
+
+  <Config
+    Name="Telemetry Full Detail (days)"
+    Target="TELEMETRY_FULL_DETAIL_DAYS"
+    Default="365"
+    Mode=""
+    Description="Days of telemetry kept exactly as the car reported it. Older telemetry is folded into one row per quarter of an hour, which keeps every reading's latest value, each day's totals and your saved trips while the database stops growing as fast. Values below 90 are raised to 90. Set to 0 to keep every row."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">365</Config>
+
+  <Config
+    Name="API Rate Limit (per minute)"
+    Target="RATE_LIMIT_GLOBAL_PER_MINUTE"
+    Default="120"
+    Mode=""
+    Description="Requests per minute the API accepts from one address. Raise it when several people share one public address. Login and the widget keep their own, tighter limits."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">120</Config>
+
+  <Config
+    Name="Debug Logs"
+    Target="DEBUG_LOGS"
+    Default="false"
+    Mode=""
+    Description="true turns on debug logging in the API and the Worker."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">false</Config>
+
+  <Config
+    Name="Log Files Kept"
+    Target="LOG_RETAINED_FILES"
+    Default="30"
+    Mode=""
+    Description="Log files each service keeps under /data: one per day, and another whenever a day's file passes 100 MB. The oldest go first."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">30</Config>
+
+  <Config
+    Name="Database Name"
+    Target="POSTGRES_DB"
+    Default="mgmate"
+    Mode=""
+    Description="PostgreSQL database name. Only change this if you know what you are doing."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">mgmate</Config>
+
+  <Config
+    Name="Database User"
+    Target="POSTGRES_USER"
+    Default="mgmate"
+    Mode=""
+    Description="PostgreSQL database user. Only change this if you know what you are doing."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">mgmate</Config>
+
+</Container>

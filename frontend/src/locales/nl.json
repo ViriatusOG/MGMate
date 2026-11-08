@@ -373,7 +373,7 @@
     "scheduleCarTime": "Tijden gelden in de tijdzone van de auto.",
     "saveSchedule": "Schema opslaan",
     "refresh": "Vernieuwen",
-    "refreshConfirm": "Dit maakt de auto wakker om verse gegevens op te vragen, wat een beetje van de 12V-accu kost. GarageStack kijkt al elke 30 minuten bij de servers van MG zonder de auto te wekken. Auto nu wekken?",
+    "refreshConfirm": "Dit maakt de auto wakker om verse gegevens op te vragen, wat een beetje van de 12V-accu kost. MGMate kijkt al elke 30 minuten bij de servers van MG zonder de auto te wekken. Auto nu wekken?",
     "refreshHint": "Auto wekken voor verse gegevens",
     "pending": "Verstuurd - wachten op auto...",
     "error": "Commando mislukt",
@@ -464,9 +464,9 @@
   },
   "pwa": {
     "install": {
-      "title": "GarageStack installeren",
-      "description": "Voeg GarageStack toe aan je startscherm voor de beste ervaring.",
-      "iconAlt": "GarageStack app-icoon",
+      "title": "MGMate installeren",
+      "description": "Voeg MGMate toe aan je startscherm voor de beste ervaring.",
+      "iconAlt": "MGMate app-icoon",
       "featureQuickStart": "Met één tik open vanaf je startscherm",
       "featureNotifications": "Pushmeldingen voor voertuigevents",
       "featureNative": "Volledig scherm, native app-gevoel",
@@ -479,12 +479,12 @@
     "permissionDenied": "Toestemming geweigerd, sta meldingen toe in je browserinstellingen",
     "subscribeFailed": "Aanmelden voor pushmeldingen is mislukt. Controleer of de server bereikbaar is en probeer het opnieuw.",
     "enable": "Pushmeldingen op dit apparaat",
-    "enableDesc": "Meldingen komen binnen als systeemmelding, ook als GarageStack gesloten is.",
-    "needsHttps": "Pushmeldingen hebben GarageStack nodig op een https://-adres. Browsers staan ze niet toe op een gewoon http://-adres, behalve localhost."
+    "enableDesc": "Meldingen komen binnen als systeemmelding, ook als MGMate gesloten is.",
+    "needsHttps": "Pushmeldingen hebben MGMate nodig op een https://-adres. Browsers staan ze niet toe op een gewoon http://-adres, behalve localhost."
   },
   "updates": {
     "available": "v{version} beschikbaar",
-    "availableLabel": "GarageStack v{version} is beschikbaar: lees wat er nieuw is"
+    "availableLabel": "MGMate v{version} is beschikbaar: lees wat er nieuw is"
   },
   "notifications": {
     "title": "Meldingen",
@@ -546,7 +546,7 @@
     "redirecting": "Doorsturen naar {provider}...",
     "or": "of",
     "loggedOut": "Je bent uitgelogd",
-    "accessDenied": "Dit account mag GarageStack niet gebruiken",
+    "accessDenied": "Dit account mag MGMate niet gebruiken",
     "ssoFailed": "Eenmalig inloggen is mislukt, probeer het opnieuw",
     "noSignInMethod": "Er is geen aanmeldmethode ingesteld. Configureer een wachtwoordlogin of een OIDC-provider.",
     "apiUnreachable": "Geen verbinding met de API. Mogelijk start deze nog op."
@@ -672,7 +672,7 @@
     },
     "apiTokens": {
       "title": "API-tokens",
-      "desc": "Laat een script, een dashboard of een horloge de gegevens van GarageStack lezen zonder in te loggen. Een token leest als jouw account en kan alleen lezen: geen opdrachten sturen en niets wijzigen. Stuur hem mee als de header \"Authorization: Bearer\" gevolgd door het token.",
+      "desc": "Laat een script, een dashboard of een horloge de gegevens van MGMate lezen zonder in te loggen. Een token leest als jouw account en kan alleen lezen: geen opdrachten sturen en niets wijzigen. Stuur hem mee als de header \"Authorization: Bearer\" gevolgd door het token.",
       "nameLabel": "Naam van het token",
       "namePlaceholder": "Naam, bijv. Home Assistant",
       "create": "Token maken",
@@ -691,7 +691,7 @@
     },
     "export": {
       "title": "Je gegevens",
-      "desc": "Alles wat GarageStack bewaart, in één zip: per auto de ritten, het onderhoud, de schema’s, de plaatsen en elke meting, en je meldingen en instellingen. De metingen komen als CSV-bestand dat een spreadsheet opent, de rest als JSON. Een grote geschiedenis verzamelen duurt even.",
+      "desc": "Alles wat MGMate bewaart, in één zip: per auto de ritten, het onderhoud, de schema’s, de plaatsen en elke meting, en je meldingen en instellingen. De metingen komen als CSV-bestand dat een spreadsheet opent, de rest als JSON. Een grote geschiedenis verzamelen duurt even.",
       "download": "Alles downloaden"
     }
   },
@@ -1032,7 +1032,7 @@
   },
   "climateSchedules": {
     "title": "Klimaatschema's",
-    "subtitle": "Verwarm of koel de auto voordat je vertrekt. Schema's draaien op de GarageStack-server, dus je telefoon mag uit.",
+    "subtitle": "Verwarm of koel de auto voordat je vertrekt. Schema's draaien op de MGMate-server, dus je telefoon mag uit.",
     "addSchedule": "Schema toevoegen",
     "editSchedule": "Schema bewerken",
     "delete": "Verwijderen",
@@ -1100,11 +1100,11 @@
     "conflict": "Dat kan nu niet.",
     "rateLimited": "Te veel verzoeken. Wacht even en probeer het opnieuw.",
     "server": "Er ging iets mis op de server. Probeer het later opnieuw.",
-    "offline": "GarageStack is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
+    "offline": "MGMate is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
     "unknown": "Er is iets misgegaan.",
     "codes": {
       "csrf": {
-        "originNotAllowed": "Dit adres is niet toegestaan. Stel CORS_ORIGIN in op het adres waarop je GarageStack opent."
+        "originNotAllowed": "Dit adres is niet toegestaan. Stel CORS_ORIGIN in op het adres waarop je MGMate opent."
       },
       "vehicle": {
         "accountUnknown": "De auto heeft zijn MG-account nog niet doorgegeven. Probeer het opnieuw zodra hij gegevens heeft gestuurd."
@@ -1118,7 +1118,7 @@
         "nameTooLong": "De naam mag hoogstens 200 tekens lang zijn.",
         "notesTooLong": "De notities mogen hoogstens 1000 tekens lang zijn.",
         "intervalRequired": "Stel minstens één interval in (afstand of tijd)",
-        "intervalKmOutOfRange": "Het afstandsinterval valt buiten wat GarageStack accepteert.",
+        "intervalKmOutOfRange": "Het afstandsinterval valt buiten wat MGMate accepteert.",
         "intervalMonthsOutOfRange": "Het tijdsinterval moet tussen 1 en 120 maanden liggen.",
         "serviceDateInFuture": "De servicedatum kan niet in de toekomst liggen.",
         "odometerNegative": "De kilometerstand kan niet negatief zijn."

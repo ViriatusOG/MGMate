@@ -18,7 +18,7 @@ frontend/dist/
 __pycache__/
 
 # local all-in-one container testing data (see docker/all-in-one/README.md)
-garagestack-data/
+mgmate-data/
 
 CLAUDE.md
 dev.ps1

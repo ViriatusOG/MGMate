@@ -1,0 +1,132 @@
+using MGMate.Core.Models;
+
+namespace MGMate.Core.Interfaces;
+
+/// <summary>
+/// Stores and queries raw and merged vehicle telemetry. Each MQTT message from the SAIC
+/// gateway carries only the field(s) for one topic, so a single "poll" of the vehicle
+/// arrives as several narrow rows within a short window - <see cref="AddAsync"/> and
+/// <see cref="MergeIntoAsync"/> exist so a caller (MqttConsumerService) can fold those rows
+/// into one, while the Get* methods present a merged view back out for the API/dashboard.
+/// </summary>
+public interface ITelemetryRepository
+{
+    /// <summary>Inserts <paramref name="snapshot"/> as a new row and returns its generated id.</summary>
+    Task<long> AddAsync(TelemetrySnapshot snapshot, CancellationToken ct = default);
+
+    /// <summary>
+    /// Overwrites every field on the row identified by <paramref name="rowId"/> with the
+    /// corresponding non-null field from <paramref name="patch"/> (last-write-wins per field).
+    /// Used to fold a follow-up MQTT message into the same row an earlier message in the same
+    /// poll cycle already created.
+    /// </summary>
+    Task MergeIntoAsync(long rowId, TelemetrySnapshot patch, CancellationToken ct = default);
+
+    /// <summary>
+    /// Builds a single "current state" snapshot by merging the most recent rows for
+    /// <paramref name="vehicleId"/> field-by-field (first non-null value per field wins,
+    /// newest row first) - this is what the dashboard, widget endpoint, and SignalR live
+    /// updates all read, since no single MQTT message carries every field at once.
+    /// </summary>
+    Task<TelemetrySnapshot?> GetMergedLatestAsync(int vehicleId, CancellationToken ct = default);
+
+    /// <summary>The newest GPS fix of <paramref name="vehicleId"/>, however long ago; null when it never sent one.</summary>
+    Task<PositionFix?> GetLatestPositionAsync(int vehicleId, CancellationToken ct = default);
+
+    /// <summary>
+    /// One <see cref="DailyStat"/> per local day in <paramref name="zone"/>, from
+    /// <paramref name="from"/> to <paramref name="to"/> (or <paramref name="today"/>, whichever comes
+    /// first), worked out from every reading of those days.
+    /// </summary>
+    Task<IReadOnlyList<DailyStat>> GetDailyStatsAsync(
+        int vehicleId, DateOnly from, DateOnly to, TimeZoneInfo zone, DateOnly today, CancellationToken ct = default);
+
+    /// <summary>
+    /// The GPS fixes recorded from <paramref name="from"/> up to (not including) <paramref name="to"/>,
+    /// oldest first: every row carrying a position, with the speed when that row has one. The raw
+    /// material <see cref="Helpers.TripSegmenter"/> cuts trips from.
+    /// </summary>
+    Task<IReadOnlyList<TripPoint>> GetGpsFixesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
+    /// <summary>When the vehicle's first GPS fix was recorded, or null when it has never reported a position.</summary>
+    Task<DateTime?> GetFirstGpsFixAtAsync(int vehicleId, CancellationToken ct = default);
+
+    /// <summary>
+    /// The newest GPS fix recorded before <paramref name="before"/>, or null when there is none:
+    /// where the car stood when the fixes read from <paramref name="before"/> onwards begin.
+    /// </summary>
+    Task<TripPoint?> GetLastGpsFixBeforeAsync(int vehicleId, DateTime before, CancellationToken ct = default);
+
+    /// <summary>
+    /// When each report of any kind arrived after <paramref name="after"/> and before
+    /// <paramref name="before"/>, newest first and at most <paramref name="limit"/> of them: enough
+    /// to tell when a parked car woke up.
+    /// </summary>
+    Task<IReadOnlyList<DateTime>> GetReportTimesAsync(
+        int vehicleId, DateTime after, DateTime before, int limit, CancellationToken ct = default);
+
+    /// <summary>
+    /// The odometer as last reported at or before <paramref name="at"/>, or null when the vehicle
+    /// had not reported one by then. The odometer only counts up, so the latest reading is the
+    /// reading at that moment.
+    /// </summary>
+    Task<double?> GetOdometerAtAsync(int vehicleId, DateTime at, CancellationToken ct = default);
+
+    /// <summary>
+    /// The state of charge in percent as last reported at or before <paramref name="at"/>, with
+    /// when it was stored, or null when the vehicle had not reported one by then.
+    /// </summary>
+    Task<TimedReading?> GetSocAtAsync(int vehicleId, DateTime at, CancellationToken ct = default);
+
+    /// <summary>The mean outside temperature reported from <paramref name="from"/> to <paramref name="to"/>, in °C; null when none was.</summary>
+    Task<double?> GetMeanOutsideTemperatureAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
+    /// <summary>
+    /// The day counters (energy or fuel used today, distance driven today) as last reported at or
+    /// before <paramref name="at"/>, or null when the vehicle had not reported them by then.
+    /// </summary>
+    Task<DayCounterReading?> GetDayCountersAtAsync(int vehicleId, DateTime at, CancellationToken ct = default);
+
+    /// <summary>
+    /// The readings that say anything about charging between <paramref name="from"/> (inclusive)
+    /// and <paramref name="to"/> (exclusive), oldest first.
+    /// </summary>
+    Task<IReadOnlyList<ChargeSample>> GetChargeSamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
+    /// <summary>
+    /// What the car reported while a trip was driven, from <paramref name="from"/> to
+    /// <paramref name="to"/> (both inclusive), oldest first: speed, charge level, battery power,
+    /// elevation, outside temperature and climate.
+    /// </summary>
+    Task<IReadOnlyList<TripTelemetryPoint>> GetTripTelemetryAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
+    /// <summary>Every reading from <paramref name="from"/> up to <paramref name="to"/>, oldest first, as the activity timeline reads it.</summary>
+    Task<IReadOnlyList<ActivitySample>> GetActivitySamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+
+    /// <summary>When the vehicle first reported that it was charging, or null when it never has.</summary>
+    Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default);
+
+    /// <summary>
+    /// The car's last <paramref name="count"/> status polls (lock, doors, windows), newest first.
+    /// A poll the broker delivers again, as it does with retained messages on a reconnect, is still
+    /// one poll: it comes back once, at the time it first arrived.
+    /// </summary>
+    Task<IReadOnlyList<StatusReading>> GetStatusReadingsAsync(int vehicleId, int count, CancellationToken ct = default);
+
+    /// <summary>
+    /// Why the car stopped charging, as its newest charge poll says, or null when that poll gave no
+    /// reason. Read from that one poll: the gateway sends a reason only while the car reports one,
+    /// so the newest reason on record can belong to a charge that ended long ago.
+    /// </summary>
+    Task<string?> GetChargingStopReasonAsync(int vehicleId, CancellationToken ct = default);
+
+
+    /// <summary>
+    /// Every row recorded for <paramref name="vehicleId"/>, oldest first, one at a time: for the data
+    /// export, which can run to hundreds of thousands of rows.
+    /// </summary>
+    IAsyncEnumerable<TelemetrySnapshot> StreamAllAsync(int vehicleId, CancellationToken ct = default);
+
+    /// <summary>Computes summary statistics (e.g. climate usage) over snapshots in the given date range.</summary>
+    Task<VehicleAggregateStats> GetAggregateStatsAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default);
+}

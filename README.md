@@ -1,14 +1,16 @@
-# GarageStack
+# MGMate
 
 **A self-hosted dashboard, trip log and map for your MG.**
 
-[![Latest release](https://img.shields.io/github/v/release/joszz/GarageStack)](https://github.com/joszz/GarageStack/releases/latest)
-[![Docker image build](https://github.com/joszz/GarageStack/actions/workflows/docker-publish.yml/badge.svg?branch=main)](https://github.com/joszz/GarageStack/actions/workflows/docker-publish.yml)
-[![MIT licence](https://img.shields.io/github/license/joszz/GarageStack)](LICENSE)
+> MGMate is based on [GarageStack](https://github.com/joszz/GarageStack) by Jos Nienhuis (joszz), released under the MIT licence. It adds charge sessions and costs, Leapmotor Mate-style Trips and Charges pages, Reports, battery health, an Activity timeline, 12V and temperature charts, a car photo and a redesigned UI. Thanks to Jos for the foundation.
 
-![The GarageStack dashboard: the car on the road with its speed, tyre pressures and charge, a map of where it is, and cards for the battery, range, doors, windows, climate and today's driving](documentation/screenshots/desktop-dashboard.webp)
+[![Latest release](https://img.shields.io/github/v/release/ViriatusOG/MGMate)](https://github.com/ViriatusOG/MGMate/releases/latest)
+[![Docker image build](https://github.com/ViriatusOG/MGMate/actions/workflows/docker-publish.yml/badge.svg?branch=main)](https://github.com/ViriatusOG/MGMate/actions/workflows/docker-publish.yml)
+[![MIT licence](https://img.shields.io/github/license/ViriatusOG/MGMate)](LICENSE)
 
-GarageStack is a free, open-source web app for **modern MG cars**, the ones built by SAIC Motor such as the MG4, MG5, ZS EV and HS PHEV. It signs in to the SAIC iSmart API, the same backend the official MG iSmart app uses, and turns what your car reports into something worth opening:
+![The MGMate dashboard: the car on the road with its speed, tyre pressures and charge, a map of where it is, and cards for the battery, range, doors, windows, climate and today's driving](documentation/screenshots/desktop-dashboard.webp)
+
+MGMate is a free, open-source web app for **modern MG cars**, the ones built by SAIC Motor such as the MG4, MG5, ZS EV and HS PHEV. It signs in to the SAIC iSmart API, the same backend the official MG iSmart app uses, and turns what your car reports into something worth opening:
 
 - **See the car at a glance.** Fuel, battery, tyre pressures, doors, windows and climate on one live dashboard, with cards that adapt to your hybrid, plug-in hybrid or full electric car.
 - **Relive every drive.** Trips are saved automatically, named by where they went and drawn on the map along the roads you took, with heatmaps and the speed limits along the way.
@@ -19,7 +21,7 @@ GarageStack is a free, open-source web app for **modern MG cars**, the ones buil
 - **Fit it into your homelab.** Home Assistant through MQTT discovery, a gethomepage.dev widget, and single sign-on through Authentik, Authelia, Keycloak or any other OpenID Connect provider.
 - **Keep it yours.** Everything runs in Docker on your own hardware, as one all-in-one container or a Compose stack. No subscription, and no account needed beyond your MG login.
 
-> **Note:** GarageStack only works with the current MG brand owned by SAIC Motor. It is **not** compatible with classic British-built MG cars (MGB, Midget, MGF, etc.) produced before SAIC's acquisition of the brand. If your car does not use the MG iSmart app, GarageStack will not work with it.
+> **Note:** MGMate only works with the current MG brand owned by SAIC Motor. It is **not** compatible with classic British-built MG cars (MGB, Midget, MGF, etc.) produced before SAIC's acquisition of the brand. If your car does not use the MG iSmart app, MGMate will not work with it.
 
 ## Screenshots
 
@@ -39,7 +41,7 @@ And on a phone, with a single trip snapped to the roads and coloured against the
 
 The statistics, trip log, maintenance list and light theme are in the [screenshot gallery](documentation/screenshots/README.md).
 
-**Want to try it?** Read [MG iSmart account and session limits](#mg-ismart-account-and-session-limits) first, because GarageStack and the MG app cannot be signed in to the same account at once, then pick an [installation option](#installation). A single `docker run` is enough to get going.
+**Want to try it?** Read [MG iSmart account and session limits](#mg-ismart-account-and-session-limits) first, because MGMate and the MG app cannot be signed in to the same account at once, then pick an [installation option](#installation). A single `docker run` is enough to get going.
 
 ## Contents
 
@@ -61,7 +63,7 @@ The statistics, trip log, maintenance list and light theme are in the [screensho
 - **Tyre history** -- Tap a tyre's pressure on the dashboard's car to see a month of daily pressures for all four tyres, and how each one moved against the other three over the last two weeks: a tyre falling behind the others while they hold is a slow puncture, which also sends a notification.
 - **Trip history** -- Browse past journeys on an interactive map, each drawn on the roads it took and coloured by speed or by the speed limit, with a heatmap of the roads you drive most. Each trip is saved to the database a few minutes after the car parks. After upgrading from a version that did not save trips, the existing history is saved in the background on the Worker's first start.
 - **Trip log** -- Mark each trip as business, commute or private (commutes between your home and work are marked automatically), add notes, hide a GPS glitch, join two trips a fuel stop split, and export a month or a year as a spreadsheet with the addresses and odometer readings a tax trip log (such as the Dutch *rittenregistratie*) asks for. See [Trip log](#trip-log).
-- **Maintenance** -- Keep the car's service items (oil, tyres, the yearly inspection, ...) with a distance interval, a time interval or both. GarageStack works out from the odometer and your service log when each one is due, shows the most urgent on the dashboard, and sends a notification when an item reaches 90 % of its interval. Log each service with its date, odometer reading and notes.
+- **Maintenance** -- Keep the car's service items (oil, tyres, the yearly inspection, ...) with a distance interval, a time interval or both. MGMate works out from the odometer and your service log when each one is due, shows the most urgent on the dashboard, and sends a notification when an item reaches 90 % of its interval. Log each service with its date, odometer reading and notes.
 - **Dutch registration (RDW)** -- For a car with a Dutch licence plate, a dashboard card with the date the APK runs out and the days left, open recalls with what can go wrong and what the dealer does about it, and whether the car is insured, from the [RDW's open data](https://opendata.rdw.nl). Notifications come for a new recall, the APK a month and a week ahead, and a car with no insurance on record. Off until `RDW_ENABLED=true`; the plate, entered under Settings, is the only thing sent. See [Dutch registration (RDW)](#dutch-registration-rdw).
 - **Energy statistics** -- Track daily energy consumption, efficiency (Wh/km on a plug-in car, L/100 km on a hybrid), fuel use, electric share, average driving speed, and more, for any period from a week to several years.
 - **Remote commands** -- Trigger climate pre-conditioning (normal climate, fan only or front defrost), lock or unlock the car, open the boot, and activate the horn and lights remotely from the dashboard. On a plug-in car also start or stop charging, lock or unlock the charging cable, switch battery heating on or off, set the charging and battery heating schedules, and set the charge current limit and, where the car takes one, the charge target. Opening the boot and unlocking the cable ask for a second tap. Each command reports whether the car carried it out, and if it refused, the reason the MG servers gave.
@@ -69,10 +71,10 @@ The statistics, trip log, maintenance list and light theme are in the [screensho
 - **Push notifications** -- Browser and in-app alerts for key events: engine started, low or high tyre pressure, a slow puncture, low EV battery, low fuel, a weak 12V battery, car left unlocked, doors or windows left open, the car moving while parked, arriving at or leaving home or work, a charge that finished or stopped early, maintenance coming due, the APK running out or a recall on a Dutch plate, a climate schedule that ran, the messages the official MG app receives, and data that stopped arriving because the MG sign-in failed or the car went quiet. Each device chooses which ones it gets.
 - **Homepage widget** -- A read-only API endpoint for the [gethomepage.dev](https://gethomepage.dev) Custom API widget, exposing key vehicle stats at a glance, along with the APK days left, open recalls, the maintenance due next and the last trip.
 - **Log viewer** -- The Logs page shows the entries of the API's and the Worker's log files, newest first and older ones loading as you scroll, filtered by service, level and text, with exceptions folded open on request and a live mode that adds what was written every ten seconds. The files themselves stay on the server, one per day (`LOG_RETAINED_FILES`).
-- **Full data export** -- Settings > Your data downloads everything GarageStack keeps as one zip: per car its trips, maintenance, schedules, places and every telemetry reading (as CSV), and your notifications and settings.
+- **Full data export** -- Settings > Your data downloads everything MGMate keeps as one zip: per car its trips, maintenance, schedules, places and every telemetry reading (as CSV), and your notifications and settings.
 - **Read-only API tokens** -- Make a token under Settings > API tokens and let a script, a dashboard or a watch read what the app shows, without signing in. A token can only read: it cannot send commands or change anything, and the full data export and the logs stay with a signed-in session.
-- **Home Assistant** -- Your car appears in Home Assistant automatically through MQTT discovery, sharing GarageStack's broker and MG session instead of needing a second integration. GarageStack adds sensors of its own to the car: the APK and its days left, open recalls, the maintenance due next and the last trip. See [`HOME_ASSISTANT.md`](documentation/HOME_ASSISTANT.md).
-- **Progressive Web App (PWA)** -- Installable on mobile or desktop for a native app-like experience, complete with a home screen icon and push notification support. Where the browser allows it, GarageStack offers to install itself, and the offer can be turned down for good. Installing and push need HTTPS, see [HTTPS](#https).
+- **Home Assistant** -- Your car appears in Home Assistant automatically through MQTT discovery, sharing MGMate's broker and MG session instead of needing a second integration. MGMate adds sensors of its own to the car: the APK and its days left, open recalls, the maintenance due next and the last trip. See [`HOME_ASSISTANT.md`](documentation/HOME_ASSISTANT.md).
+- **Progressive Web App (PWA)** -- Installable on mobile or desktop for a native app-like experience, complete with a home screen icon and push notification support. Where the browser allows it, MGMate offers to install itself, and the offer can be turned down for good. Installing and push need HTTPS, see [HTTPS](#https).
 - **Charging stations** -- Overlay nearby EV charging stations on the map, sourced from the [Open Charge Map](https://openchargemap.org) database. Station data is cached in the database for 7 days; on page load the map immediately shows all stations within 100 km of your car that are already cached. Markers show operational status; clicking a marker displays the station name, operator, address, and available connector types with power ratings. Requires a free OCM API key (`OPENCHARGEMAP_API_KEY`). Unlike fuel stations and service areas, charging station tiles are loaded on demand as you browse the map and are not pre-populated by the background Worker.
 - **Fuel stations** -- Overlay nearby petrol and diesel stations on the map (HEV and PHEV only; not shown for BEV). Sourced from OpenStreetMap via the Overpass API -- no API key required. POI data is cached in the database for 7 days and pre-populated by the Worker for a 100 km radius around the car's last known position so the overlay is instant on first view.
 - **Motorway service areas** -- Overlay motorway service areas and rest stops on the map (all vehicle types). Same DB-backed cache and Worker pre-cache as fuel stations; useful for BEV drivers who often find fast chargers at service areas.
@@ -140,18 +142,18 @@ The Statistics view shows insight cards and charts for a period of its own: the 
 
 ## MG iSmart account and session limits
 
-> **Important:** The MG iSmart API only allows one active session per account at a time. Logging in anywhere else with the same credentials -- including the official MG app -- will immediately invalidate GarageStack's session, causing telemetry to stop until GarageStack reconnects.
+> **Important:** The MG iSmart API only allows one active session per account at a time. Logging in anywhere else with the same credentials -- including the official MG app -- will immediately invalidate MGMate's session, causing telemetry to stop until MGMate reconnects.
 
-GarageStack needs the vehicle **owner account**: shared or secondary accounts lack the write permissions required to register alarm switches and will fail with error 1100003. So instead of moving GarageStack off the owner account, set up a secondary account for the official MG app to use, and keep the owner account free for GarageStack:
+MGMate needs the vehicle **owner account**: shared or secondary accounts lack the write permissions required to register alarm switches and will fail with error 1100003. So instead of moving MGMate off the owner account, set up a secondary account for the official MG app to use, and keep the owner account free for MGMate:
 
 1. Open the MG app and go to **Settings > Account management > Add secondary account** (exact wording varies by region and app version).
 2. Invite a second email address and accept the invite on that account.
 3. Grant the secondary account access to your vehicle.
-4. Sign in to the official MG app with the secondary account, and use the owner account's credentials for `SAIC_USER` / `SAIC_PASSWORD` in GarageStack.
+4. Sign in to the official MG app with the secondary account, and use the owner account's credentials for `SAIC_USER` / `SAIC_PASSWORD` in MGMate.
 
-This way the official app runs independently on the secondary account and GarageStack keeps its own session on the owner account.
+This way the official app runs independently on the secondary account and MGMate keeps its own session on the owner account.
 
-The same applies to Home Assistant: rather than adding an MG integration there, connect Home Assistant to GarageStack's MQTT broker so both share one session. See [`HOME_ASSISTANT.md`](documentation/HOME_ASSISTANT.md).
+The same applies to Home Assistant: rather than adding an MG integration there, connect Home Assistant to MGMate's MQTT broker so both share one session. See [`HOME_ASSISTANT.md`](documentation/HOME_ASSISTANT.md).
 
 ---
 
@@ -159,7 +161,7 @@ The same applies to Home Assistant: rather than adding an MG integration there, 
 
 Before installing, make sure the following are available on your host:
 
-- **Docker** 23.0 or later (or Podman with Docker Compose compatibility); the quick start's relative `./garagestack-data` mount needs 23.0
+- **Docker** 23.0 or later (or Podman with Docker Compose compatibility); the quick start's relative `./mgmate-data` mount needs 23.0
 - **Docker Compose** 2.20 or later (bundled with Docker Desktop; on Linux install the `docker-compose-plugin` package) -- required for Option B only
 - An **MG iSmart account** with your vehicle already linked in the official app
 - Outbound internet access on the host, for the MG servers and the map and lookup services listed under [What leaves your network](#what-leaves-your-network)
@@ -180,21 +182,21 @@ A single Docker image that bundles every service -- nginx, the .NET API + worker
 
 ```bash
 docker run -d \
-  --name garagestack \
+  --name mgmate \
   -p 8080:80 \
-  -v ./garagestack-data:/data \
+  -v ./mgmate-data:/data \
   -e SAIC_USER=your@email.com \
   -e SAIC_PASSWORD=yourpassword \
   -e SAIC_REGION=eu \
   -e CORS_ORIGIN=http://192.168.1.100:8080 \
-  ghcr.io/joszz/garagestack:latest
+  ghcr.io/viriatusog/mgmate:latest
 ```
 
 > `POSTGRES_PASSWORD` is omitted -- a strong random password is auto-generated on first start and saved to `/data/.postgres_password`. Pass `-e POSTGRES_PASSWORD=yourpassword` explicitly if you need a known value (e.g. to connect with an external DB tool).
-> **HTTPS proxy:** nothing to set. `AUTH_COOKIE_SECURE` defaults to `auto`, which marks the session cookie Secure whenever GarageStack is opened over HTTPS (also behind a TLS-terminating proxy) and keeps a plain-HTTP LAN address working.
-> **Logging in:** without further configuration the web login uses your `SAIC_USER` / `SAIC_PASSWORD`. Set `AUTH_USERNAME` / `AUTH_PASSWORD` for separate credentials, or point GarageStack at your identity provider -- see [`AUTHENTICATION.md`](documentation/AUTHENTICATION.md).
+> **HTTPS proxy:** nothing to set. `AUTH_COOKIE_SECURE` defaults to `auto`, which marks the session cookie Secure whenever MGMate is opened over HTTPS (also behind a TLS-terminating proxy) and keeps a plain-HTTP LAN address working.
+> **Logging in:** without further configuration the web login uses your `SAIC_USER` / `SAIC_PASSWORD`. Set `AUTH_USERNAME` / `AUTH_PASSWORD` for separate credentials, or point MGMate at your identity provider -- see [`AUTHENTICATION.md`](documentation/AUTHENTICATION.md).
 
-**Unraid:** import `unraid/garagestack.xml` from Community Apps and fill in the variables in the template UI.
+**Unraid:** import `unraid/mgmate.xml` from Community Apps and fill in the variables in the template UI.
 
 See [`docker/all-in-one/README.md`](docker/all-in-one/README.md) for the volume layout and Unraid setup steps, and [`CONFIGURATION.md`](documentation/CONFIGURATION.md) for every variable.
 
@@ -207,8 +209,8 @@ Separate containers for each service. More flexible -- you can use your own Post
 #### 1. Clone the repository
 
 ```bash
-git clone https://github.com/joszz/garagestack.git
-cd garagestack
+git clone https://github.com/ViriatusOG/MGMate.git
+cd mgmate
 ```
 
 #### 2. Create your `.env` file
@@ -255,7 +257,7 @@ The frontend is served on port `8080` by default (configurable via `FRONTEND_POR
 
 Read the release notes first: anything an upgrade needs from you is listed under **Upgrade Notes** at the top. Database migrations run automatically on startup and only forwards, so to go back to an older version, restore the backup you took before upgrading (see [Backup and restore](#backup-and-restore)). A new PostgreSQL major version is never installed by an update: moving from 18 to the next one means a `pg_dump` from the old version and a restore into a fresh volume on the new one, step by step in [Moving to a new PostgreSQL major version](docker/all-in-one/README.md#moving-to-a-new-postgresql-major-version).
 
-**Docker Compose** builds GarageStack from the cloned source, so update the source and rebuild. `docker compose pull` fetches the gateway, Postgres and Mosquitto images:
+**Docker Compose** builds MGMate from the cloned source, so update the source and rebuild. `docker compose pull` fetches the gateway, Postgres and Mosquitto images:
 
 ```bash
 git pull
@@ -263,23 +265,23 @@ docker compose pull
 docker compose up -d --build
 ```
 
-**The Compose project name is fixed to `garagestack`.** Compose puts it in front of every volume (`garagestack_postgres_data`), and `docker-compose.yml` sets it, so the folder you run from no longer decides which database you get. An install that started in a folder with another name has its data under that name instead: before you update, run `docker compose ls`, and if the name there is not `garagestack`, add it to `.env`:
+**The Compose project name is fixed to `mgmate`.** Compose puts it in front of every volume (`mgmate_postgres_data`), and `docker-compose.yml` sets it, so the folder you run from no longer decides which database you get. An install that started in a folder with another name has its data under that name instead: before you update, run `docker compose ls`, and if the name there is not `mgmate`, add it to `.env`:
 
 ```bash
 COMPOSE_PROJECT_NAME=mg   # the NAME column of docker compose ls
 ```
 
-Without it, `docker compose up` stops with "The container name ... is already in use". Don't remove the old containers to get past that: GarageStack would start on new, empty volumes. If that already happened, see [My data is gone after switching](documentation/PREVIEW_BUILDS.md#my-data-is-gone-after-switching).
+Without it, `docker compose up` stops with "The container name ... is already in use". Don't remove the old containers to get past that: MGMate would start on new, empty volumes. If that already happened, see [My data is gone after switching](documentation/PREVIEW_BUILDS.md#my-data-is-gone-after-switching).
 
 **All-in-one container:**
 
 ```bash
-docker pull ghcr.io/joszz/garagestack:latest
-docker stop garagestack && docker rm garagestack
+docker pull ghcr.io/viriatusog/mgmate:latest
+docker stop mgmate && docker rm mgmate
 # Re-run your original docker run command
 ```
 
-When a newer release is out, the footer says so and links to its release notes. GarageStack asks GitHub once a day; set `UPDATE_CHECK_ENABLED=false` to stop it. A Compose build only knows its own version when you pass one, so build with `APP_VERSION=$(git describe --tags) docker compose up -d --build` to get the notice.
+When a newer release is out, the footer says so and links to its release notes. MGMate asks GitHub once a day; set `UPDATE_CHECK_ENABLED=false` to stop it. A Compose build only knows its own version when you pass one, so build with `APP_VERSION=$(git describe --tags) docker compose up -d --build` to get the notice.
 
 ### Monitoring
 
@@ -304,13 +306,13 @@ The only data that matters for disaster recovery is your PostgreSQL database (al
 **Docker Compose, bundled Postgres:** back up the database with `pg_dump` via the `postgres` service:
 
 ```bash
-docker compose exec postgres pg_dump -U garagestack garagestack > garagestack-backup.sql
+docker compose exec postgres pg_dump -U garagestack garagestack > mgmate-backup.sql
 ```
 
 Restore into a fresh database:
 
 ```bash
-cat garagestack-backup.sql | docker compose exec -T postgres psql -U garagestack garagestack
+cat mgmate-backup.sql | docker compose exec -T postgres psql -U garagestack garagestack
 ```
 
 (Replace `garagestack`/`garagestack` with your `POSTGRES_USER`/`POSTGRES_DB` if you customised them.)
@@ -318,34 +320,34 @@ cat garagestack-backup.sql | docker compose exec -T postgres psql -U garagestack
 **Docker Compose, external Postgres:** the `postgres` service above only exists when started with `--profile bundled-postgres`, so `docker compose exec postgres ...` won't work here -- back up directly against your own server instead, using the same `POSTGRES_HOST`/`POSTGRES_PORT`/`POSTGRES_USER`/`POSTGRES_DB` values you set in `.env`:
 
 ```bash
-pg_dump -h <POSTGRES_HOST> -p <POSTGRES_PORT> -U <POSTGRES_USER> <POSTGRES_DB> > garagestack-backup.sql
+pg_dump -h <POSTGRES_HOST> -p <POSTGRES_PORT> -U <POSTGRES_USER> <POSTGRES_DB> > mgmate-backup.sql
 ```
 
 Restore the same way, with `psql` in place of `pg_dump`:
 
 ```bash
-psql -h <POSTGRES_HOST> -p <POSTGRES_PORT> -U <POSTGRES_USER> <POSTGRES_DB> < garagestack-backup.sql
+psql -h <POSTGRES_HOST> -p <POSTGRES_PORT> -U <POSTGRES_USER> <POSTGRES_DB> < mgmate-backup.sql
 ```
 
 Either way, the DataProtection keys live in the `api_dataprotection` named volume -- back it up with the API stopped so nothing is mid-write:
 
 ```bash
 docker compose stop api
-docker run --rm -v garagestack_api_dataprotection:/keys -v "$(pwd)":/backup alpine tar czf /backup/dataprotection-backup.tar.gz -C /keys .
+docker run --rm -v mgmate_api_dataprotection:/keys -v "$(pwd)":/backup alpine tar czf /backup/dataprotection-backup.tar.gz -C /keys .
 docker compose start api
 ```
 
-(Volume names are prefixed with the Compose project name -- run `docker volume ls` to confirm yours if it's not `garagestack`.) The `mosquitto_data`, `worker_logs`, and `api_logs` volumes hold disposable/regeneratable data and don't need backing up.
+(Volume names are prefixed with the Compose project name -- run `docker volume ls` to confirm yours if it's not `mgmate`.) The `mosquitto_data`, `worker_logs`, and `api_logs` volumes hold disposable/regeneratable data and don't need backing up.
 
-**All-in-one container:** everything lives under the single `/data` bind mount (`garagestack-data/` by default). Stop the container first so nothing is mid-write, then copy the whole directory:
+**All-in-one container:** everything lives under the single `/data` bind mount (`mgmate-data/` by default). Stop the container first so nothing is mid-write, then copy the whole directory:
 
 ```bash
-docker stop garagestack
-cp -r garagestack-data garagestack-data-backup
-docker start garagestack
+docker stop mgmate
+cp -r mgmate-data mgmate-data-backup
+docker start mgmate
 ```
 
-To restore, stop the container, replace `garagestack-data` with the backup, and start it again.
+To restore, stop the container, replace `mgmate-data` with the backup, and start it again.
 
 ### Database size
 
@@ -355,7 +357,7 @@ Telemetry older than a year is folded into one row per quarter of an hour, so th
 
 ## Push notifications
 
-GarageStack checks your vehicle's state every 5 minutes and sends both a browser push notification and an in-app notification (bell icon) when any of the following conditions are detected. "Engine started", MG app messages and a failed MG sign-in go out the moment they arrive over MQTT instead. Each alert has a 1-hour cooldown per vehicle to avoid repeated notifications, and goes out once per report from the car: a car that sleeps for days with a soft tyre is reported once, not every hour.
+MGMate checks your vehicle's state every 5 minutes and sends both a browser push notification and an in-app notification (bell icon) when any of the following conditions are detected. "Engine started", MG app messages and a failed MG sign-in go out the moment they arrive over MQTT instead. Each alert has a 1-hour cooldown per vehicle to avoid repeated notifications, and goes out once per report from the car: a car that sleeps for days with a soft tyre is reported once, not every hour.
 
 | Alert | Condition |
 | ------- | --------- |
@@ -384,13 +386,13 @@ GarageStack checks your vehicle's state every 5 minutes and sends both a browser
 | MG app message | The official MG app receives a message, such as an alarm or a reminder (sent as it arrives, once per message) |
 | Scheduled climate | A climate schedule ran: climate started, the car refused, or it did not answer (nothing is sent for a run skipped because the car was in use or the day was mild) |
 
-Push notifications require VAPID keys to be configured (`VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`). Without them, alerts still appear in the in-app notification panel. While GarageStack is open in a browser that allowed notifications but is not subscribed to push, the same alerts show up as system notifications too; a subscribed browser gets them through push instead, so nothing arrives twice.
+Push notifications require VAPID keys to be configured (`VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`). Without them, alerts still appear in the in-app notification panel. While MGMate is open in a browser that allowed notifications but is not subscribed to push, the same alerts show up as system notifications too; a subscribed browser gets them through push instead, so nothing arrives twice.
 
 Settings has a push switch for the device you are on and a per-type checklist for these alerts, which offers only the types the car's drivetrain can produce: the plug-in alerts (low EV battery, charging complete, charging interrupted) are left out for a plain hybrid, low fuel for a full electric car, and the RDW type (APK, recalls and insurance) wherever `RDW_ENABLED` is off. Both are kept per device: a type switched off on your phone still reaches your laptop, and still shows up in the notification panel. Only the switch turns push on or off; the checklist never asks the browser for permission.
 
 Notification texts are written by the background worker, which has no browser to take a language from, so their language is a deployment setting: `NOTIFICATION_LANGUAGE=en` (default) or `nl`. The web UI's own language toggle does not affect them.
 
-MG app messages are the exception: they are passed on as SAIC wrote them, in the language of your MG account. Each one is sent once, even though the gateway repeats its latest message every time it starts, because GarageStack remembers which message it last saw. Two kinds are left out: the "vehicle started" message, which the engine started alert already covers, and any message sent more than a day ago, so a new install does not announce whatever the account last received. A message that arrives while the worker is not running is not sent afterwards.
+MG app messages are the exception: they are passed on as SAIC wrote them, in the language of your MG account. Each one is sent once, even though the gateway repeats its latest message every time it starts, because MGMate remembers which message it last saw. Two kinds are left out: the "vehicle started" message, which the engine started alert already covers, and any message sent more than a day ago, so a new install does not announce whatever the account last received. A message that arrives while the worker is not running is not sent afterwards.
 
 The tyre pressure thresholds (`TYRE_PRESSURE_LOW_BAR` / `TYRE_PRESSURE_GOOD_BAR` / `TYRE_PRESSURE_HIGH_BAR`) also drive the colour-coded dots on the dashboard's vehicle diagram. Set them once in your `.env` (or container environment) to match your vehicle's placarded pressure instead of the app's generic defaults.
 
@@ -417,7 +419,7 @@ Note: "keys left in the car" is not currently supported because the SAIC MQTT ga
 **Trip log** in the sidebar lists the saved trips for a month or a whole year. For each trip it shows the date and times, the addresses it left from and arrived at, and the odometer at either end.
 
 - **Purpose.** Mark a trip as business, commute or private. Choosing the same purpose again clears it. When trips in the period have no purpose yet, one button gives them all the same one; trips that already have a purpose keep it.
-- **Home and work.** Set your home and work places once (**Home and work** at the top, or click a trip's start or end address to use it). A car has one home and can have several work places. Every trip between home and a work place is marked as a commute: the trips already in the log, and each new one as soon as it is saved. A trip counts as ending at a place when it ends within its radius (250 m unless you change it), so parking down the street or in the office garage still counts. Trips you classified yourself, or deliberately left unclassified, are never changed; an automatic commute shows "Automatic", and choosing another purpose overrides it. Moving or removing a place updates the automatic ones. Business and private stay yours to choose. The places are kept per car in GarageStack's own database.
+- **Home and work.** Set your home and work places once (**Home and work** at the top, or click a trip's start or end address to use it). A car has one home and can have several work places. Every trip between home and a work place is marked as a commute: the trips already in the log, and each new one as soon as it is saved. A trip counts as ending at a place when it ends within its radius (250 m unless you change it), so parking down the street or in the office garage still counts. Trips you classified yourself, or deliberately left unclassified, are never changed; an automatic commute shows "Automatic", and choosing another purpose overrides it. Moving or removing a place updates the automatic ones. Business and private stay yours to choose. The places are kept per car in MGMate's own database.
 - **Arriving and leaving.** Switch on **Notify on arrival and departure** for a place, and the car parking there, or driving away from it, sends a notification (see [Push notifications](#push-notifications)). It is off for every place until you switch it on, and each device can still leave those two types out.
 - **Notes.** Record anything a trip log should say, such as who you visited or why you took another route. Notes save when you leave the field.
 - **Hide a trip.** A trip the GPS got wrong, or one that should not count, can be hidden: it leaves the map, the statistics, the dashboard, the totals and the export, and is listed only under **Show hidden trips**, where **Show again** brings it back. Nothing is deleted.
@@ -433,12 +435,12 @@ Only trips the Worker has saved can be logged, so the trip being driven, and one
 
 ## Climate schedules
 
-**Climate schedules** in the sidebar switch the car's climate on at a time you set, so it is warm (or cool) when you leave. They run on the GarageStack server: no phone or browser has to be open.
+**Climate schedules** in the sidebar switch the car's climate on at a time you set, so it is warm (or cool) when you leave. They run on the MGMate server: no phone or browser has to be open.
 
 - **When.** A time on the chosen weekdays, or once, on the next day that time comes round, when no weekday is chosen. The time is kept in the time zone the browser had when the schedule was made, so 07:30 stays 07:30 across daylight saving time.
 - **What.** A temperature (16 to 28 °C), or the fan only, or the front defrost; seat heating for either front seat, and the rear defroster.
 - **Only when it is needed.** A schedule can run only below or above an outside temperature: warming the car on cold mornings only, say. The car's own outside temperature from the last three hours decides; without a recent one the schedule runs.
-- **When it does not run.** Not while the engine runs, and not when the GarageStack Worker finds it more than 10 minutes late (after a restart, say): a car warmed long after you left is no use, so that run is recorded as missed. A car that answers that it is still busy, as one woken from a long sleep can, is asked again, up to three times.
+- **When it does not run.** Not while the engine runs, and not when the MGMate Worker finds it more than 10 minutes late (after a restart, say): a car warmed long after you left is no use, so that run is recorded as missed. A car that answers that it is still busy, as one woken from a long sleep can, is asked again, up to three times.
 - **What you hear.** Each run sends a notification saying whether the car started climate, refused, or did not answer. The schedule's card shows the last run and when it runs next, and the optional dashboard card the next start.
 
 Commands sent by hand at the same moment as a scheduled run share the car's one command at a time; see [`ARCHITECTURE.md`](documentation/ARCHITECTURE.md#climate-schedules) for how a run is carried out.
@@ -452,15 +454,15 @@ Commands sent by hand at the same moment as a scheduled run share the car's one 
 - **Intervals.** Each item has a distance interval, a time interval, or both; with both, it is due at whichever comes first.
 - **When it is due.** From the last service you logged and the car's odometer, an item is *OK*, *due soon* once 90 % of its interval has passed, or *overdue*. One without a service logged yet is *not tracked yet*.
 - **Logging a service.** Record the date, the odometer reading (the current one is filled in) and notes. The item's interval starts again from there, and its history is kept.
-- **Where it shows.** The dashboard's maintenance card shows the most urgent item, and so do the [Homepage widget](#homepage-dashboard-widget) and [Home Assistant](documentation/HOME_ASSISTANT.md#garagestacks-own-sensors). A notification comes when an item becomes due soon or overdue (checked every 6 hours, at most once a week per item).
+- **Where it shows.** The dashboard's maintenance card shows the most urgent item, and so do the [Homepage widget](#homepage-dashboard-widget) and [Home Assistant](documentation/HOME_ASSISTANT.md#mgmates-own-sensors). A notification comes when an item becomes due soon or overdue (checked every 6 hours, at most once a week per item).
 
 ---
 
 ## Dutch registration (RDW)
 
-For a car with a Dutch licence plate, GarageStack shows what the [RDW](https://opendata.rdw.nl) has on record for it: when the APK runs out, the recalls on the car, and whether it is WAM insured. It is off until the deployment sets `RDW_ENABLED=true`; until then nothing is sent and none of the below appears.
+For a car with a Dutch licence plate, MGMate shows what the [RDW](https://opendata.rdw.nl) has on record for it: when the APK runs out, the recalls on the car, and whether it is WAM insured. It is off until the deployment sets `RDW_ENABLED=true`; until then nothing is sent and none of the below appears.
 
-- **The plate.** Enter it under **Settings > Licence plate**, which is drawn as a Dutch plate. Type it with or without dashes: they are placed as the plate has them while you type (`HPK-98-B`, `12-ABC-3`). The plate is kept per car in GarageStack's own database, without the dashes, and **Remove** clears it along with what the RDW said about it.
+- **The plate.** Enter it under **Settings > Licence plate**, which is drawn as a Dutch plate. Type it with or without dashes: they are placed as the plate has them while you type (`HPK-98-B`, `12-ABC-3`). The plate is kept per car in MGMate's own database, without the dashes, and **Remove** clears it along with what the RDW said about it.
 - **The lookup.** Saving the plate looks it up straight away, so the card fills at once. After that the Worker asks again every `RDW_REFRESH_HOURS` (a day by default). The plate is the only thing sent, to `opendata.rdw.nl`, together with the RDW's own reference codes for the recalls it lists; no key is needed.
 - **The card.** The **APK & recalls** card shows the days the APK has left and how many recalls are open. Clicking it shows the APK date, the insurance on record, each open recall with what can happen and what the dealer does about it, the recalls already repaired, and when the RDW was last asked. The recall texts are the RDW's own, in Dutch. A plate the RDW does not know is said so, rather than shown as an error.
 - **Notifications.** A new open recall (once per recall: one reported repaired later sends nothing), the APK a month and a week before it runs out and once it has, and a car with no WAM insurance on record. They are listed under [Push notifications](#push-notifications), and can be switched off per device like the other types.
@@ -471,24 +473,24 @@ The settings, including an optional Socrata app token for a higher rate limit, a
 
 ## Homepage dashboard widget
 
-GarageStack has a read-only endpoint for the [gethomepage.dev](https://gethomepage.dev) Custom API widget, switched on by setting `WIDGET_API_KEY`. The setup and every field it returns are in [`WIDGET.md`](documentation/WIDGET.md).
+MGMate has a read-only endpoint for the [gethomepage.dev](https://gethomepage.dev) Custom API widget, switched on by setting `WIDGET_API_KEY`. The setup and every field it returns are in [`WIDGET.md`](documentation/WIDGET.md).
 
 ---
 
 ## Read-only API tokens
 
-To read GarageStack's data from a script, a dashboard or a watch, make a token under **Settings > API tokens**. It is shown once: copy it then. Send it with every request:
+To read MGMate's data from a script, a dashboard or a watch, make a token under **Settings > API tokens**. It is shown once: copy it then. Send it with every request:
 
 ```bash
-curl -H "Authorization: Bearer gs_..." https://garagestack.example.com/api/vehicles
+curl -H "Authorization: Bearer gs_..." https://mgmate.example.com/api/vehicles
 ```
 
-A token reads as the account that made it, through the same endpoints the app uses, and it can only read: any request that would change something, send a command or make another token is refused with `403`. The full data export and the server logs are refused too: they hold the car's whole history and the services' diagnostics, so they need a signed-in session. The list under Settings shows when each token was last used; revoking one stops it at once. GarageStack keeps only a hash of each token, so a lost one cannot be shown again: revoke it and make a new one.
+A token reads as the account that made it, through the same endpoints the app uses, and it can only read: any request that would change something, send a command or make another token is refused with `403`. The full data export and the server logs are refused too: they hold the car's whole history and the services' diagnostics, so they need a signed-in session. The list under Settings shows when each token was last used; revoking one stops it at once. MGMate keeps only a hash of each token, so a lost one cannot be shown again: revoke it and make a new one.
 
 **The API reference** is at `/api/openapi/v1.json`, readable with the token like any other endpoint: every endpoint, what it takes and what it answers, as an OpenAPI document. Load it into any OpenAPI viewer, for example:
 
 ```bash
-curl -H "Authorization: Bearer gs_..." https://garagestack.example.com/api/openapi/v1.json -o garagestack-openapi.json
+curl -H "Authorization: Bearer gs_..." https://mgmate.example.com/api/openapi/v1.json -o mgmate-openapi.json
 ```
 
 A few things to know before building on a token:
@@ -496,7 +498,7 @@ A few things to know before building on a token:
 - Tokens do not expire. Revoke the ones you no longer use; an account can hold 20.
 - Requests with a token count against the same per-address rate limit as the app (120 a minute by default, `RATE_LIMIT_GLOBAL_PER_MINUTE`), so poll every few seconds at most.
 - Live updates (the `/hubs/telemetry` connection the dashboard uses) are not available with a token; poll the REST endpoints instead.
-- A Home Assistant [REST sensor](https://www.home-assistant.io/integrations/sensor.rest/) works well with a token, see [`HOME_ASSISTANT.md`](documentation/HOME_ASSISTANT.md#reading-garagestack-with-an-api-token).
+- A Home Assistant [REST sensor](https://www.home-assistant.io/integrations/sensor.rest/) works well with a token, see [`HOME_ASSISTANT.md`](documentation/HOME_ASSISTANT.md#reading-mgmate-with-an-api-token).
 
 ---
 
@@ -533,7 +535,7 @@ Sourced from OpenStreetMap via the free [Overpass API](https://overpass-api.de) 
 - Shows petrol and diesel stations from OSM data. Accuracy and completeness depend on OSM coverage in your area.
 - **Brand filter** -- select one or more brands (e.g. BP, Shell, Total) from the Filters panel. Only stations with a matching `brand` or `operator` OSM tag are shown; untagged stations are hidden when any filter is active. The filter is applied client-side with no additional API call.
 - The Worker pre-populates a 100 km radius around your car's last known position every 6 hours, so the layer loads instantly on first view without hitting Overpass.
-- If Overpass answers that it is busy (429, 503 or 504), GarageStack waits as long as Overpass asks (its `Retry-After`) before asking again, and shows the cached data in the meantime. The same goes for every other service GarageStack asks.
+- If Overpass answers that it is busy (429, 503 or 504), MGMate waits as long as Overpass asks (its `Retry-After`) before asking again, and shows the cached data in the meantime. The same goes for every other service MGMate asks.
 - Tile data is cached for 7 days. Zooming or panning to a new area triggers on-demand fetching for uncached tiles.
 - Hidden for BEV vehicles (petrol stations are not relevant).
 
@@ -551,7 +553,7 @@ Sourced from OpenStreetMap (`highway=speed_camera`) via the Overpass API -- no A
 
 - Shows the cameras OSM holds a position for, all vehicle types. A marker's popup names the limit the camera enforces (`maxspeed`), the kind of camera (fixed, mobile site, average speed check, red light) and its operator, as far as the node is tagged for them. Coverage and accuracy are whatever OSM's mappers have entered.
 - Off by default. **The map's layer panel > Speed cameras** switches it on.
-- Positions on a map, not warnings: GarageStack is a dashboard of the car's state, and nothing here alerts you to a camera ahead while driving.
+- Positions on a map, not warnings: MGMate is a dashboard of the car's state, and nothing here alerts you to a camera ahead while driving.
 - Several countries restrict pointing a driver at camera positions, France and Germany among them. Set `SPEEDCAMERAS__ENABLED=false` to remove the layer from the deployment: the toggle then disappears from the layer panel, the endpoint serves nothing, and the Worker fetches no camera data either.
 - Same DB-backed cache and Worker pre-population as fuel stations. The same Overpass slowness applies for uncached tiles outside the pre-populated radius -- see the note in the Fuel stations section above.
 
@@ -601,12 +603,12 @@ A reading counts as over the limit only past 5 km/h above it: speedometers read 
 - With an identity provider, restrict who may sign in -- at the provider itself or with `OIDC_ALLOWED_GROUPS` / `OIDC_ALLOWED_EMAILS`. Without a restriction, every account the provider accepts can sign in and control the car.
 - Login endpoints are rate-limited per IP address on top of the global limit.
 - MQTT now requires credentials and ACLs, and broker exposure defaults to localhost-only in Docker Compose.
-- The optional Home Assistant broker login can only use the car's `saic/#` topics and read Home Assistant discovery and GarageStack's own sensor values (`garagestack/#`), so it cannot publish fake discovery configs or reach anything else on the broker.
-- The frontend sends a strict Content-Security-Policy with every response, which allows scripts only from GarageStack itself. See [Behind a reverse proxy or CDN](#behind-a-reverse-proxy-or-cdn) for keeping it intact.
+- The optional Home Assistant broker login can only use the car's `saic/#` topics and read Home Assistant discovery and MGMate's own sensor values (`garagestack/#`), so it cannot publish fake discovery configs or reach anything else on the broker.
+- The frontend sends a strict Content-Security-Policy with every response, which allows scripts only from MGMate itself. See [Behind a reverse proxy or CDN](#behind-a-reverse-proxy-or-cdn) for keeping it intact.
 
 ### What leaves your network
 
-GarageStack runs on your own hardware, but a few features ask public services for what they know. Each one is listed here with what it sends, and each one except the MG servers can be switched off.
+MGMate runs on your own hardware, but a few features ask public services for what they know. Each one is listed here with what it sends, and each one except the MG servers can be switched off.
 
 | Service | Asked by | What it receives | Switch it off |
 | ------- | -------- | ---------------- | ------------- |
@@ -616,15 +618,15 @@ GarageStack runs on your own hardware, but a few features ask public services fo
 | [Overpass](https://overpass-api.de) (fuel stations, service areas, speed cameras) | the API and the Worker | The map tiles being looked at, and the ones around the car (0.5° squares, not the car's position) | Turn the layers off; `SPEEDCAMERAS__ENABLED=false` removes the camera layer |
 | [Open Charge Map](https://openchargemap.org) (charging stations) | the API and the Worker | The map tiles being looked at, and your OCM key | Leave `OPENCHARGEMAP_API_KEY` empty |
 | [RDW open data](https://opendata.rdw.nl) (APK, recalls, insurance) | the API and the Worker | The licence plate, and the RDW's own codes for the recalls it lists | Off until `RDW_ENABLED=true` |
-| [GitHub](https://github.com/joszz/GarageStack/releases) (update notice) | the API | One request a day for the latest release | `UPDATE_CHECK_ENABLED=false` |
+| [GitHub](https://github.com/ViriatusOG/MGMate/releases) (update notice) | the API | One request a day for the latest release | `UPDATE_CHECK_ENABLED=false` |
 | [OpenFreeMap](https://openfreemap.org) and [OpenStreetMap](https://www.openstreetmap.org) tiles (the basemap) | your browser | The map tiles your browser shows | Serve your own tiles, see [Basemap](#basemap) |
 | Your browser's push service (Google, Mozilla, Apple) | the Worker | Each notification, encrypted so only your browser can read it, and `VAPID_SUBJECT` | Leave the VAPID keys empty, or switch push off per device |
 
-Requests to the map, lookup and update services identify themselves as `GarageStack/1.0 (+https://github.com/joszz/GarageStack)`, as Nominatim's usage policy asks. Apart from what the table lists, the car's telemetry, its trips, your notifications and your settings stay on your server, unless you connect something to it yourself, such as Home Assistant.
+Requests to the map, lookup and update services identify themselves as `MGMate/1.0 (+https://github.com/ViriatusOG/MGMate)`, as Nominatim's usage policy asks. Apart from what the table lists, the car's telemetry, its trips, your notifications and your settings stay on your server, unless you connect something to it yourself, such as Home Assistant.
 
 ### HTTPS
 
-GarageStack serves plain HTTP, which is all it needs on your own network, except for three things browsers keep for secure pages: push notifications, installing it as an app, and the service worker behind both. Browsers count `http://localhost` as secure, but not `http://192.168.1.100:8080`. To use those on your phone, give GarageStack an `https://` address: put it behind a reverse proxy that terminates TLS (examples below), or reach it through a VPN that provides HTTPS certificates. Over plain HTTP, Settings > Notifications says why push is not available.
+MGMate serves plain HTTP, which is all it needs on your own network, except for three things browsers keep for secure pages: push notifications, installing it as an app, and the service worker behind both. Browsers count `http://localhost` as secure, but not `http://192.168.1.100:8080`. To use those on your phone, give MGMate an `https://` address: put it behind a reverse proxy that terminates TLS (examples below), or reach it through a VPN that provides HTTPS certificates. Over plain HTTP, Settings > Notifications says why push is not available.
 
 ### Reverse proxy examples
 
@@ -643,14 +645,14 @@ garage.example.com {
 ```yaml
 http:
   routers:
-    garagestack:
+    mgmate:
       rule: Host(`garage.example.com`)
       entryPoints: [websecure]
       tls:
         certResolver: letsencrypt
-      service: garagestack
+      service: mgmate
   services:
-    garagestack:
+    mgmate:
       loadBalancer:
         servers:
           - url: http://192.168.1.100:8080
@@ -662,14 +664,14 @@ Every proxy in front of the API (yours, and with Compose the frontend container)
 
 ### Behind a reverse proxy or CDN
 
-- **Let GarageStack's security headers through.** A proxy that sets its own `Content-Security-Policy`, `X-Frame-Options` or `Permissions-Policy` replaces GarageStack's rather than adding to them. A Traefik headers middleware does this, for example. The page then runs without its script restrictions. Leave those three headers out of whatever headers the proxy adds for GarageStack; transport headers such as HSTS are fine.
-- **On Cloudflare, switch Rocket Loader off for this host** (Speed > Optimization, or a Configuration Rule). It rewrites every script on the page and delays the one that applies the stylesheet, which wastes the stylesheet preload and fills the console with warnings. With GarageStack's policy in place it is blocked outright. Cloudflare's injected Web Analytics beacon and bot-detection script are blocked by the policy too, so switch those off for the host if you would rather not see the console reports.
+- **Let MGMate's security headers through.** A proxy that sets its own `Content-Security-Policy`, `X-Frame-Options` or `Permissions-Policy` replaces MGMate's rather than adding to them. A Traefik headers middleware does this, for example. The page then runs without its script restrictions. Leave those three headers out of whatever headers the proxy adds for MGMate; transport headers such as HSTS are fine.
+- **On Cloudflare, switch Rocket Loader off for this host** (Speed > Optimization, or a Configuration Rule). It rewrites every script on the page and delays the one that applies the stylesheet, which wastes the stylesheet preload and fills the console with warnings. With MGMate's policy in place it is blocked outright. Cloudflare's injected Web Analytics beacon and bot-detection script are blocked by the policy too, so switch those off for the host if you would rather not see the console reports.
 
 ---
 
 ## Documentation
 
-For running GarageStack:
+For running MGMate:
 
 - [`CONFIGURATION.md`](documentation/CONFIGURATION.md): every setting, with its default
 - [`AUTHENTICATION.md`](documentation/AUTHENTICATION.md): single sign-on, the built-in login, and provider examples
@@ -687,7 +689,7 @@ For working on it:
 - [`PREVIEW_BUILDS.md`](documentation/PREVIEW_BUILDS.md): throwaway `pr-<number>` images for testing a fix on someone else's car, and how to run one
 - [`ACCESSIBILITY.md`](.github/ACCESSIBILITY.md) and [`SECURITY.md`](.github/SECURITY.md), which also says how to report a vulnerability
 
-What changed in each version is on the [releases page](https://github.com/joszz/GarageStack/releases).
+What changed in each version is on the [releases page](https://github.com/ViriatusOG/MGMate/releases).
 
 ---
 

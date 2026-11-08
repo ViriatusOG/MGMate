@@ -1,0 +1,213 @@
+using System.Globalization;
+using System.Text.Json.Serialization;
+using MGMate.Api;
+using MGMate.Api.Authentication;
+using MGMate.Api.Endpoints;
+using MGMate.Api.Hosting;
+using MGMate.Api.Hubs;
+using MGMate.Api.Services;
+using MGMate.Core.Configuration;
+using MGMate.Core.Helpers;
+using MGMate.Core.Interfaces;
+using MGMate.Data;
+using MGMate.Data.Demo;
+using MGMate.Data.Extensions;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
+using Serilog;
+
+Log.Logger = HostingExtensions.CreateBootstrapLogger();
+
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
+
+    // User secrets are loaded automatically in Development; also load them in Demo so local
+    // dev secrets (e.g. OpenChargeMap:ApiKey) are available when running start-demo.ps1.
+    if (builder.Environment.IsEnvironment("Demo"))
+        builder.Configuration.AddUserSecrets<Program>(optional: true);
+
+    builder.Configuration.AddMGMateEnvironment();
+
+    builder.Services.AddMGMateSerilog(builder.Configuration, "api");
+
+    // Pin the key ring to a fixed, CWD-relative path (mirrors "logs/api-.log" above) instead of
+    // relying on ASP.NET Core's implicit default, which resolves against the OS user profile.
+    // A container running as a non-root user with no profile falls back to an in-memory key
+    // ring there, silently invalidating every auth cookie on each restart.
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo("keys"));
+
+    var isDemoMode = builder.Configuration.GetValue<bool>("DEMO_MODE");
+
+    builder.Services.AddLocalization(opts => opts.ResourcesPath = "Resources");
+    builder.Services.Configure<MqttOptions>(builder.Configuration.GetSection(MqttOptions.SectionName));
+
+    if (isDemoMode)
+    {
+        Log.Information("DEMO MODE enabled -- using in-memory fake data, no database or MQTT required");
+        builder.Services.AddDemoServices();
+        // Demo mode's gateway carries commands out on the demo car and answers them.
+        builder.Services.AddSingleton<IMqttPublisher>(sp => ActivatorUtilities.CreateInstance<DemoCommandPublisher>(
+            sp, (DemoTelemetryRepository)sp.GetRequiredService<ITelemetryRepository>()));
+    }
+    else
+    {
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("DefaultConnection is not configured.");
+        builder.Services.AddMGMateData(connectionString);
+        builder.Services.AddSingleton<MqttPublisher>();
+        builder.Services.AddSingleton<IMqttPublisher>(sp => sp.GetRequiredService<MqttPublisher>());
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<MqttPublisher>());
+        builder.Services.AddSingleton<VehicleCommandRequestHandler>();
+        builder.Services.AddHostedService<TelemetryNotificationService>();
+        builder.Services.AddHostedService<HomeAssistantPublisher>();
+    }
+    builder.Services.AddOpenApi(opts =>
+    {
+        opts.AddDocumentTransformer((doc, _, _) =>
+        {
+            doc.Info = new()
+            {
+                Title = "MGMate API",
+                Version = "v1",
+                Description = "REST API for MGMate -- vehicle telemetry, statistics, and notifications.",
+            };
+            return Task.CompletedTask;
+        });
+    });
+    // Every error answer is a ProblemDetails body; refusals add a `code` the browser translates.
+    builder.Services.AddProblemDetails();
+    builder.Services.ConfigureHttpJsonOptions(opts =>
+    {
+        opts.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        opts.SerializerOptions.Converters.Add(new FiniteDoubleConverter());
+    });
+
+    builder.Services.AddTyrePressureThresholds(builder.Configuration);
+    builder.Services.AddHvBatteryCapacity(builder.Configuration);
+    builder.Services.AddSingleton(VapidOptions.From(builder.Configuration));
+
+    builder.Services.AddScoped<ChargingStationService>();
+    builder.Services.AddScoped<PoiService>();
+    builder.Services.AddScoped<GeocodeService>();
+    builder.Services.AddScoped<TripPlaceService>();
+    builder.Services.AddScoped<MapMatchService>();
+    builder.Services.AddScoped<DataExport>();
+    builder.Services.AddScoped<VehicleFactsService>();
+    builder.Services.AddSingleton<VehicleCommandGate>();
+    builder.Services.AddSingleton<VehicleCommandSender>();
+
+    builder.Services.AddSignalR();
+    builder.Services.AddMGMateHealthChecks(isDemoMode);
+
+    // Asks GitHub once a day for the latest release, for the footer's update notice.
+    builder.Services.AddHttpClient(GitHubReleaseClient.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(UpstreamHttp.UserAgent);
+        client.Timeout = TimeSpan.FromSeconds(15);
+    });
+    builder.Services.AddSingleton(new UpdateCheckOptions(
+        builder.Configuration.SwitchOrDefault("UpdateCheck:Enabled", true),
+        ReleaseVersion.Of(typeof(ApiEntryPoint).Assembly)));
+    builder.Services.AddSingleton<GitHubReleaseClient>();
+    builder.Services.AddSingleton<UpdateCheckService>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<UpdateCheckService>());
+
+    builder.Services.AddMGMateAuthentication(builder.Configuration, builder.Environment);
+    builder.Services.AddMGMateRateLimiting(builder.Configuration);
+
+    // The browser origins allowed to call the API: CORS for cross-origin deployments and the
+    // CSRF origin check below. Read once here; it is fixed for the process lifetime.
+    var allowedOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [];
+    builder.Services.AddMGMateCors(allowedOrigins, builder.Environment);
+
+    var app = builder.Build();
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        if (isDemoMode)
+            await DemoSeeder.SeedAsync(db, scope.ServiceProvider.GetRequiredService<RdwOptions>().Enabled);
+        else
+            await db.Database.MigrateAsync();
+    }
+
+    app.UseExceptionHandler();
+    app.UseMGMateForwardedHeaders();
+    app.UseMGMateRequestLogging();
+    app.UseCors();
+
+    // Rate limiting runs before the CSRF origin check so that a flood of requests with a
+    // spoofed/mismatched Origin gets throttled instead of generating unbounded warning-log
+    // volume in the check.
+    app.UseRateLimiter();
+    app.UseCsrfOriginCheck(allowedOrigins);
+
+    app.UseRequestLocalization(new RequestLocalizationOptions
+    {
+        DefaultRequestCulture = new RequestCulture("en"),
+        SupportedCultures = [new CultureInfo("en"), new CultureInfo("nl")],
+        SupportedUICultures = [new CultureInfo("en"), new CultureInfo("nl")],
+    });
+    app.UseAuthentication();
+    app.UseMiddleware<ApiTokenAuthentication.ReadOnlyMiddleware>();
+    app.UseAuthorization();
+
+    // The API reference, for scripts with a read-only token: under /api/, which the frontend's nginx
+    // passes on, and for signed-in callers only, like every endpoint it describes.
+    app.MapOpenApi("/api/openapi/{documentName}.json").RequireAuthorization();
+
+    if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Demo"))
+    {
+        app.MapOpenApi();
+        app.MapScalarApiReference(opts => opts
+            .WithTitle("MGMate API")
+            .WithTheme(ScalarTheme.DeepSpace)
+            .EnableDarkMode()
+            .WithDynamicBaseServerUrl(true)
+            .SortTagsAlphabetically()
+            .SortOperationsByMethod());
+    }
+
+    app.MapHealthEndpoints();
+    app.MapHub<TelemetryHub>("/hubs/telemetry").RequireAuthorization();
+    app.MapAuthEndpoints();
+    app.MapSettingsEndpoints();
+    app.MapApiTokenEndpoints();
+    app.MapExportEndpoints();
+    app.MapLogEndpoints();
+    app.MapVehicleEndpoints();
+    app.MapTripEndpoints();
+    app.MapChargeEndpoints();
+    app.MapVehiclePhotoEndpoints();
+    app.MapActivityEndpoints();
+    app.MapPushEndpoints();
+    app.MapNotificationEndpoints();
+    app.MapMaintenanceEndpoints();
+    app.MapClimateScheduleEndpoints();
+    app.MapCommutePlaceEndpoints();
+    app.MapRdwEndpoints();
+    app.MapWidgetEndpoints();
+    app.MapUpdateEndpoints();
+    app.MapClientErrorEndpoints();
+    app.MapMapEndpoints();
+
+    if (isDemoMode)
+    {
+        var demoTelemetry = app.Services.GetRequiredService<ITelemetryRepository>();
+        app.MapDemoEndpoints(demoTelemetry);
+    }
+
+    app.Run();
+}
+catch (Exception ex) when (ex is not HostAbortedException)
+{
+    Log.Fatal(ex, "API terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

@@ -118,7 +118,7 @@ describe('service worker', () => {
     await dispatch(scope, 'push', pushEvent('Charging complete'))
 
     expect(scope.registration.showNotification).toHaveBeenCalledWith(
-      'GarageStack',
+      'MGMate',
       expect.objectContaining({ body: 'Charging complete', data: { url: '/' } }),
     )
   })
@@ -157,7 +157,7 @@ describe('service worker', () => {
     expect(scope.clients.openWindow).toHaveBeenCalledWith(`${ORIGIN}/map`)
   })
 
-  // A push payload names where a click goes; it may only ever be a page of GarageStack itself.
+  // A push payload names where a click goes; it may only ever be a page of MGMate itself.
   it('never sends a click to another site', async () => {
     const scope = await loadWorker()
 

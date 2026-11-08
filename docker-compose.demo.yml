@@ -2,8 +2,8 @@ services:
   api:
     build:
       context: .
-      dockerfile: src/GarageStack.Api/Dockerfile
-    container_name: garagestack-api-demo
+      dockerfile: src/MGMate.Api/Dockerfile
+    container_name: mgmate-api-demo
     restart: unless-stopped
     environment:
       # Everything the container gets is listed here. Start the stack with --env-file .env.demo
@@ -32,7 +32,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_DEMO_MODE: "true"
-    container_name: garagestack-frontend-demo
+    container_name: mgmate-frontend-demo
     restart: unless-stopped
     depends_on:
       api:

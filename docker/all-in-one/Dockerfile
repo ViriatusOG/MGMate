@@ -43,19 +43,19 @@ ARG APP_VERSION=0.0.0-local
 # Shared build settings (target framework, analyzers) and central package versions. MSBuild
 # finds them by walking up from each project folder, so they sit one level above the projects.
 COPY Directory.Build.props Directory.Packages.props .editorconfig ./
-COPY src/GarageStack.Core/GarageStack.Core.csproj GarageStack.Core/
-COPY src/GarageStack.Data/GarageStack.Data.csproj GarageStack.Data/
-COPY src/GarageStack.Api/GarageStack.Api.csproj GarageStack.Api/
-COPY src/GarageStack.Worker/GarageStack.Worker.csproj GarageStack.Worker/
-RUN dotnet restore GarageStack.Api/GarageStack.Api.csproj \
-    && dotnet restore GarageStack.Worker/GarageStack.Worker.csproj
-COPY src/GarageStack.Core/ GarageStack.Core/
-COPY src/GarageStack.Data/ GarageStack.Data/
-COPY src/GarageStack.Api/ GarageStack.Api/
-COPY src/GarageStack.Worker/ GarageStack.Worker/
+COPY src/MGMate.Core/MGMate.Core.csproj MGMate.Core/
+COPY src/MGMate.Data/MGMate.Data.csproj MGMate.Data/
+COPY src/MGMate.Api/MGMate.Api.csproj MGMate.Api/
+COPY src/MGMate.Worker/MGMate.Worker.csproj MGMate.Worker/
+RUN dotnet restore MGMate.Api/MGMate.Api.csproj \
+    && dotnet restore MGMate.Worker/MGMate.Worker.csproj
+COPY src/MGMate.Core/ MGMate.Core/
+COPY src/MGMate.Data/ MGMate.Data/
+COPY src/MGMate.Api/ MGMate.Api/
+COPY src/MGMate.Worker/ MGMate.Worker/
 # ${APP_VERSION#v} strips a leading "v" (e.g. a tag name), which MinVer rejects
-RUN dotnet publish GarageStack.Api/GarageStack.Api.csproj -c Release -o /publish/api /p:MinVerVersionOverride=${APP_VERSION#v} \
- && dotnet publish GarageStack.Worker/GarageStack.Worker.csproj -c Release -o /publish/worker /p:MinVerVersionOverride=${APP_VERSION#v}
+RUN dotnet publish MGMate.Api/MGMate.Api.csproj -c Release -o /publish/api /p:MinVerVersionOverride=${APP_VERSION#v} \
+ && dotnet publish MGMate.Worker/MGMate.Worker.csproj -c Release -o /publish/worker /p:MinVerVersionOverride=${APP_VERSION#v}
 
 # ── Stage 3: Pull SAIC MQTT Gateway (source of truth for the gateway app) ────
 # The gateway is not on PyPI. We copy its pre-built venv + source directly from
@@ -175,10 +175,10 @@ COPY --from=dotnet-build /publish/worker /app/worker
 # Configuration
 COPY docker/all-in-one/nginx.conf       /etc/nginx/conf.d/default.conf
 # Same security-header snippet the frontend image uses, so the two never drift apart.
-COPY frontend/nginx-security-headers.conf /etc/nginx/snippets/garagestack-security-headers.conf
+COPY frontend/nginx-security-headers.conf /etc/nginx/snippets/mgmate-security-headers.conf
 # And the same locations, behind this image's own upstream (docker/all-in-one/nginx.conf).
-COPY frontend/nginx-app.conf /etc/nginx/snippets/garagestack-app.conf
-COPY docker/all-in-one/mosquitto.conf   /etc/mosquitto/conf.d/garagestack.conf
+COPY frontend/nginx-app.conf /etc/nginx/snippets/mgmate-app.conf
+COPY docker/all-in-one/mosquitto.conf   /etc/mosquitto/conf.d/mgmate.conf
 COPY docker/all-in-one/supervisord.conf /etc/supervisor/supervisord.conf
 COPY --chmod=755 \
     docker/all-in-one/entrypoint.sh \

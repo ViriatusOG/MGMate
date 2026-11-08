@@ -13,7 +13,7 @@ Only the latest release is actively maintained and receives security fixes.
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Use [GitHub's private vulnerability reporting](https://github.com/joszz/garagestack/security/advisories/new) to submit a report. Include:
+Use [GitHub's private vulnerability reporting](https://github.com/ViriatusOG/MGMate/security/advisories/new) to submit a report. Include:
 
 - A description of the vulnerability
 - Steps to reproduce
@@ -81,7 +81,7 @@ This project follows a coordinated vulnerability disclosure model. Good-faith se
 
 ### Database
 
-- The bundled deployments use one PostgreSQL role, owned by the application, for both the API and the Worker. There is no split into per-service roles; on an external server you can create a dedicated role with access to the `garagestack` database only
+- The bundled deployments use one PostgreSQL role, owned by the application, for both the API and the Worker. There is no split into per-service roles; on an external server you can create a dedicated role with access to the `mgmate` database only
 - User settings are stored per account under a SHA-256 hash of the sign-in method and subject, so the settings table holds no user name or email address. The server accepts only the known sections, plain identifier keys and 16 KB per section
 - Personal identifiers are kept out of the rotating log files: the MG account email and VIN are redacted from MQTT topics before logging, VINs are shortened to their last four characters, and failed login attempts log only the client IP. Location data is stored in the database and never logged
 - Errors the web app hits in a browser are reported to the API (signed-in only, rate-limited, 16 KB) and written to its log, capped, on one line, with VINs shortened. The log viewer and the full data export are available to signed-in sessions only

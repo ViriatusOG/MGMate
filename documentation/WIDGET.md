@@ -1,6 +1,6 @@
 # Homepage dashboard widget
 
-GarageStack exposes a dedicated read-only endpoint for the [gethomepage.dev](https://gethomepage.dev) [Custom API widget](https://gethomepage.dev/widgets/services/customapi/). No fork or custom widget code is required.
+MGMate exposes a dedicated read-only endpoint for the [gethomepage.dev](https://gethomepage.dev) [Custom API widget](https://gethomepage.dev/widgets/services/customapi/). No fork or custom widget code is required.
 
 ## 1. Generate an API key
 
@@ -12,19 +12,19 @@ Set `WIDGET_API_KEY` to the generated value in your `.env` file (Docker Compose)
 
 ## 2. Find your VIN
 
-Log in to GarageStack, open the browser developer tools (Network tab) and reload: the VIN is the `vin` field in the `/api/vehicles` response. It is also the 17-character segment in the MQTT topics the gateway logs, `saic/<account>/vehicles/<VIN>/...`.
+Log in to MGMate, open the browser developer tools (Network tab) and reload: the VIN is the `vin` field in the `/api/vehicles` response. It is also the 17-character segment in the MQTT topics the gateway logs, `saic/<account>/vehicles/<VIN>/...`.
 
 ## 3. Configure Homepage
 
-Add the following block to your Homepage `services.yaml`, replacing `YOUR_GARAGESTACK_URL`, `YOUR_VIN`, and `YOUR_WIDGET_API_KEY`:
+Add the following block to your Homepage `services.yaml`, replacing `YOUR_MGMATE_URL`, `YOUR_VIN`, and `YOUR_WIDGET_API_KEY`:
 
 ```yaml
-- GarageStack:
-    href: https://YOUR_GARAGESTACK_URL
+- MGMate:
+    href: https://YOUR_MGMATE_URL
     description: MG Vehicle Status
     widget:
       type: customapi
-      url: https://YOUR_GARAGESTACK_URL/api/widget/YOUR_VIN/status
+      url: https://YOUR_MGMATE_URL/api/widget/YOUR_VIN/status
       headers:
         X-Widget-Key: "YOUR_WIDGET_API_KEY"
       mappings:

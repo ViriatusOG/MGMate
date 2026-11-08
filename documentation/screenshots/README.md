@@ -1,6 +1,6 @@
 # Screenshots
 
-The main pages of GarageStack, on a desktop and on a phone. They were taken in [demo mode](../DEMO.md), so the car, its trips and the addresses are sample data.
+The main pages of MGMate, on a desktop and on a phone. They were taken in [demo mode](../DEMO.md), so the car, its trips and the addresses are sample data.
 
 ## Desktop
 

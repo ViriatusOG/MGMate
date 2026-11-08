@@ -373,7 +373,7 @@
     "scheduleCarTime": "Times are in the car's own time zone.",
     "saveSchedule": "Save schedule",
     "refresh": "Refresh",
-    "refreshConfirm": "This wakes the car to ask for fresh data, which uses a little of its 12V battery. GarageStack already checks MG's servers every 30 minutes without waking it. Wake the car now?",
+    "refreshConfirm": "This wakes the car to ask for fresh data, which uses a little of its 12V battery. MGMate already checks MG's servers every 30 minutes without waking it. Wake the car now?",
     "refreshHint": "Wake the car for fresh data",
     "pending": "Sent - waiting for car...",
     "error": "Command failed",
@@ -464,9 +464,9 @@
   },
   "pwa": {
     "install": {
-      "title": "Install GarageStack",
-      "description": "Add GarageStack to your home screen for the best experience.",
-      "iconAlt": "GarageStack app icon",
+      "title": "Install MGMate",
+      "description": "Add MGMate to your home screen for the best experience.",
+      "iconAlt": "MGMate app icon",
       "featureQuickStart": "Opens in a tap from your home screen",
       "featureNotifications": "Push notifications for vehicle events",
       "featureNative": "Full-screen native app feel",
@@ -479,12 +479,12 @@
     "permissionDenied": "Permission denied, allow notifications in your browser settings",
     "subscribeFailed": "Could not register for push notifications. Check that the server is reachable, then try again.",
     "enable": "Push notifications on this device",
-    "enableDesc": "Alerts arrive as system notifications, even while GarageStack is closed.",
-    "needsHttps": "Push notifications need GarageStack on an https:// address. Browsers do not allow them on a plain http:// address other than localhost."
+    "enableDesc": "Alerts arrive as system notifications, even while MGMate is closed.",
+    "needsHttps": "Push notifications need MGMate on an https:// address. Browsers do not allow them on a plain http:// address other than localhost."
   },
   "updates": {
     "available": "v{version} available",
-    "availableLabel": "GarageStack v{version} is available: read what changed"
+    "availableLabel": "MGMate v{version} is available: read what changed"
   },
   "notifications": {
     "title": "Notifications",
@@ -546,7 +546,7 @@
     "redirecting": "Redirecting to {provider}...",
     "or": "or",
     "loggedOut": "You have been signed out",
-    "accessDenied": "This account is not allowed to use GarageStack",
+    "accessDenied": "This account is not allowed to use MGMate",
     "ssoFailed": "Single sign-on failed, please try again",
     "noSignInMethod": "No sign-in method is configured. Set a password login or an OIDC provider.",
     "apiUnreachable": "Could not reach the API. It may still be starting."
@@ -672,7 +672,7 @@
     },
     "apiTokens": {
       "title": "API tokens",
-      "desc": "Let a script, a dashboard or a watch read GarageStack's data without signing in. A token reads as your account and can only read: it cannot send commands or change anything. Send it as the header \"Authorization: Bearer\" followed by the token.",
+      "desc": "Let a script, a dashboard or a watch read MGMate's data without signing in. A token reads as your account and can only read: it cannot send commands or change anything. Send it as the header \"Authorization: Bearer\" followed by the token.",
       "nameLabel": "Token name",
       "namePlaceholder": "Name, e.g. Home Assistant",
       "create": "Create token",
@@ -691,7 +691,7 @@
     },
     "export": {
       "title": "Your data",
-      "desc": "Everything GarageStack keeps, in one zip: per car its trips, maintenance, schedules, places and every telemetry reading, and your notifications and settings. Telemetry comes as a CSV file a spreadsheet opens, the rest as JSON. A big history takes a moment to gather.",
+      "desc": "Everything MGMate keeps, in one zip: per car its trips, maintenance, schedules, places and every telemetry reading, and your notifications and settings. Telemetry comes as a CSV file a spreadsheet opens, the rest as JSON. A big history takes a moment to gather.",
       "download": "Download everything"
     }
   },
@@ -1032,7 +1032,7 @@
   },
   "climateSchedules": {
     "title": "Climate schedules",
-    "subtitle": "Warm or cool the car before you leave. Schedules run on the GarageStack server, so your phone can stay off.",
+    "subtitle": "Warm or cool the car before you leave. Schedules run on the MGMate server, so your phone can stay off.",
     "addSchedule": "Add schedule",
     "editSchedule": "Edit schedule",
     "delete": "Delete",
@@ -1100,11 +1100,11 @@
     "conflict": "That cannot be done right now.",
     "rateLimited": "Too many requests. Wait a moment and try again.",
     "server": "Something went wrong on the server. Try again later.",
-    "offline": "GarageStack cannot be reached. Check your connection and try again.",
+    "offline": "MGMate cannot be reached. Check your connection and try again.",
     "unknown": "Something went wrong.",
     "codes": {
       "csrf": {
-        "originNotAllowed": "This address is not allowed. Set CORS_ORIGIN to the address you open GarageStack on."
+        "originNotAllowed": "This address is not allowed. Set CORS_ORIGIN to the address you open MGMate on."
       },
       "vehicle": {
         "accountUnknown": "The car has not reported its MG account yet. Try again once it has sent data."
@@ -1118,7 +1118,7 @@
         "nameTooLong": "The name can be at most 200 characters.",
         "notesTooLong": "The notes can be at most 1000 characters.",
         "intervalRequired": "Set at least one interval (distance or time)",
-        "intervalKmOutOfRange": "The distance interval is outside the range GarageStack accepts.",
+        "intervalKmOutOfRange": "The distance interval is outside the range MGMate accepts.",
         "intervalMonthsOutOfRange": "The time interval must be between 1 and 120 months.",
         "serviceDateInFuture": "The service date cannot be in the future.",
         "odometerNegative": "The odometer reading cannot be negative."

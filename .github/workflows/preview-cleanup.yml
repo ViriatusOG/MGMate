@@ -54,7 +54,7 @@ jobs:
           # pr-123 and every pr-123-<commit>; never pr-1234.
           PATTERN="^pr-$PR(-[0-9a-f]+)?\$"
           FAILED=0
-          for PACKAGE in garagestack garagestack-frontend garagestack-api garagestack-worker; do
+          for PACKAGE in mgmate mgmate-frontend mgmate-api mgmate-worker; do
             IDS=$(gh api --paginate "$BASE/packages/container/$PACKAGE/versions?per_page=100" \
               --jq ".[] | select(any(.metadata.container.tags[]; test(\"$PATTERN\"))) | .id")
             if [ -z "$IDS" ]; then
@@ -76,7 +76,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          MARKER='<!-- garagestack-preview-build -->'
+          MARKER='<!-- mgmate-preview-build -->'
           ID=$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
             --jq ".[] | select(.body | startswith(\"$MARKER\")) | .id" | head -n 1)
           if [ -z "$ID" ]; then

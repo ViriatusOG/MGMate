@@ -125,7 +125,7 @@ async function submitLogin() {
           <font-awesome-icon icon="car" />
         </div>
         <div>
-          <div class="login-card__title">GarageStack</div>
+          <div class="login-card__title">MGMate</div>
           <div class="login-card__subtitle">{{ t('auth.subtitle') }}</div>
         </div>
       </div>

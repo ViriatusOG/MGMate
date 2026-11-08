@@ -1,6 +1,6 @@
 # Preview builds
 
-A preview build is a set of throwaway images for one pull request, so someone with the right car can try a fix before it is merged. It exists because most of GarageStack's drivetrain code (BEV and PHEV charging, battery counters) cannot be checked on the maintainer's own car: the person who reported the problem is the only one who can say whether the fix works.
+A preview build is a set of throwaway images for one pull request, so someone with the right car can try a fix before it is merged. It exists because most of MGMate's drivetrain code (BEV and PHEV charging, battery counters) cannot be checked on the maintainer's own car: the person who reported the problem is the only one who can say whether the fix works.
 
 - Add the **`test-build`** label to a pull request and every image is published as **`pr-<number>`**.
 - Every push to the pull request replaces those images.
@@ -25,7 +25,7 @@ Contents:
 3. **Add the `test-build` label.** The *Preview build* workflow publishes the four images (a few minutes, since it reuses the build cache of `main`) and then posts a comment on the pull request with the exact image names and commands. That comment is updated on every later push.
 4. **Point the tester at it.** Comment on the issue, for example:
 
-   > A build with a possible fix is ready to try. If you're not on the latest release yet, update to it first. Then switch your GarageStack image to `pr-123` as described in [this comment](link to the preview comment), use the car as usual for a day, and let me know what the dashboard shows. Afterwards switch back to the latest release. Step by step: [Testing a preview build](https://github.com/joszz/GarageStack/blob/main/documentation/PREVIEW_BUILDS.md#testing-a-preview-build).
+   > A build with a possible fix is ready to try. If you're not on the latest release yet, update to it first. Then switch your MGMate image to `pr-123` as described in [this comment](link to the preview comment), use the car as usual for a day, and let me know what the dashboard shows. Afterwards switch back to the latest release. Step by step: [Testing a preview build](https://github.com/ViriatusOG/MGMate/blob/main/documentation/PREVIEW_BUILDS.md#testing-a-preview-build).
 
 5. **Iterate.** Push more commits to the same branch. The `pr-123` tag follows the pull request, so the tester only has to pull again (Unraid: *Force update*; Compose: run the same command again). The footer version ends in `.pr.123`, and the comment shows which commit it is.
 6. **Finish.**
@@ -40,12 +40,12 @@ Need a fresh build without a new commit, for example to pick up a newer `main`? 
 
 *This section is written for testers. Link to it from issues.*
 
-A preview build is GarageStack with one change in it that has not been released yet. It runs on your own data like a normal update, and you can go back to the normal version at any time.
+A preview build is MGMate with one change in it that has not been released yet. It runs on your own data like a normal update, and you can go back to the normal version at any time.
 
 **Before you start:**
 
 - **Run the latest release first.** On an older version, update to the latest release as usual (its release notes say whether anything needs doing), check that it runs, and only then switch to the preview. The preview is built on top of that release, the database warning in the preview comment compares with it, and going back means going back to it. Skipping it means the preview also applies the database changes of every release in between, and going back to your old version is then not supported. A clone on `main` is already past the latest release.
-- **Switch where you always run GarageStack:** the same folder, Portainer stack or Unraid container, changing only the image. Docker Compose names the database volume after the folder or stack (`mg_postgres_data` for a folder called `mg`), so the same stack started from another folder, a fresh clone for example, runs on a new, empty database. Your old data is then still there, just not in use (see [My data is gone after switching](#my-data-is-gone-after-switching)).
+- **Switch where you always run MGMate:** the same folder, Portainer stack or Unraid container, changing only the image. Docker Compose names the database volume after the folder or stack (`mg_postgres_data` for a folder called `mg`), so the same stack started from another folder, a fresh clone for example, runs on a new, empty database. Your old data is then still there, just not in use (see [My data is gone after switching](#my-data-is-gone-after-switching)).
 - **Never run** `docker compose down -v`, `docker volume prune` or `docker system prune --volumes` while testing. Those do delete data.
 - **Back up the database** when the preview comment warns that the build changes the database (see [Backup and restore](../README.md#backup-and-restore)). Without the warning a backup is not required, but it takes one command and never hurts.
 
@@ -53,10 +53,10 @@ Replace `pr-123` below with the tag from the pull request comment.
 
 ### All-in-one container or Unraid
 
-Change the image from `ghcr.io/joszz/garagestack:latest` to:
+Change the image from `ghcr.io/viriatusog/mgmate:latest` to:
 
 ```text
-ghcr.io/joszz/garagestack:pr-123
+ghcr.io/viriatusog/mgmate:pr-123
 ```
 
 - **Unraid:** edit the container, change *Repository*, apply.
@@ -67,7 +67,7 @@ When the maintainer says a new version is ready, pull the same tag again (Unraid
 
 ### Docker Compose with the published images
 
-Your own compose file runs `ghcr.io/joszz/garagestack-api`, `garagestack-worker` and `garagestack-frontend`. Change the tag of those three images to `pr-123`, leave everything else (database, broker, gateway, volumes) as it is, and in the folder you always run it from:
+Your own compose file runs `ghcr.io/viriatusog/mgmate-api`, `mgmate-worker` and `mgmate-frontend`. Change the tag of those three images to `pr-123`, leave everything else (database, broker, gateway, volumes) as it is, and in the folder you always run it from:
 
 ```sh
 docker compose pull
@@ -78,7 +78,7 @@ For a newer version of the same preview, run both commands again.
 
 ### Docker Compose from a clone of this repository
 
-The repository's `docker-compose.yml` builds GarageStack from source. `docker-compose.preview.yml` swaps the three GarageStack services for the preview images and leaves the database, broker and gateway as they are. In the clone's folder:
+The repository's `docker-compose.yml` builds MGMate from source. `docker-compose.preview.yml` swaps the three MGMate services for the preview images and leaves the database, broker and gateway as they are. In the clone's folder:
 
 ```sh
 git pull
@@ -104,13 +104,13 @@ Your data stays. Readings collected while the preview ran stay too.
 
 ### What to report
 
-On the issue: what you did, what GarageStack showed, and what the MG app showed for the same moment. Screenshots help. **Remove your VIN, location and other personal details first.**
+On the issue: what you did, what MGMate showed, and what the MG app showed for the same moment. Screenshots help. **Remove your VIN, location and other personal details first.**
 
 Preview images are deleted when the pull request is closed or merged. If your container then fails to update, that is why: switch back as described above.
 
 ### My data is gone after switching
 
-The preview almost certainly did not delete it. GarageStack is running on another, empty database, and the old one is still on your disk. **Don't prune or remove volumes** until it is back.
+The preview almost certainly did not delete it. MGMate is running on another, empty database, and the old one is still on your disk. **Don't prune or remove volumes** until it is back.
 
 1. List the volumes and stacks:
 
@@ -119,7 +119,7 @@ The preview almost certainly did not delete it. GarageStack is running on anothe
    docker compose ls
    ```
 
-2. **Two database volumes** (for example `mg_postgres_data` and `garagestack_postgres_data`): the preview ran under another project name. Stop the stack you run now with `docker compose down` (no `-v`), go to the folder you used before and start it there as you always do. Or keep the current folder and point it at the old volume at the bottom of its compose file:
+2. **Two database volumes** (for example `mg_postgres_data` and `mgmate_postgres_data`): the preview ran under another project name. Stop the stack you run now with `docker compose down` (no `-v`), go to the folder you used before and start it there as you always do. Or keep the current folder and point it at the old volume at the bottom of its compose file:
 
    ```yaml
    volumes:
@@ -139,7 +139,7 @@ Readings the car sent while the empty database was in use stay in that one; ever
 A tester runs the preview against their real database. If the build carries an EF Core migration, it is applied on start, and switching back does **not** undo it. The build is the pull request merged into the current `main`, so a migration merged into `main` after the latest release reaches the tester too, even when the pull request itself has none. The warning compares with the latest release because testers are asked to run it before they switch; one who skips that also gets the migrations of the releases in between. Usually the older version still runs on the newer schema, but not always (for example a new non-nullable column without a default).
 
 - Prefer fixes without a migration in a preview. Display, mapping and calculation fixes rarely need one.
-- When a migration is unavoidable, the preview comment carries a warning automatically (it compares `src/GarageStack.Data/Migrations/` in the build with the latest release, so a migration only on `main` counts too). Say it in your issue comment too. GarageStack has no built-in backups, so the tester makes their own.
+- When a migration is unavoidable, the preview comment carries a warning automatically (it compares `src/MGMate.Data/Migrations/` in the build with the latest release, so a migration only on `main` counts too). Say it in your issue comment too. MGMate has no built-in backups, so the tester makes their own.
 - If the fix is dropped, a migration left in a tester's database stays there. Make the eventual real migration tolerate that (for example `IF NOT EXISTS` in raw SQL), or ask the tester to restore their backup.
 
 ---
@@ -148,10 +148,10 @@ A tester runs the preview against their real database. If the build carries an E
 
 | Piece | What it does |
 | ----- | ------------ |
-| [`preview-build.yml`](../.github/workflows/preview-build.yml) | Runs on `labeled`, `synchronize` and `reopened` for pull requests to `main`. When the pull request has the `test-build` label and comes from this repository, it calls `docker-publish.yml` with the pull request number, then posts or updates the preview comment (found by the hidden marker `<!-- garagestack-preview-build -->`). |
+| [`preview-build.yml`](../.github/workflows/preview-build.yml) | Runs on `labeled`, `synchronize` and `reopened` for pull requests to `main`. When the pull request has the `test-build` label and comes from this repository, it calls `docker-publish.yml` with the pull request number, then posts or updates the preview comment (found by the hidden marker `<!-- mgmate-preview-build -->`). |
 | [`docker-publish.yml`](../.github/workflows/docker-publish.yml) | The normal image pipeline, callable through `workflow_call` with `pr_number`. For a preview it pushes `pr-<number>` and `pr-<number>-<commit>`, and stamps the version with `.pr.<number>`. It skips the SBOM, provenance and Cosign signature, so each image is a single registry version that the cleanup can find by tag. |
 | [`preview-cleanup.yml`](../.github/workflows/preview-cleanup.yml) | Runs when a labelled pull request closes or loses the label, or by hand (*Run workflow* with a pull request number). Deletes every version of the four packages tagged `pr-<number>` or `pr-<number>-<commit>`, and rewrites the preview comment to say so. |
-| [`docker-compose.preview.yml`](../docker-compose.preview.yml) | Compose override for testers who run from a clone: drops the `build:` of `api`, `worker` and `frontend` and pulls `ghcr.io/joszz/garagestack-*:${PREVIEW_TAG}` instead. |
+| [`docker-compose.preview.yml`](../docker-compose.preview.yml) | Compose override for testers who run from a clone: drops the `build:` of `api`, `worker` and `frontend` and pulls `ghcr.io/viriatusog/mgmate-*:${PREVIEW_TAG}` instead. |
 
 Details worth knowing:
 
@@ -172,12 +172,12 @@ Details worth knowing:
 gh label create test-build --color 5319E7 --description "Publish pr-<number> preview images for testers"
 ```
 
-**The cleanup fails with 403 or "not found".** The workflow token may delete a package version only when the repository has the *Admin* role on that package. For each of `garagestack`, `garagestack-frontend`, `garagestack-api` and `garagestack-worker`: open the package on GitHub, *Package settings*, *Manage Actions access*, and set this repository to *Admin*. Then run *Preview cleanup* by hand with the pull request number.
+**The cleanup fails with 403 or "not found".** The workflow token may delete a package version only when the repository has the *Admin* role on that package. For each of `mgmate`, `mgmate-frontend`, `mgmate-api` and `mgmate-worker`: open the package on GitHub, *Package settings*, *Manage Actions access*, and set this repository to *Admin*. Then run *Preview cleanup* by hand with the pull request number.
 
 **Images are left behind** (for example after a failed cleanup). Run *Preview cleanup* from the Actions tab with the pull request number. To see what is there (a local `gh` login needs the `read:packages` scope for this: `gh auth refresh -s read:packages`):
 
 ```sh
-gh api --paginate "users/joszz/packages/container/garagestack/versions" \
+gh api --paginate "users/ViriatusOG/packages/container/mgmate/versions" \
   --jq '.[] | select(any(.metadata.container.tags[]; startswith("pr-"))) | {id, tags: .metadata.container.tags}'
 ```
 

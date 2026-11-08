@@ -11,4 +11,4 @@ for _ in $(seq 1 180); do
     sleep 1
 done
 
-echo "[garagestack] api did not become healthy within 180s, starting the worker anyway" >&2
+echo "[mgmate] api did not become healthy within 180s, starting the worker anyway" >&2

@@ -1,6 +1,6 @@
 # Architecture
 
-This is an overview of how GarageStack's services fit together, for contributors who need
+This is an overview of how MGMate's services fit together, for contributors who need
 the map before their first PR. For end-user setup, see [README.md](../README.md); for local dev
 without a real car, see [DEMO.md](DEMO.md).
 
@@ -30,32 +30,32 @@ without a real car, see [DEMO.md](DEMO.md).
                      └─────────────────────────┘
 ```
 
-- **saic-mqtt-gateway** (`saicismartapi/saic-python-mqtt-gateway`, pinned in `docker-compose.yml`) polls the SAIC/MG cloud API on GarageStack's behalf and publishes telemetry to MQTT, and relays commands published back to MQTT to the cloud API. This is the only piece of the stack that isn't part of this repo.
+- **saic-mqtt-gateway** (`saicismartapi/saic-python-mqtt-gateway`, pinned in `docker-compose.yml`) polls the SAIC/MG cloud API on MGMate's behalf and publishes telemetry to MQTT, and relays commands published back to MQTT to the cloud API. This is the only piece of the stack that isn't part of this repo.
 - **Mosquitto** is the MQTT broker all telemetry and commands flow through. Requires auth; not exposed to the LAN by default. Its password and ACL files are generated on every start by [docker/mosquitto-auth.sh](../docker/mosquitto-auth.sh), shared by Compose and the all-in-one image. An optional, restricted second login lets Home Assistant consume the gateway's MQTT discovery directly (see [HOME_ASSISTANT.md](HOME_ASSISTANT.md)).
-- **Worker** (`GarageStack.Worker`) subscribes to MQTT and writes telemetry to Postgres. Runs on its own, no inbound HTTP.
-- **Api** (`GarageStack.Api`) serves the REST API and SignalR hub the frontend talks to, and separately publishes outbound MQTT messages: remote commands (lock, climate, etc.), and, every five minutes, Home Assistant discovery for what only GarageStack knows (`HomeAssistantPublisher`: the APK and recalls, the maintenance due first, the last trip, from `VehicleFactsService`, which the Homepage widget reads too).
+- **Worker** (`MGMate.Worker`) subscribes to MQTT and writes telemetry to Postgres. Runs on its own, no inbound HTTP.
+- **Api** (`MGMate.Api`) serves the REST API and SignalR hub the frontend talks to, and separately publishes outbound MQTT messages: remote commands (lock, climate, etc.), and, every five minutes, Home Assistant discovery for what only MGMate knows (`HomeAssistantPublisher`: the APK and recalls, the maintenance due first, the last trip, from `VehicleFactsService`, which the Homepage widget reads too).
 - **Postgres** is the only datastore. The Api also uses it as a pub/sub channel (`pg_notify`/`LISTEN`) to learn about writes the Worker makes, so it can push live updates without polling the DB.
 - **frontend** is a Vue 3 SPA built and served by nginx; the only service with a public port by default.
 
 ## Data flow: a telemetry update reaching the browser
 
 1. `saic-mqtt-gateway` polls the SAIC cloud and publishes one MQTT message per changed field to a topic like `saic/{user}/vehicles/{vin}/drivetrain/soc`.
-2. `MqttConsumerService` ([src/GarageStack.Worker/Mqtt/MqttConsumerService.cs](../src/GarageStack.Worker/Mqtt/MqttConsumerService.cs)) is subscribed to `saic/#`. It keeps the connection alive and offers every message to a chain of handlers, the first one to claim it winning: Home Assistant discovery, the car's capability configuration, MG app messages, command results, and telemetry last. `TelemetryHandler` ([src/GarageStack.Worker/Mqtt/TelemetryHandler.cs](../src/GarageStack.Worker/Mqtt/TelemetryHandler.cs)) maps the payload onto a `TelemetrySnapshot` field via `TelemetryMapper` and writes it to Postgres. A single poll cycle produces several MQTT messages in quick succession, so messages arriving within a 15s window are merged into one row instead of one row per field (see the comments on `MergeOrAddTelemetryAsync` in that file for why this needs a per-vehicle lock). The handlers share a `VehicleResolver`, which caches the vehicle id per VIN.
+2. `MqttConsumerService` ([src/MGMate.Worker/Mqtt/MqttConsumerService.cs](../src/MGMate.Worker/Mqtt/MqttConsumerService.cs)) is subscribed to `saic/#`. It keeps the connection alive and offers every message to a chain of handlers, the first one to claim it winning: Home Assistant discovery, the car's capability configuration, MG app messages, command results, and telemetry last. `TelemetryHandler` ([src/MGMate.Worker/Mqtt/TelemetryHandler.cs](../src/MGMate.Worker/Mqtt/TelemetryHandler.cs)) maps the payload onto a `TelemetrySnapshot` field via `TelemetryMapper` and writes it to Postgres. A single poll cycle produces several MQTT messages in quick succession, so messages arriving within a 15s window are merged into one row instead of one row per field (see the comments on `MergeOrAddTelemetryAsync` in that file for why this needs a per-vehicle lock). The handlers share a `VehicleResolver`, which caches the vehicle id per VIN.
 3. Each write calls `pg_notify('telemetry_updated', vehicleId)`.
-4. `TelemetryNotificationService` ([src/GarageStack.Api/Services/TelemetryNotificationService.cs](../src/GarageStack.Api/Services/TelemetryNotificationService.cs)), a background service in the Api process, holds a `LISTEN telemetry_updated` connection. On notification it debounces briefly (to coalesce a poll cycle's several writes into one update), re-reads the merged latest snapshot, and broadcasts it over SignalR to browsers subscribed to that vehicle's group.
+4. `TelemetryNotificationService` ([src/MGMate.Api/Services/TelemetryNotificationService.cs](../src/MGMate.Api/Services/TelemetryNotificationService.cs)), a background service in the Api process, holds a `LISTEN telemetry_updated` connection. On notification it debounces briefly (to coalesce a poll cycle's several writes into one update), re-reads the merged latest snapshot, and broadcasts it over SignalR to browsers subscribed to that vehicle's group.
 5. The frontend's `useSignalR` composable ([frontend/src/composables/useSignalR.ts](../frontend/src/composables/useSignalR.ts)) receives the `telemetryUpdated` event and updates the UI. There is no polling fallback - if the SignalR connection drops, the dashboard goes stale until it reconnects.
 
-The same `pg_notify`/`LISTEN`/SignalR pattern also carries `notification_created` (push/in-app alerts), `trip_completed` and `command_result` (see below) events. The channel names live in `PgChannels` and every publisher goes through the `NotifyAsync` extension in [src/GarageStack.Data/Extensions/PgNotifyExtensions.cs](../src/GarageStack.Data/Extensions/PgNotifyExtensions.cs), which is a no-op on the in-memory provider used by demo mode and the tests. The `notification_created` payload is the `NotificationCreatedPayload` record in Core, serialized by the Worker and deserialized by the Api, so the two processes cannot disagree about its shape.
+The same `pg_notify`/`LISTEN`/SignalR pattern also carries `notification_created` (push/in-app alerts), `trip_completed` and `command_result` (see below) events. The channel names live in `PgChannels` and every publisher goes through the `NotifyAsync` extension in [src/MGMate.Data/Extensions/PgNotifyExtensions.cs](../src/MGMate.Data/Extensions/PgNotifyExtensions.cs), which is a no-op on the in-memory provider used by demo mode and the tests. The `notification_created` payload is the `NotificationCreatedPayload` record in Core, serialized by the Worker and deserialized by the Api, so the two processes cannot disagree about its shape.
 
 Push notification texts are written by the Worker, which has no browser request to take a language from; they come from `Resources/NotificationStrings*.resx` in the Worker project and the language is the `NOTIFICATION_LANGUAGE` deployment setting. The marker types for these resources (`NotificationStrings`, and `WidgetStrings` in the Api) must stay in their assembly's root namespace: the resource localizer maps a marker in a sub-namespace to a resource path that does not exist and silently falls back to the keys.
 
-Messages from the official MG app are the one notification the Worker does not write itself: `VehicleMessageHandler` ([src/GarageStack.Worker/Mqtt/VehicleMessageHandler.cs](../src/GarageStack.Worker/Mqtt/VehicleMessageHandler.cs)) passes on SAIC's own text from the gateway's `events/vehicleMessage` event. The gateway publishes its latest message again every time it starts, so the handler remembers the newest message id per vehicle (`Vehicle.LastMessageId`) and pushes each message once; its summary explains how it pairs the event with that id.
+Messages from the official MG app are the one notification the Worker does not write itself: `VehicleMessageHandler` ([src/MGMate.Worker/Mqtt/VehicleMessageHandler.cs](../src/MGMate.Worker/Mqtt/VehicleMessageHandler.cs)) passes on SAIC's own text from the gateway's `events/vehicleMessage` event. The gateway publishes its latest message again every time it starts, so the handler remembers the newest message id per vehicle (`Vehicle.LastMessageId`) and pushes each message once; its summary explains how it pairs the event with that id.
 
 `TelemetryHandler` is also the one place that watches the engine. A start sends the engine-start notification at once (with a one-hour cooldown). A stop ends the trip: it raises `trip_completed` and writes `Vehicle.LastParkedAt`, which the five-minute notification check reads to give a driver ten minutes to unload before it warns about an open door or window.
 
 ## Sending a command to the car (the reverse path)
 
-The frontend calls `POST /api/vehicles/{vin}/commands/{command}` on the Api, which publishes an MQTT message via `MqttPublisher` ([src/GarageStack.Api/Services/MqttPublisher.cs](../src/GarageStack.Api/Services/MqttPublisher.cs)) - a separate MQTT client from the Worker's, since the Api only ever publishes and the Worker only ever consumes. `saic-mqtt-gateway` picks the message up and relays it to the SAIC cloud API. `VehicleCommandGate` ([src/GarageStack.Api/VehicleCommandGate.cs](../src/GarageStack.Api/VehicleCommandGate.cs)) serializes commands per VIN server-side, since the real gateway only processes one command at a time. The command names and their gateway topics live in `VehicleCommands` ([src/GarageStack.Core/Helpers/VehicleCommands.cs](../src/GarageStack.Core/Helpers/VehicleCommands.cs)), one table for both directions, and `VehicleCommandSender` is the one place a command is checked and published.
+The frontend calls `POST /api/vehicles/{vin}/commands/{command}` on the Api, which publishes an MQTT message via `MqttPublisher` ([src/MGMate.Api/Services/MqttPublisher.cs](../src/MGMate.Api/Services/MqttPublisher.cs)) - a separate MQTT client from the Worker's, since the Api only ever publishes and the Worker only ever consumes. `saic-mqtt-gateway` picks the message up and relays it to the SAIC cloud API. `VehicleCommandGate` ([src/MGMate.Api/VehicleCommandGate.cs](../src/MGMate.Api/VehicleCommandGate.cs)) serializes commands per VIN server-side, since the real gateway only processes one command at a time. The command names and their gateway topics live in `VehicleCommands` ([src/MGMate.Core/Helpers/VehicleCommands.cs](../src/MGMate.Core/Helpers/VehicleCommands.cs)), one table for both directions, and `VehicleCommandSender` is the one place a command is checked and published.
 
 The gateway answers every command on the same topic with `/set` swapped for `/result`: `Success`, or `Failed: <reason>` once the SAIC API gives up (it polls for up to 30 seconds). The Worker parses that (`GatewayCommandResult`) and raises `command_result`. The Api releases the command gate for that VIN and pushes a `commandResult` event over SignalR, named by the command the browser sent. `useVehicleCommand` then settles the matching pending command: a refusal clears it and shows the reason. A success clears a command that no telemetry reports (the horn, the charge current limit). A command that telemetry does report stays pending until the telemetry shows it, but a batch can already move on to its next command. Without an answer, the 45-second hold on both sides still applies, which is also what happens in demo mode.
 
@@ -63,7 +63,7 @@ Two details matter here. Gateways up to 0.12.0 published results retained, and t
 
 ### Climate schedules
 
-The gateway has charging and battery-heating schedules of its own, but none for climate, so GarageStack runs climate schedules itself. The Api keeps them (`ClimateScheduleEndpoints`) and works out each one's next run on every save (`ClimateScheduleCalendar`): a schedule is a time on the clock in the IANA time zone the browser had when it was made, so 07:30 stays 07:30 across daylight saving time. A time skipped when the clocks go forward runs just after the jump, and a time that happens twice when they go back runs the first time only.
+The gateway has charging and battery-heating schedules of its own, but none for climate, so MGMate runs climate schedules itself. The Api keeps them (`ClimateScheduleEndpoints`) and works out each one's next run on every save (`ClimateScheduleCalendar`): a schedule is a time on the clock in the IANA time zone the browser had when it was made, so 07:30 stays 07:30 across daylight saving time. A time skipped when the clocks go forward runs just after the jump, and a time that happens twice when they go back runs the first time only.
 
 The Worker runs them. `ClimateScheduleService` looks every 15 seconds for schedules that are due and claims each one before it runs (a repeating schedule moves on to its next run, a one-off switches itself off), so a restart in the middle never runs a schedule twice. A run found more than 10 minutes late is recorded as missed instead: a car warmed long after its driver left is no use. `ClimateScheduleRunner` skips a run while the engine runs, or when the schedule only wants cold or hot days and an outside temperature from the last three hours says otherwise. Otherwise it sends the commands one at a time (temperature first, since the gateway only stores it while climate is off, then the climate mode, then the extras), sends a command again after 30 seconds, up to three times, when the car refused it only because it was still busy with another (SAIC return code 8, as a car woken from a long sleep can answer), stops at the first one refused or unanswered otherwise, records the outcome on the schedule, and sends one push in the `climate-schedule` category.
 
@@ -150,15 +150,15 @@ PostgreSQL reuses the space of removed rows for new ones rather than handing it 
 
 | Project | Contains | Depends on |
 | --- | --- | --- |
-| `GarageStack.Core` | Domain models (`Models/`), repository/service interfaces (`Interfaces/`), and pure helpers with no I/O (`Helpers/`) - the shared vocabulary every other project builds on. | nothing (leaf project) |
-| `GarageStack.Data` | EF Core: `AppDbContext`, migrations, concrete repository implementations, and `Demo/` (in-memory fakes used when `DEMO_MODE=true`). | `Core` |
-| `GarageStack.Worker` | The MQTT-ingestion process: `Mqtt/MqttConsumerService` and the message handlers beside it, plus the periodic jobs (maintenance reminders, POI pre-caching, push-notification checks, the slow-puncture check over two weeks of tyre pressures, saving finished trips, housekeeping and telemetry compaction, climate schedules, RDW lookups, and the heartbeat the API's readiness check listens for), each a `PeriodicBackgroundService`. | `Core`, `Data` |
-| `GarageStack.Api` | ASP.NET Core minimal APIs (`Endpoints/`), the SignalR hub (`Hubs/`), and Api-only services (outbound MQTT publishing, POI/charging-station lookups, the Postgres-LISTEN-to-SignalR bridge). | `Core`, `Data` |
-| `GarageStack.Tests` | xUnit tests across all of the above. | all four |
+| `MGMate.Core` | Domain models (`Models/`), repository/service interfaces (`Interfaces/`), and pure helpers with no I/O (`Helpers/`) - the shared vocabulary every other project builds on. | nothing (leaf project) |
+| `MGMate.Data` | EF Core: `AppDbContext`, migrations, concrete repository implementations, and `Demo/` (in-memory fakes used when `DEMO_MODE=true`). | `Core` |
+| `MGMate.Worker` | The MQTT-ingestion process: `Mqtt/MqttConsumerService` and the message handlers beside it, plus the periodic jobs (maintenance reminders, POI pre-caching, push-notification checks, the slow-puncture check over two weeks of tyre pressures, saving finished trips, housekeeping and telemetry compaction, climate schedules, RDW lookups, and the heartbeat the API's readiness check listens for), each a `PeriodicBackgroundService`. | `Core`, `Data` |
+| `MGMate.Api` | ASP.NET Core minimal APIs (`Endpoints/`), the SignalR hub (`Hubs/`), and Api-only services (outbound MQTT publishing, POI/charging-station lookups, the Postgres-LISTEN-to-SignalR bridge). | `Core`, `Data` |
+| `MGMate.Tests` | xUnit tests across all of the above. | all four |
 
 ## Configuration
 
-Deployments configure GarageStack through environment variables named for people (`MQTT_HOST`, `OIDC_AUTHORITY`), not in .NET's `Section__Key` form. `EnvironmentAliases` ([src/GarageStack.Core/Configuration/EnvironmentAliases.cs](../src/GarageStack.Core/Configuration/EnvironmentAliases.cs)) is the one table that maps each name onto its setting; both hosts add it as their last configuration source. An empty variable counts as unset, and a setting given by its own key wins over the name, which is how the all-in-one entrypoint passes the values it derives. The compose files therefore pass the variables straight through, and the defaults live in the code. `EnvironmentAliasesTests` fails when `.env.example`, the Unraid template or a compose file mentions a variable that is neither in the table nor consumed by the deployment itself.
+Deployments configure MGMate through environment variables named for people (`MQTT_HOST`, `OIDC_AUTHORITY`), not in .NET's `Section__Key` form. `EnvironmentAliases` ([src/MGMate.Core/Configuration/EnvironmentAliases.cs](../src/MGMate.Core/Configuration/EnvironmentAliases.cs)) is the one table that maps each name onto its setting; both hosts add it as their last configuration source. An empty variable counts as unset, and a setting given by its own key wins over the name, which is how the all-in-one entrypoint passes the values it derives. The compose files therefore pass the variables straight through, and the defaults live in the code. `EnvironmentAliasesTests` fails when `.env.example`, the Unraid template or a compose file mentions a variable that is neither in the table nor consumed by the deployment itself.
 
 The upstream clients and the push sender take typed options (`GeocodingOptions`, `MapMatchingOptions`, `OverpassOptions`, `OpenChargeMapOptions`, `RdwOptions`, `VapidOptions` in `Core/Configuration`), each built once by a `From(IConfiguration)` that reads blank values as defaults. The operator-facing list of every variable is [CONFIGURATION.md](CONFIGURATION.md).
 
@@ -170,7 +170,7 @@ Errors the other way round, the ones the web app runs into in someone's browser 
 
 ## Logs and the data export
 
-- **Log files.** Both services log through Serilog to the console and to a daily rolling file (`logs/api-*.log`, `logs/worker-*.log`, rolled early at 100 MB, `LOG_RETAINED_FILES` kept), set up once in `HostingExtensions.AddGarageStackSerilog`. Successful requests are Debug; refusals, slow answers and failures are logged.
+- **Log files.** Both services log through Serilog to the console and to a daily rolling file (`logs/api-*.log`, `logs/worker-*.log`, rolled early at 100 MB, `LOG_RETAINED_FILES` kept), set up once in `HostingExtensions.AddMGMateSerilog`. Successful requests are Debug; refusals, slow answers and failures are logged.
 - **Log viewer.** `GET /api/logs` reads entries back out of those files with `LogFileReader`, a page at a time. Each page comes with two cursors, a byte offset per service's file: `older` goes back as `before` for the page under it, read backwards from there only as far as fills the page, so the whole retained history scrolls at one page's cost per request; `newer` goes back as `after`, and live mode reads only what was written since (more than a page of it starts the list over, `reset`). Entries below the chosen level are skipped without being decoded. The API reads its own folder and the Worker's from `LogFiles:WorkerDirectory` (`WORKER_LOG_DIRECTORY`): Compose mounts the Worker's log volume there read-only, the all-in-one image points it at `/data/worker`.
 - **Export.** `GET /api/export` (`DataExport`) writes one zip to a temporary file and sends that: JSON per kind of record, and every telemetry row as CSV, streamed from the database rather than loaded. It is rate-limited to a few downloads a quarter of an hour.
 
@@ -229,19 +229,19 @@ All four POI types share the same tile-based PostgreSQL cache:
 - The background Worker pre-populates tiles around the car two minutes after it starts and every 6 hours after that: the OpenStreetMap layers the car has a use for (fuel, service areas, and speed cameras unless the deployment switched them off), and, for a plug-in car, charging stations when an Open Charge Map key is set.
 - The `MaxOnDemandTiles` cap (1 per API request) prevents Overpass rate-limiting when many uncached tiles are requested at once; the frontend chains requests automatically with back-off when more tiles remain.
 
-If GarageStack ever needs to run more than one Api/Worker instance, revisit this: per-vehicle
+If MGMate ever needs to run more than one Api/Worker instance, revisit this: per-vehicle
 in-memory state (this cache, the revocation cache, `VehicleCommandGate`,
 `NotificationCooldownGate`, the shared `UpstreamRateGate` behind the Overpass/OCM/Nominatim/Valhalla/RDW clients)
 would all need to move to something shared.
 
 ## Authentication
 
-`src/GarageStack.Api/Authentication/` wires both sign-in methods into a single session scheme, so nothing downstream has to care which one was used. Read-only API tokens sit beside it: a policy scheme (`SessionOrApiToken`, the default) hands a request carrying `Authorization: Bearer gs_...` to the token scheme and every other request to the session cookie.
+`src/MGMate.Api/Authentication/` wires both sign-in methods into a single session scheme, so nothing downstream has to care which one was used. Read-only API tokens sit beside it: a policy scheme (`SessionOrApiToken`, the default) hands a request carrying `Authorization: Bearer gs_...` to the token scheme and every other request to the session cookie.
 
 - **Sessions** are ASP.NET Core cookie-auth tickets (`garagestack-auth`), encrypted with the Data Protection keys on disk. `AuthenticationSetup` answers unauthenticated API calls with 401 instead of the framework's default redirect to a login page, checks every request's session id against the `RevokedTokens` table, and keeps the principal slim: display name, subject, session id.
 - **OIDC** uses the stock `AddOpenIdConnect` handler (authorization code + PKCE, `response_mode=query` so the callback carries `SameSite=Lax` cookies on plain HTTP). `OidcOptions` binds the `OIDC_*` environment variables and fails fast on a half-finished configuration; `OidcAccessPolicy` decides whether an authenticated user is also authorised, and is the piece worth reading first.
 - **Password login** is the fallback. `PasswordLoginOptions.Resolve` switches it off as soon as OIDC is configured, unless `AUTH_PASSWORD_LOGIN_ENABLED` explicitly asks for both, and the API refuses to start when that leaves no way in at all.
-- **API tokens** (`ApiTokenAuthentication`) are looked up by their SHA-256 hash in `ApiTokens`; only the hash and the first characters are stored. A token signs in as the account that made it, through the same `garagestack:account` claim a session carries, so settings and per-account data read the same. `ReadOnlyMiddleware`, straight after authentication, is what holds a token to reading: it refuses anything but `GET`/`HEAD`, the token endpoints, the full export and the logs. A token has no session, so the SignalR hub (whose negotiate step is a `POST`) is not open to it.
+- **API tokens** (`ApiTokenAuthentication`) are looked up by their SHA-256 hash in `ApiTokens`; only the hash and the first characters are stored. A token signs in as the account that made it, through the same `mgmate:account` claim a session carries, so settings and per-account data read the same. `ReadOnlyMiddleware`, straight after authentication, is what holds a token to reading: it refuses anything but `GET`/`HEAD`, the token endpoints, the full export and the logs. A token has no session, so the SignalR hub (whose negotiate step is a `POST`) is not open to it.
 
 Both `/api/auth/oidc/login` and the callback answer failures with a redirect to `/login?error=...` rather than an exception: they are browser navigations, and a JSON 500 is useless to the person looking at it (and, with auto-login on, loops).
 
@@ -258,14 +258,14 @@ A user's settings (theme, language, units, the dashboard layout, the map's layer
 
 ## Database
 
-Code-first EF Core migrations live in `src/GarageStack.Data/Migrations/`. `Program.cs` runs `db.Database.MigrateAsync()` on Api startup in normal operation; in `DEMO_MODE` it calls `DemoSeeder.SeedAsync()` instead, which creates the in-memory schema and seeds fake data, bypassing a real Postgres server entirely.
+Code-first EF Core migrations live in `src/MGMate.Data/Migrations/`. `Program.cs` runs `db.Database.MigrateAsync()` on Api startup in normal operation; in `DEMO_MODE` it calls `DemoSeeder.SeedAsync()` instead, which creates the in-memory schema and seeds fake data, bypassing a real Postgres server entirely.
 
 The Data project has its own `DesignTimeDbContextFactory`, so the EF tooling never needs the Api's configuration:
 
 ```sh
 dotnet tool restore
-dotnet ef migrations add <Name> --project src/GarageStack.Data --startup-project src/GarageStack.Data
-dotnet ef migrations has-pending-model-changes --project src/GarageStack.Data --startup-project src/GarageStack.Data
+dotnet ef migrations add <Name> --project src/MGMate.Data --startup-project src/MGMate.Data
+dotnet ef migrations has-pending-model-changes --project src/MGMate.Data --startup-project src/MGMate.Data
 ```
 
 `dotnet tool restore` installs the `dotnet-ef` version pinned in `.config/dotnet-tools.json`, which matches the EF Core packages.
@@ -280,7 +280,7 @@ A new value arriving from the car passes through several layers, in this order:
 2. `TelemetryMapper` in the Worker, which maps the MQTT topic onto the new property.
 3. The frontend's `TelemetrySnapshot` interface in `services/vehicleApi.ts`, mirrored by hand.
 4. Wherever it should show up: a card in `frontend/src/cards/registry.ts`, and the demo data in
-   `src/GarageStack.Data/Demo/` so the field is visible without a car.
+   `src/MGMate.Data/Demo/` so the field is visible without a car.
 5. Only for a counter that starts again from zero (per day, per charge, per journey): its entry in
    `TelemetryCompaction`'s resetting counters, so compaction keeps the total it reached before
    each reset.
@@ -335,7 +335,7 @@ vector map gets that variant's style; a raster map gets a `data-raster-basemap` 
 
 ## Tests
 
-Backend tests (xUnit) and frontend unit tests (Vitest) cover logic in isolation. Most backend tests use EF's in-memory database, which has no indexes, transactions, concurrency tokens or bulk updates, so the tests in `GarageStack.Tests/Postgres` run the repositories against a real PostgreSQL (`PostgresDatabase`: a fresh database per test, copied from a template every migration has been applied to). They need `GARAGESTACK_TEST_POSTGRES`; CI's backend job runs a `postgres:18` service for them and fails rather than skips without it. On top of those,
+Backend tests (xUnit) and frontend unit tests (Vitest) cover logic in isolation. Most backend tests use EF's in-memory database, which has no indexes, transactions, concurrency tokens or bulk updates, so the tests in `MGMate.Tests/Postgres` run the repositories against a real PostgreSQL (`PostgresDatabase`: a fresh database per test, copied from a template every migration has been applied to). They need `MGMATE_TEST_POSTGRES`; CI's backend job runs a `postgres:18` service for them and fails rather than skips without it. On top of those,
 `frontend/e2e/` holds Playwright smoke tests that run against the demo stack from
 `docker-compose.demo.yml`, which is the production frontend image with the real nginx config.
 
@@ -349,6 +349,6 @@ rotated map marker. CI runs them in the `e2e` job; see
 
 ## Build conventions
 
-Backend projects share `Directory.Build.props` (analyzers on, warnings are errors, `.editorconfig` style rules enforced in the build) and `Directory.Packages.props` (central package versions). `dotnet format GarageStack.slnx` applies the formatting rules; CI verifies them. The frontend is linted by oxlint and ESLint, its stylesheets by Stylelint, and formatted by Prettier, all verified in CI.
+Backend projects share `Directory.Build.props` (analyzers on, warnings are errors, `.editorconfig` style rules enforced in the build) and `Directory.Packages.props` (central package versions). `dotnet format MGMate.slnx` applies the formatting rules; CI verifies them. The frontend is linted by oxlint and ESLint, its stylesheets by Stylelint, and formatted by Prettier, all verified in CI.
 
 Versions are pinned once: package versions in `Directory.Packages.props` (the release workflow reads MinVer's version from there too, so the tag and the stamped assemblies cannot come from different MinVer majors), and pnpm in `frontend/package.json`'s `packageManager` field, which the Docker builds and the CI action both read. Runtime defaults belong to the app rather than to the deployment files: the compose files and the all-in-one entrypoint pass a setting through only when the operator sets one, so numbers like the tyre pressure thresholds exist in exactly one place.

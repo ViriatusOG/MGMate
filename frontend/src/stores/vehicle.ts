@@ -132,7 +132,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     })
   }
 
-  // GarageStack follows one car. Every view needs the same one, so "the first vehicle" is
+  // MGMate follows one car. Every view needs the same one, so "the first vehicle" is
   // resolved here instead of being re-derived from the list by index in each component.
   const activeVehicle = computed((): Vehicle | null => vehicles.value[0] ?? null)
   const activeVin = computed((): string | null => activeVehicle.value?.vin ?? null)

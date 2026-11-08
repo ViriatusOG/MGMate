@@ -173,7 +173,7 @@ export function buildGpx(
   })
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    '<gpx version="1.1" creator="GarageStack" xmlns="http://www.topografix.com/GPX/1/1">',
+    '<gpx version="1.1" creator="MGMate" xmlns="http://www.topografix.com/GPX/1/1">',
     '  <trk>',
     `    <name>${escapeXml(name)}</name>`,
     '    <trkseg>',

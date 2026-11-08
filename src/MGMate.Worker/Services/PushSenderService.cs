@@ -1,0 +1,141 @@
+using System.Collections.Concurrent;
+using System.Text.Json;
+using MGMate.Core.Configuration;
+using MGMate.Core.Helpers;
+using MGMate.Core.Interfaces;
+using MGMate.Core.Models;
+using MGMate.Data;
+using MGMate.Data.Extensions;
+using Lib.Net.Http.WebPush;
+using Lib.Net.Http.WebPush.Authentication;
+using ModelPushSubscription = MGMate.Core.Models.PushSubscription;
+using WebPushSubscription = Lib.Net.Http.WebPush.PushSubscription;
+
+namespace MGMate.Worker.Services;
+
+public sealed class PushSenderService : IPushSender, IDisposable
+{
+    private const int MaxConcurrentDeliveries = 10;
+
+    private readonly ILogger<PushSenderService> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly HttpClient _httpClient;
+    private readonly PushServiceClient? _pushClient;
+
+    public PushSenderService(
+        ILogger<PushSenderService> logger,
+        IServiceScopeFactory scopeFactory,
+        VapidOptions vapid,
+        IHttpClientFactory httpClientFactory)
+    {
+        _logger = logger;
+        _scopeFactory = scopeFactory;
+        _httpClient = httpClientFactory.CreateClient(nameof(PushSenderService));
+
+        if (vapid.IsConfigured)
+        {
+            _pushClient = new PushServiceClient(_httpClient)
+            {
+                DefaultAuthentication = new VapidAuthentication(vapid.PublicKey, vapid.PrivateKey) { Subject = vapid.Subject }
+            };
+        }
+        else
+        {
+            _logger.LogWarning("VAPID keys not configured - push notifications disabled");
+        }
+    }
+
+    public bool IsConfigured => _pushClient is not null;
+
+    public async Task SendToAllAsync(string title, string body, CancellationToken ct = default, string? category = null, int? vehicleId = null)
+    {
+        int? unreadCount = null;
+
+        // Always persist so the in-app bell works regardless of push configuration
+        try
+        {
+            using var recordScope = _scopeFactory.CreateScope();
+            var notifications = recordScope.ServiceProvider.GetRequiredService<INotificationRepository>();
+            var record = new AppNotification
+            {
+                Title = title,
+                Body = body,
+                CreatedAt = DateTime.UtcNow,
+                Category = category,
+                VehicleId = vehicleId,
+            };
+            await notifications.AddAsync(record, ct);
+            unreadCount = await notifications.CountUnreadAsync(ct);
+
+            // Signal the API process via PostgreSQL so connected browser clients get
+            // an immediate notificationReceived push without polling.
+            var payload = NotificationCreatedPayload.From(record, unreadCount);
+            var db = recordScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await db.Database.NotifyAsync(PgChannels.NotificationCreated, payload.ToJson(), ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to persist notification record, push delivery will still proceed");
+        }
+
+        if (_pushClient is null) return;
+
+        using var scope = _scopeFactory.CreateScope();
+        var subscriptionRepository = scope.ServiceProvider.GetRequiredService<IPushSubscriptionRepository>();
+        // Each device switched its own types off. The in-app record above is shared and kept
+        // regardless; only the push to a device that does not want this type is left out.
+        var subscriptions = (await subscriptionRepository.ListAsync(ct))
+            .Where(s => NotificationCategories.IsWanted(category, s.ExcludedCategories))
+            .ToList();
+        if (subscriptions.Count == 0) return;
+
+        // Only re-queried if persistence above failed before it could compute this itself.
+        unreadCount ??= await scope.ServiceProvider.GetRequiredService<INotificationRepository>().CountUnreadAsync(ct);
+        // The service worker (frontend/src/sw.ts) reads title, body, category and unreadCount;
+        // it picks the icon itself from the app's own assets.
+        var webPushPayload = JsonSerializer.Serialize(new { title, body, category, unreadCount });
+        var message = new PushMessage(webPushPayload) { TimeToLive = 3600 };
+        var dead = new ConcurrentBag<ModelPushSubscription>();
+
+        // Deliver concurrently (bounded) so one slow/unreachable subscriber can't delay
+        // delivery to everyone else; a single push endpoint request can take several
+        // seconds if that push service is degraded.
+        using var throttle = new SemaphoreSlim(MaxConcurrentDeliveries);
+        await Task.WhenAll(subscriptions.Select(async sub =>
+        {
+            await throttle.WaitAsync(ct);
+            try
+            {
+                var pushSub = new WebPushSubscription();
+                pushSub.Endpoint = sub.Endpoint;
+                pushSub.SetKey(PushEncryptionKeyName.P256DH, sub.P256DhKey);
+                pushSub.SetKey(PushEncryptionKeyName.Auth, sub.AuthKey);
+
+                try
+                {
+                    await _pushClient.RequestPushMessageDeliveryAsync(pushSub, message, ct);
+                }
+                catch (PushServiceClientException ex) when (
+                    ex.StatusCode == System.Net.HttpStatusCode.Gone ||
+                    ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    dead.Add(sub);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to send push through {PushService}", LogRedaction.UrlHost(sub.Endpoint));
+                }
+            }
+            finally
+            {
+                throttle.Release();
+            }
+        }));
+
+        // The push service said these subscriptions are gone for good.
+        if (dead.Count > 0)
+            await subscriptionRepository.RemoveAsync([.. dead.Select(d => d.Endpoint).Distinct()], ct);
+    }
+
+    public void Dispose() => _httpClient.Dispose();
+}

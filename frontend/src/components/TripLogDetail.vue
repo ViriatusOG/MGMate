@@ -535,7 +535,7 @@ function downloadGpx() {
   const name = `${dateLabel.value} ${timeLabel.value}`
   const stamp = props.entry.startedAt.slice(0, 16).replace(/[:T]/g, '-')
   downloadText(
-    `garagestack-trip-${stamp}.gpx`,
+    `mgmate-trip-${stamp}.gpx`,
     buildGpx(name, points, telemetry.value),
     'application/gpx+xml',
   )

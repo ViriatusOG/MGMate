@@ -172,7 +172,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-    # The PostgreSQL tests (src/GarageStack.Tests/Postgres) run against the same major version the
+    # The PostgreSQL tests (src/MGMate.Tests/Postgres) run against the same major version the
     # images bundle. Without a server they fail here rather than skip.
     services:
       postgres:
@@ -187,7 +187,7 @@ jobs:
           --health-timeout 5s
           --health-retries 30
     env:
-      GARAGESTACK_TEST_POSTGRES: "Host=localhost;Port=5432;Username=postgres;Password=postgres"
+      MGMATE_TEST_POSTGRES: "Host=localhost;Port=5432;Username=postgres;Password=postgres"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -202,7 +202,7 @@ jobs:
         run: >-
           dotnet test --no-restore --verbosity normal
           --coverage --coverage-output-format cobertura
-          --coverage-settings src/GarageStack.Tests/coverage.settings.xml
+          --coverage-settings src/MGMate.Tests/coverage.settings.xml
           --results-directory TestResults
 
       # Reported, not enforced: the figure is there to watch, not yet a gate.
@@ -244,14 +244,14 @@ jobs:
       # Warnings are errors and the .NET analyzers run as part of the build above; this step
       # covers what the build cannot: whitespace, using order and the other .editorconfig rules.
       - name: Format check
-        run: dotnet format GarageStack.slnx --verify-no-changes --no-restore
+        run: dotnet format MGMate.slnx --verify-no-changes --no-restore
 
       # A model change without a migration would only surface at MigrateAsync on a real
       # database. The Data project carries its own design-time factory, so no API config is needed.
       - name: EF model matches migrations
         run: |
           dotnet tool restore
-          dotnet ef migrations has-pending-model-changes --project src/GarageStack.Data --startup-project src/GarageStack.Data --no-build --configuration Release
+          dotnet ef migrations has-pending-model-changes --project src/MGMate.Data --startup-project src/MGMate.Data --no-build --configuration Release
 
   # Pull requests only: on main, docker-publish.yml builds and publishes these same images. The
   # "Protect main" ruleset requires these checks, so they stay here rather than there.
@@ -274,10 +274,10 @@ jobs:
             dockerfile: frontend/Dockerfile
           - label: api
             context: .
-            dockerfile: src/GarageStack.Api/Dockerfile
+            dockerfile: src/MGMate.Api/Dockerfile
           - label: worker
             context: .
-            dockerfile: src/GarageStack.Worker/Dockerfile
+            dockerfile: src/MGMate.Worker/Dockerfile
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

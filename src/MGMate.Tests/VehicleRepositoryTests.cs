@@ -1,0 +1,298 @@
+using System.Text.Json;
+using MGMate.Core.Models;
+using MGMate.Data;
+using MGMate.Data.Repositories;
+using Microsoft.EntityFrameworkCore;
+
+namespace MGMate.Tests;
+
+public class VehicleRepositoryTests
+{
+    private static AppDbContext CreateDb() =>
+        new(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options);
+
+    // ── GetByVinAsync ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByVinAsync_ExistingVin_ReturnsVehicle()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        db.Vehicles.Add(new Vehicle { Vin = "FAKEVN00000000001" });
+        await db.SaveChangesAsync(ct);
+
+        var result = await new VehicleRepository(db).GetByVinAsync("FAKEVN00000000001", ct);
+
+        Assert.NotNull(result);
+        Assert.Equal("FAKEVN00000000001", result.Vin);
+    }
+
+    [Fact]
+    public async Task GetByVinAsync_NonExistingVin_ReturnsNull()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+
+        var result = await new VehicleRepository(db).GetByVinAsync("FAKEVN00000000002", ct);
+
+        Assert.Null(result);
+    }
+
+    // ── GetOrCreateByVinAsync ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetOrCreateByVinAsync_NewVin_CreatesAndReturnsVehicle()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+
+        var result = await new VehicleRepository(db).GetOrCreateByVinAsync("FAKEVN00000000001", null, ct);
+
+        Assert.NotNull(result);
+        Assert.Equal("FAKEVN00000000001", result.Vin);
+        Assert.Equal(1, await db.Vehicles.CountAsync(ct));
+    }
+
+    [Fact]
+    public async Task GetOrCreateByVinAsync_NewVin_WithSaicUser_SetsUser()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+
+        var result = await new VehicleRepository(db).GetOrCreateByVinAsync("FAKEVN00000000001", "alice@example.com", ct);
+
+        Assert.Equal("alice@example.com", result.SaicUser);
+    }
+
+    [Fact]
+    public async Task GetOrCreateByVinAsync_ExistingVin_ReturnsExistingWithoutDuplicate()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        db.Vehicles.Add(new Vehicle { Vin = "FAKEVN00000000001" });
+        await db.SaveChangesAsync(ct);
+
+        var result = await new VehicleRepository(db).GetOrCreateByVinAsync("FAKEVN00000000001", null, ct);
+
+        Assert.Equal("FAKEVN00000000001", result.Vin);
+        Assert.Equal(1, await db.Vehicles.CountAsync(ct));
+    }
+
+    [Fact]
+    public async Task GetOrCreateByVinAsync_ExistingVin_UpdatesSaicUserWhenChanged()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        db.Vehicles.Add(new Vehicle { Vin = "FAKEVN00000000001", SaicUser = "old@example.com" });
+        await db.SaveChangesAsync(ct);
+
+        var result = await new VehicleRepository(db).GetOrCreateByVinAsync("FAKEVN00000000001", "new@example.com", ct);
+
+        Assert.Equal("new@example.com", result.SaicUser);
+    }
+
+    [Fact]
+    public async Task GetOrCreateByVinAsync_ExistingVin_NullSaicUser_DoesNotOverwriteExistingUser()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        db.Vehicles.Add(new Vehicle { Vin = "FAKEVN00000000001", SaicUser = "keep@example.com" });
+        await db.SaveChangesAsync(ct);
+
+        var result = await new VehicleRepository(db).GetOrCreateByVinAsync("FAKEVN00000000001", null, ct);
+
+        Assert.Equal("keep@example.com", result.SaicUser);
+    }
+
+    // ── SetModelAsync ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SetModelAsync_ExistingVehicle_SetsModel()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var vehicle = new Vehicle { Vin = "FAKEVN00000000001" };
+        db.Vehicles.Add(vehicle);
+        await db.SaveChangesAsync(ct);
+
+        await new VehicleRepository(db).SetModelAsync(vehicle.Id, "MG ZS EV", ct);
+
+        var updated = await db.Vehicles.FindAsync([vehicle.Id], ct);
+        Assert.Equal("MG ZS EV", updated!.Model);
+    }
+
+    [Fact]
+    public async Task SetModelAsync_SameModel_DoesNotChangeValue()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var vehicle = new Vehicle { Vin = "FAKEVN00000000001", Model = "MG ZS EV" };
+        db.Vehicles.Add(vehicle);
+        await db.SaveChangesAsync(ct);
+
+        // Should not throw or change anything
+        await new VehicleRepository(db).SetModelAsync(vehicle.Id, "MG ZS EV", ct);
+
+        var updated = await db.Vehicles.FindAsync([vehicle.Id], ct);
+        Assert.Equal("MG ZS EV", updated!.Model);
+    }
+
+    [Fact]
+    public async Task SetModelAsync_NonExistingVehicle_DoesNothing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+
+        // Should not throw
+        await new VehicleRepository(db).SetModelAsync(9999, "SomeModel", ct);
+    }
+
+    // ── SetParkedAsync ────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SetParkedAsync_PersistsWhenAndWhereTheCarParked()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var vehicle = new Vehicle { Vin = "FAKEVN00000000001" };
+        db.Vehicles.Add(vehicle);
+        await db.SaveChangesAsync(ct);
+        var parkedAt = new DateTime(2026, 9, 16, 8, 30, 0, DateTimeKind.Utc);
+
+        await new VehicleRepository(db).SetParkedAsync(vehicle.Id, parkedAt, 52.1, 5.1, ct);
+
+        var updated = await db.Vehicles.FindAsync([vehicle.Id], ct);
+        Assert.Equal(parkedAt, updated!.LastParkedAt);
+        Assert.Equal((52.1, 5.1), (updated.ParkedLatitude, updated.ParkedLongitude));
+    }
+
+    [Fact]
+    public async Task SetParkedAsync_UnknownVehicle_DoesNothing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+
+        await new VehicleRepository(db).SetParkedAsync(4242, DateTime.UtcNow, null, null, ct);
+
+        Assert.Empty(db.Vehicles);
+    }
+
+    // ── SetLastMessageIdAsync ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SetLastMessageIdAsync_ReplacesTheStoredId()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var vehicle = new Vehicle { Vin = "FAKEVN00000000001", LastMessageId = "M1" };
+        db.Vehicles.Add(vehicle);
+        await db.SaveChangesAsync(ct);
+
+        await new VehicleRepository(db).SetLastMessageIdAsync(vehicle.Id, "M2", ct);
+
+        var updated = await db.Vehicles.FindAsync([vehicle.Id], ct);
+        Assert.Equal("M2", updated!.LastMessageId);
+    }
+
+    [Fact]
+    public async Task SetLastMessageIdAsync_UnknownVehicle_DoesNothing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+
+        await new VehicleRepository(db).SetLastMessageIdAsync(4242, "M1", ct);
+
+        Assert.Empty(db.Vehicles);
+    }
+
+    // ── SetConfigValueAsync ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SetConfigValueAsync_NewKey_AddsToConfig()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var vehicle = new Vehicle { Vin = "FAKEVN00000000001" };
+        db.Vehicles.Add(vehicle);
+        await db.SaveChangesAsync(ct);
+
+        await new VehicleRepository(db).SetConfigValueAsync(vehicle.Id, "hw_version", "MG_BEV_1.0", ct);
+
+        var updated = await db.Vehicles.FindAsync([vehicle.Id], ct);
+        Assert.NotNull(updated!.ConfigJson);
+        var config = JsonSerializer.Deserialize<Dictionary<string, string>>(updated.ConfigJson!);
+        Assert.Equal("MG_BEV_1.0", config!["hw_version"]);
+    }
+
+    // The blob has no schema, so an unreadable one starts afresh, which drops what it held: that
+    // much is worth a warning.
+    [Fact]
+    public async Task SetConfigValueAsync_UnreadableConfig_StartsAfreshAndSaysSo()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var vehicle = new Vehicle { Vin = "FAKEVN00000000001", ConfigJson = "{not json" };
+        db.Vehicles.Add(vehicle);
+        await db.SaveChangesAsync(ct);
+        var logger = new RecordingLogger<VehicleRepository>();
+
+        await new VehicleRepository(db, logger).SetConfigValueAsync(vehicle.Id, "hw_version", "MG_BEV_1.0", ct);
+
+        var config = JsonSerializer.Deserialize<Dictionary<string, string>>((await db.Vehicles.FindAsync([vehicle.Id], ct))!.ConfigJson!);
+        Assert.Equal(new Dictionary<string, string> { ["hw_version"] = "MG_BEV_1.0" }, config);
+        Assert.Single(logger.Entries, e => e.Level == Microsoft.Extensions.Logging.LogLevel.Warning);
+    }
+
+    [Fact]
+    public async Task SetConfigValueAsync_ExistingKey_UpdatesValue()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var vehicle = new Vehicle
+        {
+            Vin = "FAKEVN00000000001",
+            ConfigJson = """{"hw_version":"OLD"}"""
+        };
+        db.Vehicles.Add(vehicle);
+        await db.SaveChangesAsync(ct);
+
+        await new VehicleRepository(db).SetConfigValueAsync(vehicle.Id, "hw_version", "NEW", ct);
+
+        var updated = await db.Vehicles.FindAsync([vehicle.Id], ct);
+        var config = JsonSerializer.Deserialize<Dictionary<string, string>>(updated!.ConfigJson!);
+        Assert.Equal("NEW", config!["hw_version"]);
+    }
+
+    [Fact]
+    public async Task SetConfigValueAsync_MultipleKeys_PreservesOtherKeys()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var vehicle = new Vehicle
+        {
+            Vin = "FAKEVN00000000001",
+            ConfigJson = """{"key1":"val1"}"""
+        };
+        db.Vehicles.Add(vehicle);
+        await db.SaveChangesAsync(ct);
+
+        await new VehicleRepository(db).SetConfigValueAsync(vehicle.Id, "key2", "val2", ct);
+
+        var updated = await db.Vehicles.FindAsync([vehicle.Id], ct);
+        var config = JsonSerializer.Deserialize<Dictionary<string, string>>(updated!.ConfigJson!);
+        Assert.Equal("val1", config!["key1"]);
+        Assert.Equal("val2", config["key2"]);
+    }
+
+    [Fact]
+    public async Task SetConfigValueAsync_NonExistingVehicle_DoesNothing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+
+        // Should not throw
+        await new VehicleRepository(db).SetConfigValueAsync(9999, "key", "value", ct);
+    }
+}

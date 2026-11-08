@@ -1,12 +1,12 @@
 name: Feature Request
-description: Suggest a new feature or improvement for GarageStack
+description: Suggest a new feature or improvement for MGMate
 title: "[Feature]: "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Have an idea to make GarageStack better? We'd love to hear it!
+        Have an idea to make MGMate better? We'd love to hear it!
 
   - type: textarea
     id: problem
@@ -55,7 +55,7 @@ body:
       options:
         - Nice to have
         - Would significantly improve my usage
-        - Blocking my use of GarageStack
+        - Blocking my use of MGMate
     validations:
       required: true
 

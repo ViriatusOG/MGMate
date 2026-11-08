@@ -1,0 +1,115 @@
+using MGMate.Core.Models;
+using MGMate.Data;
+using MGMate.Data.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+
+namespace MGMate.Tests;
+
+public class PoiRepositoryTests
+{
+    private static AppDbContext CreateDb() =>
+        new(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options);
+
+    private static PoiRepository CreateRepo(AppDbContext db) =>
+        new(db, new MemoryCache(new MemoryCacheOptions()));
+
+    private static PoiItem MakeItem(string source, string poiType, string externalId, double lat, double lng) => new()
+    {
+        Source = source,
+        PoiType = poiType,
+        ExternalId = externalId,
+        Latitude = lat,
+        Longitude = lng,
+        CellLat = (int)lat,
+        CellLng = (int)lng,
+    };
+
+    [Fact]
+    public async Task GetPoisInBoundsAsync_ReturnsOnlyItemsWithinBounds()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        db.PoiItems.AddRange(
+            MakeItem("overpass", "fuel", "inside", lat: 52.0, lng: 5.0),
+            MakeItem("overpass", "fuel", "outside-lat", lat: 60.0, lng: 5.0),
+            MakeItem("overpass", "fuel", "outside-lng", lat: 52.0, lng: 20.0));
+        await db.SaveChangesAsync(ct);
+
+        var result = await CreateRepo(db).GetPoisInBoundsAsync(
+            "overpass", "fuel", minLat: 51.0, minLng: 4.0, maxLat: 53.0, maxLng: 6.0, ct);
+
+        Assert.Single(result);
+        Assert.Equal("inside", result[0].ExternalId);
+    }
+
+    [Fact]
+    public async Task GetPoisInBoundsAsync_FiltersBySourceAndPoiType()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        db.PoiItems.AddRange(
+            MakeItem("overpass", "fuel", "match", lat: 52.0, lng: 5.0),
+            MakeItem("ocm", "charging", "wrong-source", lat: 52.0, lng: 5.0),
+            MakeItem("overpass", "service_area", "wrong-type", lat: 52.0, lng: 5.0));
+        await db.SaveChangesAsync(ct);
+
+        var result = await CreateRepo(db).GetPoisInBoundsAsync(
+            "overpass", "fuel", minLat: 51.0, minLng: 4.0, maxLat: 53.0, maxLng: 6.0, ct);
+
+        Assert.Single(result);
+        Assert.Equal("match", result[0].ExternalId);
+    }
+
+    [Fact]
+    public async Task GetDistinctBrandsAsync_ReturnsSortedCaseInsensitiveDistinctBrands()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var shell = MakeItem("overpass", "fuel", "shell-1", lat: 52.0, lng: 5.0);
+        shell.Brand = "Shell";
+        var shellLower = MakeItem("overpass", "fuel", "shell-2", lat: 52.1, lng: 5.1);
+        shellLower.Brand = "shell";
+        var bp = MakeItem("overpass", "fuel", "bp-1", lat: 52.2, lng: 5.2);
+        bp.Brand = "BP";
+        var unbranded = MakeItem("overpass", "fuel", "none-1", lat: 52.3, lng: 5.3);
+        var otherType = MakeItem("overpass", "service_area", "sa-1", lat: 52.4, lng: 5.4);
+        otherType.Brand = "Rest Stop Co";
+        db.PoiItems.AddRange(shell, shellLower, bp, unbranded, otherType);
+        await db.SaveChangesAsync(ct);
+
+        var result = await CreateRepo(db).GetDistinctBrandsAsync("overpass", "fuel", ct);
+
+        Assert.Equal(["BP", "Shell"], result);
+    }
+
+    [Fact]
+    public async Task UpsertTileAsync_InvalidatesCachedBrandList()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var repo = CreateRepo(db);
+
+        Assert.Empty(await repo.GetDistinctBrandsAsync("overpass", "fuel", ct));
+
+        var item = MakeItem("overpass", "fuel", "esso-1", lat: 52.0, lng: 5.0);
+        item.Brand = "Esso";
+        await repo.UpsertTileAsync("overpass", "fuel", item.CellLat, item.CellLng, [item], TimeSpan.FromDays(1), ct);
+
+        Assert.Equal(["Esso"], await repo.GetDistinctBrandsAsync("overpass", "fuel", ct));
+    }
+
+    [Fact]
+    public async Task GetPoisInBoundsAsync_NoMatches_ReturnsEmpty()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+
+        var result = await CreateRepo(db).GetPoisInBoundsAsync(
+            "overpass", "fuel", minLat: 51.0, minLng: 4.0, maxLat: 53.0, maxLng: 6.0, ct);
+
+        Assert.Empty(result);
+    }
+}

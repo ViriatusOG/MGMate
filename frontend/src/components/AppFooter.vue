@@ -29,7 +29,7 @@ async function openModal() {
 }
 
 // Joined in script rather than the template, which drops a whitespace-only text node before the version
-const copyrightLabel = ['© 2026 GarageStack', APP_VERSION].filter(Boolean).join(' ')
+const copyrightLabel = ['© 2026 MGMate', APP_VERSION].filter(Boolean).join(' ')
 
 const vin = computed(() => vehicleStore.activeVin)
 
@@ -49,7 +49,7 @@ defineExpose({ openSettings: openModal, refresh })
     <div class="app-footer__meta">
       <a
         class="app-footer__copyright"
-        href="https://github.com/joszz/GarageStack"
+        href="https://github.com/ViriatusOG/MGMate"
         target="_blank"
         rel="noopener"
         >{{ copyrightLabel }}</a

@@ -258,7 +258,7 @@ watch(
       </button>
       <RouterLink to="/" class="mobile-brand">
         <font-awesome-icon icon="car" />
-        GarageStack
+        MGMate
       </RouterLink>
       <button
         class="topbar-btn"
@@ -294,7 +294,7 @@ watch(
       >
         <RouterLink to="/" class="sidebar-brand">
           <font-awesome-icon icon="car" />
-          <span>GarageStack</span>
+          <span>MGMate</span>
         </RouterLink>
         <div v-if="carModel || onlineStatusText" class="sidebar-car">
           <span
