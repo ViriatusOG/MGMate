@@ -13,16 +13,26 @@
 }
 
 .ov-row {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr);
 }
 
-/* Without the car or the map the remaining cards share the row. */
+/* Without the car, the map or the status card the remaining cards share the row. */
 .ov-hero:not(:has(.ov-hero__car)) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.ov-row:not(:has(.ov-row__map)) {
+.ov-row:not(:has(.ov-row__map)),
+.ov-row:not(:has(.ov-row__status)) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.ov-row:not(:has(.ov-row__map), :has(.ov-row__status)) {
   grid-template-columns: minmax(0, 1fr);
+}
+
+/* The car photo no longer sets the row's height: the cards beside it do. */
+.ov-hero__car .car-photo__img {
+  max-height: 13rem;
 }
 
 .ov-hero > *,
@@ -40,15 +50,29 @@
     order: -1;
   }
 
-  .ov-row {
-    grid-template-columns: minmax(0, 1fr);
+  .ov-row,
+  .ov-row:not(:has(.ov-row__map)),
+  .ov-row:not(:has(.ov-row__status)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ov-row__trips {
+    grid-column: 1 / -1;
   }
 }
 
 @media (width <= 767px) {
   .ov-hero,
-  .ov-hero:not(:has(.ov-hero__car)) {
+  .ov-hero:not(:has(.ov-hero__car)),
+  .ov-row,
+  .ov-row:not(:has(.ov-row__map)),
+  .ov-row:not(:has(.ov-row__status)) {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* On a phone the car's state comes before where it is. */
+  .ov-row__status {
+    order: -1;
   }
 
   .ov-hero__car {
@@ -261,7 +285,325 @@
   text-align: right;
 }
 
+/* A charge's two ends on the bar: before it faded, what it added bright. */
+.ov-battery__bar .ov-battery__bar-before {
+  border-radius: 6px 0 0 6px;
+  background: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
+.ov-battery__bar .ov-battery__bar-now {
+  border-radius: 0 6px 6px 0;
+  background: var(--color-success);
+}
+
+.ov-battery__bar .ov-battery__bar-now:only-of-type {
+  border-radius: 6px;
+}
+
+/* ── Small line charts ────────────────────────────────────── */
+
+/* The chart takes whatever height the card has left, so the card ends with it, not with a gap. */
+.ov-spark-wrap {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 5rem;
+  margin: 0;
+}
+
+.ov-spark {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 3.5rem;
+  max-height: 10rem;
+  overflow: visible;
+}
+
+.ov-spark__line {
+  fill: none;
+  stroke: var(--tone);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.ov-spark__line.is-dashed {
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.ov-spark__area {
+  fill: var(--tone);
+  stroke: none;
+  opacity: 0.18;
+}
+
+.ov-spark .is-success {
+  --tone: var(--color-success);
+}
+
+.ov-spark .is-warning {
+  --tone: var(--color-warning);
+}
+
+.ov-spark .is-info {
+  --tone: var(--color-info);
+}
+
+.ov-spark-cap {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Charging, live ───────────────────────────────────────── */
+
+.ov-battery--charging {
+  border-color: color-mix(in srgb, var(--color-success) 45%, var(--color-border));
+}
+
+.ov-live__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--color-success-text);
+}
+
+.ov-live__pulse {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-success) 60%, transparent);
+  animation: ov-live-pulse 1.8s infinite;
+}
+
+@keyframes ov-live-pulse {
+  70% {
+    box-shadow: 0 0 0 0.45rem transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ov-live__pulse {
+    animation: none;
+  }
+}
+
+.ov-live__power {
+  font-size: 2.75rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.ov-live__power small {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.ov-battery__soc--small {
+  font-size: 2.25rem;
+}
+
+.ov-live__note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Car status ───────────────────────────────────────────── */
+
+.ov-status__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.ov-status__body {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+.ov-status__car {
+  position: relative;
+}
+
+.ov-topview {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.ov-topview__body {
+  fill: var(--color-surface-2);
+  stroke: color-mix(in srgb, var(--color-text-muted) 45%, var(--color-border));
+  stroke-width: 2;
+}
+
+.ov-topview__wheel {
+  fill: color-mix(in srgb, var(--color-text) 12%, var(--color-bg));
+}
+
+.ov-topview__glass {
+  fill: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface-2));
+  stroke: color-mix(in srgb, var(--color-text-muted) 45%, var(--color-border));
+  stroke-width: 1.2;
+}
+
+.ov-topview__panel {
+  fill: color-mix(in srgb, var(--color-text) 6%, var(--color-surface-2));
+  stroke: color-mix(in srgb, var(--color-text-muted) 45%, var(--color-border));
+  stroke-width: 1.5;
+  transition:
+    transform 0.35s ease,
+    fill 0.2s;
+}
+
+.ov-topview__panel.is-open,
+.ov-topview__window.is-open {
+  fill: color-mix(in srgb, var(--color-warning) 50%, var(--color-surface-2));
+  stroke: var(--color-warning);
+}
+
+/* An open door swings out on its front hinge. */
+.ov-topview__door {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+}
+
+.ov-topview__door--left.is-open {
+  transform: translateX(-4px) rotate(38deg);
+}
+
+.ov-topview__door--right.is-open {
+  transform: translateX(4px) rotate(-38deg);
+}
+
+.ov-topview__lamp {
+  fill: color-mix(in srgb, var(--color-text) 15%, var(--color-surface-2));
+}
+
+.ov-topview__lamp.is-on {
+  fill: #fde68a;
+  filter: drop-shadow(0 -2px 4px #fde68a);
+}
+
+.ov-topview__port {
+  fill: var(--color-surface);
+  stroke: color-mix(in srgb, var(--color-text-muted) 45%, var(--color-border));
+}
+
+.ov-topview__port.is-plugged {
+  fill: var(--color-info);
+  stroke: var(--color-info);
+}
+
+.ov-topview__port.is-charging {
+  fill: var(--color-success);
+  stroke: var(--color-success);
+  animation: ov-port-glow 1.8s ease-in-out infinite;
+}
+
+@keyframes ov-port-glow {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ov-topview__panel {
+    transition: none;
+  }
+
+  .ov-topview__port.is-charging {
+    animation: none;
+  }
+}
+
+/* The lock sits on the roof, in the middle of the drawing. */
+.ov-status__lock {
+  position: absolute;
+  top: 54%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  transform: translate(-50%, -50%);
+  font-size: 0.85rem;
+}
+
+.ov-status__lock.is-locked {
+  color: var(--color-success-text);
+}
+
+.ov-status__lock.is-unlocked {
+  color: var(--color-warning-text);
+}
+
+.ov-status__list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.ov-status__list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ov-status__list dt {
+  color: var(--color-text-muted);
+}
+
+.ov-status__list dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.ov-status__list .is-ok {
+  color: var(--color-success-text);
+}
+
+.ov-status__list .is-warn {
+  color: var(--color-warning-text);
+}
+
+.ov-status__list .is-info {
+  color: var(--color-info-text);
+}
+
+.ov-status__list .is-muted {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
 /* ── Last charge ──────────────────────────────────────────── */
+
+.ov-charge__ends {
+  margin-top: 0.35rem;
+}
 
 .ov-charge__added {
   display: flex;

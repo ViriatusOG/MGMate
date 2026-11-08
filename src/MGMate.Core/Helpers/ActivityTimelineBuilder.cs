@@ -26,13 +26,29 @@ public static class ActivityTimelineBuilder
     {
         var events = new List<ActivityEvent>();
         var gaps = new List<ActivityGap>();
+        var socPoints = new List<ActivitySocPoint>();
         // Each switch keeps the last value it saw, so a reading that leaves it out changes nothing.
         var last = new bool?[Switches.Length];
         double? soc = null;
+        DateTime? socAt = null;
         DateTime? previous = null;
 
         foreach (var s in samples)
         {
+            // The level line for the overview: a point where the level moves, and the reading just
+            // before it too, so a line drawn through them stays flat until the change.
+            if (s.SocPercent is { } level)
+            {
+                if (soc is not { } prevLevel)
+                    socPoints.Add(new ActivitySocPoint(s.RecordedAt, level));
+                else if (prevLevel != level)
+                {
+                    if (socAt is { } flatEnd && socPoints[^1].At != flatEnd)
+                        socPoints.Add(new ActivitySocPoint(flatEnd, prevLevel));
+                    socPoints.Add(new ActivitySocPoint(s.RecordedAt, level));
+                }
+                socAt = s.RecordedAt;
+            }
             soc = s.SocPercent ?? soc;
             if (previous is { } p && s.RecordedAt - p > gap) gaps.Add(new ActivityGap(p, s.RecordedAt));
             previous = s.RecordedAt;
@@ -65,6 +81,10 @@ public static class ActivityTimelineBuilder
             .OrderBy(h => h.Hour)
             .ToList();
 
-        return new ActivityTimeline(events, gaps, hours, samples.Count);
+        // The level as of the last reading, so the line reaches the end of the readings.
+        if (soc is { } lastLevel && socAt is { } lastAt && socPoints[^1].At != lastAt)
+            socPoints.Add(new ActivitySocPoint(lastAt, lastLevel));
+
+        return new ActivityTimeline(events, gaps, hours, samples.Count, socPoints);
     }
 }
