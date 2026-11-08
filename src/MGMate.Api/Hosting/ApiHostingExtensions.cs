@@ -20,14 +20,25 @@ internal static class ApiHostingExtensions
     private const int DefaultGlobalPermitsPerMinute = 120;
 
     private const string LoginPolicy = "login";
+    private const string WidgetPolicy = "widget";
+    private const string ExportPolicy = "export";
 
     // The address nginx saw the request come from, kept before the forwarded headers are unwrapped.
     internal const string PeerItemKey = "MGMate.Peer";
 
-    // Failed or not, sign-ins through one device in front of nginx per window when no proxies are
-    // configured: three times one visitor's limit, so a household behind an outer proxy never
-    // notices it, while a LAN device forging X-Forwarded-For stops here instead of never.
-    private const int LoginPermitsPerPeer = 30;
+    // How many times a policy's per-IP limit one device in front of nginx gets when no proxies are
+    // configured: a household behind an outer proxy never notices it, while a LAN device forging
+    // X-Forwarded-For stops here instead of never.
+    private const int PeerAllowanceFactor = 3;
+
+    // The policies worth guessing at or expensive to run, with their per-IP window and limit. The
+    // per-peer backstop below counts the same ones, at PeerAllowanceFactor times the limit.
+    private static readonly Dictionary<string, (TimeSpan Window, int PermitLimit)> PeerCountedPolicies = new()
+    {
+        [LoginPolicy] = (TimeSpan.FromMinutes(5), 10),
+        [WidgetPolicy] = (TimeSpan.FromMinutes(5), 60),
+        [ExportPolicy] = (TimeSpan.FromMinutes(15), 5),
+    };
 
     /// <summary>
     /// Requests per minute per client IP across the whole API, plus tighter policies for the
@@ -53,11 +64,11 @@ internal static class ApiHostingExtensions
             var global = PartitionedRateLimiter.Create(FixedWindowPerIp(TimeSpan.FromMinutes(1), globalPermitsPerMinute));
             opts.GlobalLimiter = proxiesConfigured
                 ? global
-                : PartitionedRateLimiter.CreateChained(global, LoginPerPeerLimiter());
+                : PartitionedRateLimiter.CreateChained(global, PerPeerLimiter());
 
             // Tighter, endpoint-specific limit on login to slow down credential-stuffing attempts.
             // Composes with (i.e. is enforced in addition to) the global limiter above.
-            opts.AddPolicy(LoginPolicy, FixedWindowPerIp(TimeSpan.FromMinutes(5), permitLimit: 10));
+            opts.AddPolicy(LoginPolicy, FixedWindowPerIp(PeerCountedPolicies[LoginPolicy]));
 
             // Starting an OIDC sign-in submits no credentials, so it needs no brute-force limit --
             // but it does redirect to the identity provider, and a redirect loop caused by a
@@ -68,20 +79,23 @@ internal static class ApiHostingExtensions
             // Tighter limit on the widget endpoint to slow down guessing WIDGET_API_KEY, which the
             // global limiter alone (120/min by default) would allow at a much higher rate. Still generous
             // enough for a handful of dashboard widgets behind the same NAT polling every 30s.
-            opts.AddPolicy("widget", FixedWindowPerIp(TimeSpan.FromMinutes(5), permitLimit: 60));
+            opts.AddPolicy(WidgetPolicy, FixedWindowPerIp(PeerCountedPolicies[WidgetPolicy]));
 
             // Browser error reports: a page stuck in an error loop must not fill the log files.
             // The page itself caps what it sends; this caps what a misbehaving one could.
             opts.AddPolicy("client-errors", FixedWindowPerIp(TimeSpan.FromMinutes(5), permitLimit: 30));
 
             // A full export reads every row the car ever sent: a few a quarter of an hour is plenty.
-            opts.AddPolicy("export", FixedWindowPerIp(TimeSpan.FromMinutes(15), permitLimit: 5));
+            opts.AddPolicy(ExportPolicy, FixedWindowPerIp(PeerCountedPolicies[ExportPolicy]));
         });
     }
 
     // One fixed-window limiter per client IP. Every policy above differs only in window and limit.
     private static Func<HttpContext, RateLimitPartition<string>> FixedWindowPerIp(TimeSpan window, int permitLimit) =>
         httpContext => FixedWindow(httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown", window, permitLimit);
+
+    private static Func<HttpContext, RateLimitPartition<string>> FixedWindowPerIp((TimeSpan Window, int PermitLimit) limit) =>
+        FixedWindowPerIp(limit.Window, limit.PermitLimit);
 
     private static RateLimitPartition<string> FixedWindow(string key, TimeSpan window, int permitLimit) =>
         RateLimitPartition.GetFixedWindowLimiter(
@@ -97,17 +111,20 @@ internal static class ApiHostingExtensions
     /// <summary>
     /// With no proxies configured every private address is believed as a proxy, so a device on the
     /// LAN can put any address it likes in X-Forwarded-For and look like a new visitor on each
-    /// sign-in attempt. The address nginx saw (<see cref="PeerItemKey"/>) cannot be forged that way,
-    /// so sign-ins are also counted per that address. Every other request passes untouched.
+    /// request. The address nginx saw (<see cref="PeerItemKey"/>) cannot be forged that way, so
+    /// sign-ins, widget-key guesses and exports are also counted per that address, each in its own
+    /// partition. Every other request passes untouched.
     /// </summary>
-    internal static PartitionedRateLimiter<HttpContext> LoginPerPeerLimiter() =>
+    internal static PartitionedRateLimiter<HttpContext> PerPeerLimiter() =>
         PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
-            httpContext.GetEndpoint()?.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName == LoginPolicy
-                ? FixedWindow(
-                    httpContext.Items[PeerItemKey] as string ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                    TimeSpan.FromMinutes(5),
-                    LoginPermitsPerPeer)
-                : RateLimitPartition.GetNoLimiter(""));
+        {
+            var policy = httpContext.GetEndpoint()?.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName;
+            if (policy is null || !PeerCountedPolicies.TryGetValue(policy, out var limit))
+                return RateLimitPartition.GetNoLimiter("");
+
+            var peer = httpContext.Items[PeerItemKey] as string ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            return FixedWindow($"{policy}:{peer}", limit.Window, limit.PermitLimit * PeerAllowanceFactor);
+        });
 
     /// <summary>
     /// CORS for the configured browser origins; any origin in Development, where the Vite dev
@@ -190,10 +207,10 @@ internal static class ApiHostingExtensions
         {
             if (!app.Environment.IsDevelopment())
                 Log.Warning("ForwardedHeaders:TrustedProxies is not configured -- trusting all RFC 1918 ranges, " +
-                            "so sign-ins are also limited per device in front of nginx. Set it to your proxy IP(s) " +
+                            "so sign-ins, widget calls and exports are also limited per device in front of nginx. Set it to your proxy IP(s) " +
                             "to stop anything on the LAN from claiming another address.");
 
-            // Kept before the unwrapping below replaces it, for the per-peer sign-in limit.
+            // Kept before the unwrapping below replaces it, for the per-peer limits.
             app.Use((context, next) =>
             {
                 context.Items[PeerItemKey] = NearestPeer(context, options);

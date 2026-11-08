@@ -132,24 +132,39 @@ public class ForwardedHeadersTests
         Assert.Equal(expected, ApiHostingExtensions.NearestPeer(context, ApiHostingExtensions.ForwardedHeadersOptionsFor(null)));
     }
 
-    [Fact]
-    public void LoginPerPeer_StopsADeviceThatKeepsChangingItsClaimedAddress()
+    [Theory]
+    [InlineData("login", 30)]
+    [InlineData("widget", 180)]
+    [InlineData("export", 15)]
+    public void PerPeer_StopsADeviceThatKeepsChangingItsClaimedAddress(string policy, int expected)
     {
-        using var limiter = ApiHostingExtensions.LoginPerPeerLimiter();
+        using var limiter = ApiHostingExtensions.PerPeerLimiter();
 
-        HttpContext Attempt(int i, string policy)
-        {
-            var context = new DefaultHttpContext();
-            context.Connection.RemoteIpAddress = IPAddress.Parse($"198.51.100.{i % 250}");
-            context.Items[ApiHostingExtensions.PeerItemKey] = "192.168.1.50";
-            context.SetEndpoint(new Endpoint(null, new EndpointMetadataCollection(new EnableRateLimitingAttribute(policy)), policy));
-            return context;
-        }
+        var granted = Enumerable.Range(0, expected + 10).Count(i => limiter.AttemptAcquire(Attempt(i, policy)).IsAcquired);
 
-        var granted = Enumerable.Range(0, 40).Count(i => limiter.AttemptAcquire(Attempt(i, "login")).IsAcquired);
-        var otherEndpoint = limiter.AttemptAcquire(Attempt(41, "widget")).IsAcquired;
+        Assert.Equal(expected, granted);
+    }
 
-        Assert.Equal(30, granted);
-        Assert.True(otherEndpoint);
+    [Fact]
+    public void PerPeer_CountsEachPolicyApartAndLeavesTheRestAlone()
+    {
+        using var limiter = ApiHostingExtensions.PerPeerLimiter();
+
+        var logins = Enumerable.Range(0, 40).Count(i => limiter.AttemptAcquire(Attempt(i, "login")).IsAcquired);
+        var widgetAfterLogins = limiter.AttemptAcquire(Attempt(41, "widget")).IsAcquired;
+        var unlisted = Enumerable.Range(0, 200).All(i => limiter.AttemptAcquire(Attempt(i, "client-errors")).IsAcquired);
+
+        Assert.Equal(30, logins);
+        Assert.True(widgetAfterLogins);
+        Assert.True(unlisted);
+    }
+
+    private static HttpContext Attempt(int i, string policy)
+    {
+        var context = new DefaultHttpContext();
+        context.Connection.RemoteIpAddress = IPAddress.Parse($"198.51.100.{i % 250}");
+        context.Items[ApiHostingExtensions.PeerItemKey] = "192.168.1.50";
+        context.SetEndpoint(new Endpoint(null, new EndpointMetadataCollection(new EnableRateLimitingAttribute(policy)), policy));
+        return context;
     }
 }
