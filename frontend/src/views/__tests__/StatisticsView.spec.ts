@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia, type Pinia } from 'pinia'
+import { useDashboardSettingsStore } from '@/stores/settingsDashboard'
 import { createI18n } from 'vue-i18n'
 import en from '@/locales/en.json'
 import StatisticsView from '../StatisticsView.vue'
@@ -156,6 +157,9 @@ describe('StatisticsView', () => {
   })
 
   it("sums the period's trips into its insights", async () => {
+    // Off by default, so switched on here to check its sum.
+    useDashboardSettingsStore(pinia).statsInsights.find((i) => i.id === 'climateUsage')!.visible =
+      true
     const wrapper = await mountView()
 
     const shown = shownInsights(wrapper)

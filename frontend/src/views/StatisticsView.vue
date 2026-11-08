@@ -19,6 +19,7 @@ import CardInfoWrap from '@/components/CardInfoWrap.vue'
 import DetailModal from '@/components/DetailModal.vue'
 import ToolbarPanel from '@/components/ToolbarPanel.vue'
 import StatsPeriodFilter from '@/components/StatsPeriodFilter.vue'
+import StatsPeriodChips from '@/components/StatsPeriodChips.vue'
 import StatsMonthTable from '@/components/StatsMonthTable.vue'
 import SkeletonCard from '@/components/SkeletonCard.vue'
 import SkeletonChart from '@/components/SkeletonChart.vue'
@@ -349,6 +350,22 @@ const chartRows = computed(() =>
   settings.statsCharts.map((item) => ({ item, def: chartDefMap.value.get(item.id)! })),
 )
 
+// The charts in three sections, each keeping the user's order within it.
+const CHART_SECTIONS: { key: string; charts: readonly StatsChartId[] }[] = [
+  { key: 'driving', charts: ['distanceChart', 'consumptionTempChart'] },
+  { key: 'energy', charts: ['evChart', 'hybridSocChart', 'dailyKwhChart', 'rangeChart'] },
+  { key: 'health', charts: ['voltage12vChart', 'tyreChart', 'temperatureChart'] },
+]
+
+const chartSections = computed(() =>
+  CHART_SECTIONS.map((section) => ({
+    key: section.key,
+    rows: chartRows.value.filter(
+      ({ item, def }) => section.charts.includes(item.id) && item.visible && def.applicable,
+    ),
+  })).filter((section) => section.rows.length > 0),
+)
+
 // ── Layout reset ──────────────────────────────────────────────
 
 function resetStatsLayout() {
@@ -373,6 +390,7 @@ const skeletonChartCount = computed(
   <div class="view-container">
     <ViewHeader :title="t('nav.statistics')" :caption="periodLabel">
       <template #actions>
+        <StatsPeriodChips />
         <ToolbarPanel>
           <StatsPeriodFilter />
         </ToolbarPanel>
@@ -497,21 +515,27 @@ const skeletonChartCount = computed(
             </template>
           </EditableCardGrid>
 
-          <!-- Normal mode: visible + applicable charts -->
-          <div v-else class="stats-chart-grid">
-            <template v-for="{ item, def } in chartRows" :key="item.id">
-              <StatsChartCard
-                v-if="item.visible && def.applicable"
-                :title="def.title"
-                :icon="def.icon"
-                :type="def.type"
-                :data="def.data"
-                :options="def.options"
-                :show-info="uiSettings.showCardInfoIcons"
-                @info="activeChartInfo = item.id"
-              />
-            </template>
-          </div>
+          <!-- Normal mode: visible + applicable charts, in their sections -->
+          <template v-else>
+            <details v-for="section in chartSections" :key="section.key" class="stats-section" open>
+              <summary class="stats-section__title">
+                {{ t(`statistics.sections.${section.key}`) }}
+              </summary>
+              <div class="stats-chart-grid">
+                <StatsChartCard
+                  v-for="{ item, def } in section.rows"
+                  :key="item.id"
+                  :title="def.title"
+                  :icon="def.icon"
+                  :type="def.type"
+                  :data="def.data"
+                  :options="def.options"
+                  :show-info="uiSettings.showCardInfoIcons"
+                  @info="activeChartInfo = item.id"
+                />
+              </div>
+            </details>
+          </template>
         </template>
 
         <StatsMonthTable
@@ -577,6 +601,17 @@ const skeletonChartCount = computed(
 
 .stats-insights {
   margin-bottom: 1.5rem;
+}
+
+.stats-section {
+  margin-bottom: 1.5rem;
+}
+
+.stats-section__title {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .stats-chart-grid {

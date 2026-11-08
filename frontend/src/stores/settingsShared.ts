@@ -81,8 +81,14 @@ export const ALL_STATS_CHART_IDS: StatsChartId[] = [
   'consumptionTempChart',
 ]
 
+// Shown only when someone switches them on: too narrow to earn a tile on everyone's page.
+const INSIGHTS_OFF_BY_DEFAULT: ReadonlySet<StatsInsightId> = new Set([
+  'climateUsage',
+  'commutePattern',
+])
+
 export function defaultStatsInsights(): StatsItemConfig<StatsInsightId>[] {
-  return ALL_STATS_INSIGHT_IDS.map((id) => ({ id, visible: true }))
+  return ALL_STATS_INSIGHT_IDS.map((id) => ({ id, visible: !INSIGHTS_OFF_BY_DEFAULT.has(id) }))
 }
 
 export function defaultStatsCharts(): StatsItemConfig<StatsChartId>[] {

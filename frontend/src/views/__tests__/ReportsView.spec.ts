@@ -91,7 +91,9 @@ describe('ReportsView', () => {
     const distance = wrapper.findAll('.reports__tile')[0]!.text()
     expect(distance).toContain('120')
     expect(distance).toContain('▲ 20% vs Oct')
-    expect(wrapper.findAll('.reports__table tbody tr')).toHaveLength(12)
+    // Dec to Sep had no trips, so they fold into one gap row before Oct and Nov.
+    expect(wrapper.findAll('.reports__table tbody tr')).toHaveLength(3)
+    expect(wrapper.findAll('.reports__bar')).toHaveLength(12)
     expect(wrapper.find('.reports__row--selected').text()).toContain('Nov 2026')
   })
 

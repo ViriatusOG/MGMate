@@ -299,6 +299,51 @@ const rows = computed(() =>
   }),
 )
 
+// Runs of two or more months with nothing in them fold into one line, so a car that arrived in
+// September does not open on nine rows of zeros. The month on show never folds.
+type TableRow =
+  | { kind: 'month'; key: string; row: (typeof rows.value)[number] }
+  | { kind: 'gap'; key: string; label: string }
+
+const tableRows = computed<TableRow[]>(() => {
+  const out: TableRow[] = []
+  let run: (typeof rows.value)[number][] = []
+  const flush = () => {
+    if (run.length >= 2) {
+      // Newest first, so the run reads from its last month back to its first.
+      const label = t('reports.emptyRun', { from: run[run.length - 1]!.month, to: run[0]!.month })
+      out.push({ kind: 'gap', key: `gap-${run[0]!.key}`, label })
+    } else {
+      for (const r of run) out.push({ kind: 'month', key: r.key, row: r })
+    }
+    run = []
+  }
+  for (const r of rows.value) {
+    if (r.trips === 0 && r.charges === 0 && !r.selected) {
+      run.push(r)
+    } else {
+      flush()
+      out.push({ kind: 'month', key: r.key, row: r })
+    }
+  }
+  flush()
+  return out
+})
+
+// The year as bars of distance, oldest on the left; a bar picks its month.
+const yearBars = computed(() => {
+  const all = reports.value
+  const most = Math.max(1, ...all.map((m) => m.km))
+  return all.map((m) => ({
+    key: m.key,
+    start: m.start,
+    label: formatDate(m.start, { month: 'narrow' }),
+    title: `${formatDate(m.start, { month: 'long', year: 'numeric' })}: ${units.value.format('distance', m.km, { decimals: 0, grouped: true })}`,
+    height: (m.km / most) * 100,
+    selected: m.start.getTime() === selected.value.getTime(),
+  }))
+})
+
 const yearTotals = computed(() => {
   const all = reports.value
   const km = all.reduce((s, m) => s + m.km, 0)
@@ -378,6 +423,32 @@ const yearTotals = computed(() => {
       </StatTile>
     </section>
 
+    <section class="ll-card reports__bars-card">
+      <h2 class="reports__year-title">
+        {{ t('reports.barsTitle', { unit: units.symbol('distance') }) }}
+      </h2>
+      <div
+        class="reports__bars"
+        role="group"
+        :aria-label="t('reports.barsTitle', { unit: units.symbol('distance') })"
+      >
+        <button
+          v-for="bar in yearBars"
+          :key="bar.key"
+          type="button"
+          class="reports__bar"
+          :class="{ 'is-selected': bar.selected }"
+          :title="bar.title"
+          :aria-label="bar.title"
+          :aria-pressed="bar.selected"
+          @click="show(bar.start)"
+        >
+          <span class="reports__bar-fill" :style="{ height: `${Math.max(bar.height, 1.5)}%` }" />
+          <span class="reports__bar-label">{{ bar.label }}</span>
+        </button>
+      </div>
+    </section>
+
     <section class="ll-card reports__year">
       <h2 class="reports__year-title">{{ t('reports.yearTitle') }}</h2>
       <div class="reports__table-wrap">
@@ -398,24 +469,28 @@ const yearTotals = computed(() => {
             </tr>
           </thead>
           <tbody>
-            <tr
-              v-for="row in rows"
-              :key="row.key"
-              :class="{ 'reports__row--selected': row.selected }"
-              :aria-selected="row.selected"
-            >
-              <th scope="row">
-                <button type="button" class="reports__row-button" @click="show(row.start)">
-                  {{ row.month }}
-                </button>
-              </th>
-              <td>{{ row.trips }}</td>
-              <td>{{ row.distance }}</td>
-              <td>{{ row.efficiency }}</td>
-              <td>{{ row.charges }}</td>
-              <td>{{ row.charged }}</td>
-              <td v-if="priced">{{ row.cost }}</td>
-            </tr>
+            <template v-for="entry in tableRows" :key="entry.key">
+              <tr v-if="entry.kind === 'gap'" class="reports__row--gap">
+                <td :colspan="priced ? 7 : 6">{{ entry.label }}</td>
+              </tr>
+              <tr
+                v-else
+                :class="{ 'reports__row--selected': entry.row.selected }"
+                :aria-selected="entry.row.selected"
+              >
+                <th scope="row">
+                  <button type="button" class="reports__row-button" @click="show(entry.row.start)">
+                    {{ entry.row.month }}
+                  </button>
+                </th>
+                <td>{{ entry.row.trips }}</td>
+                <td>{{ entry.row.distance }}</td>
+                <td>{{ entry.row.efficiency }}</td>
+                <td>{{ entry.row.charges }}</td>
+                <td>{{ entry.row.charged }}</td>
+                <td v-if="priced">{{ entry.row.cost }}</td>
+              </tr>
+            </template>
           </tbody>
           <tfoot>
             <tr>
@@ -460,6 +535,57 @@ const yearTotals = computed(() => {
 
 .reports__change--bad {
   color: var(--color-danger-text);
+}
+
+.reports__bars-card {
+  margin-bottom: 1rem;
+}
+
+.reports__bars {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 0.4rem;
+  height: 9rem;
+}
+
+.reports__bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.reports__bar-fill {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: color-mix(in srgb, var(--color-primary) 70%, var(--color-surface));
+}
+
+.reports__bar.is-selected .reports__bar-fill {
+  background: var(--color-primary-light);
+}
+
+.reports__bar.is-selected {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.reports__bar-label {
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.reports__row--gap td {
+  color: var(--color-text-muted);
+  font-style: italic;
+  text-align: left;
 }
 
 .reports__year-title {

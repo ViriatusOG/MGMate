@@ -64,6 +64,8 @@ interface UiSettings {
   units: UnitSettings
   /** Electricity prices, for what charges and trips cost; null until set. */
   tariff: Tariff | null
+  /** What the traction battery held new, picked on the battery health page; null until picked. */
+  batteryPackKwh: number | null
 }
 
 function defaultsFor(): UiSettings {
@@ -84,6 +86,7 @@ function defaultsFor(): UiSettings {
     clock: 'auto',
     units: { ...AUTO_UNITS },
     tariff: null,
+    batteryPackKwh: null,
   }
 }
 
@@ -177,6 +180,12 @@ function parseUiFields(parsed: Record<string, unknown>, fallback: UiSettings): U
     clock: oneOf(parsed.clock, CLOCK_SETTINGS, fallback.clock),
     units: parseUnits(parsed.units, fallback.units),
     tariff: parseTariff(parsed.tariff),
+    batteryPackKwh:
+      typeof parsed.batteryPackKwh === 'number' &&
+      parsed.batteryPackKwh > 0 &&
+      parsed.batteryPackKwh < 250
+        ? parsed.batteryPackKwh
+        : null,
   }
 }
 

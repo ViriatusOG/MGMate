@@ -129,7 +129,13 @@
         "custom": "Custom dates"
       },
       "from": "From",
-      "to": "To"
+      "to": "To",
+      "chip": {
+        "last7": "7 d",
+        "last30": "30 d",
+        "last90": "90 d",
+        "thisYear": "Year"
+      }
     },
     "months": {
       "title": "Per month",
@@ -157,9 +163,15 @@
       "outsideHigh": "High",
       "inside": "Inside",
       "trips": "Trips",
-      "trend": "Trend"
+      "trend": "Trend",
+      "lowPressure": "Warning"
     },
-    "consumptionTempChart": "Consumption vs Outside Temperature"
+    "consumptionTempChart": "Consumption vs Outside Temperature",
+    "sections": {
+      "driving": "Driving",
+      "energy": "Energy and battery",
+      "health": "12V, tyres and temperature"
+    }
   },
   "vehicle": {
     "diagramLabel": "Vehicle status diagram",
@@ -1349,7 +1361,11 @@
     "reading": "One charge (bigger = more of the battery)",
     "trend": "Trend",
     "none": "No readings yet. A reading comes from a charge that adds {percent}% or more and whose energy the car measured.",
-    "disclaimer": "An estimate from the energy each charge put into the battery over the battery percentage it added, not a lab test. Readings vary with temperature and how the car rounds its percentage."
+    "disclaimer": "An estimate from the energy each charge put into the battery over the battery percentage it added, not a lab test. Readings vary with temperature and how the car rounds its percentage.",
+    "margin": "Margin",
+    "newLine": "New ({kwh} kWh)",
+    "health": "Health",
+    "pack": "Pack when new:"
   },
   "activity": {
     "title": "Activity",
@@ -1432,7 +1448,9 @@
       "charged": "Charged (kWh)",
       "cost": "Cost",
       "total": "Total"
-    }
+    },
+    "emptyRun": "{from} – {to}: nothing recorded",
+    "barsTitle": "Distance per month ({unit})"
   },
   "overview": {
     "battery": "Battery",

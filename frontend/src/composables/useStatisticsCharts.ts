@@ -24,6 +24,7 @@ import type { StatsGrouping } from '@/utils/statsPeriod'
 import { burnsFuel, mayPlugIn, plugsIn } from '@/utils/vehicleType'
 import { useChartTheme } from './useChartTheme'
 import { useUnits } from './useUnits'
+import { useTyrePressureThresholds } from './useTyrePressureThresholds'
 
 export interface ChartDef {
   id: StatsChartId
@@ -232,19 +233,38 @@ export function useStatisticsCharts(
     datasets: [levelDataset('battery', true)],
   }))
 
+  const tyreThresholds = useTyrePressureThresholds()
+
+  const tyreBars = computed(() =>
+    TYRE_SERIES.map((series) => ({ ...series, bars: bucketAverages(buckets.value, series.read) })),
+  )
+
   const tyreChartData = computed(() => {
     const u = units.value
+    const low = u.convert('pressure', tyreThresholds.value.lowBar)
     return {
       labels: labels.value,
-      datasets: TYRE_SERIES.map(({ position, read, color }) =>
-        lineDataset(
-          `${t(`vehicle.diagram.tyrePositionShort.${position}`)} (${u.symbol('pressure')})`,
-          bucketAverages(buckets.value, read).map((bar) =>
-            bar === null ? null : u.convert('pressure', bar),
+      datasets: [
+        ...tyreBars.value.map(({ position, bars, color }) =>
+          lineDataset(
+            `${t(`vehicle.diagram.tyrePositionShort.${position}`)} (${u.symbol('pressure')})`,
+            bars.map((bar) => (bar === null ? null : u.convert('pressure', bar))),
+            color,
           ),
-          color,
         ),
-      ),
+        // The warning threshold across the chart, so a slow leak shows as a line closing in on it.
+        {
+          ...lineDataset(
+            t('statistics.series.lowPressure'),
+            labels.value.map(() => low),
+            '#ef4444',
+          ),
+          borderDash: [5, 4],
+          borderWidth: 1.5,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+        },
+      ],
     }
   })
 
@@ -425,12 +445,16 @@ export function useStatisticsCharts(
   })
 
   const percentOptions = computed(() => chartOptions(2.6, false, PERCENT_AXIS))
+  // Zoomed to the readings and the warning line: a fixed 1.5 to 3.5 bar drew every tyre flat.
   const pressureOptions = computed(() => {
     const u = units.value
+    const readings = tyreBars.value.flatMap((s) => s.bars).filter((b): b is number => b !== null)
+    const lowest = Math.min(tyreThresholds.value.lowBar, ...readings) - 0.1
+    const highest = Math.max(tyreThresholds.value.lowBar, ...readings) + 0.1
     return chartOptions(
       2.3,
       true,
-      roundedRange(u.convert('pressure', 1.5), u.convert('pressure', 3.5)),
+      roundedRange(u.convert('pressure', lowest), u.convert('pressure', highest)),
     )
   })
   const hybridSocOptions = computed(() => chartOptions(2.6, true, PERCENT_AXIS))
