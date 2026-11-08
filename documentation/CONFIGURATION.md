@@ -47,7 +47,7 @@ all-in-one container and the Unraid template take them as container variables.
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `MQTT_BROKER_USERNAME` | `mgmate` | Username of the broker login the services use. |
+| `MQTT_BROKER_USERNAME` | `garagestack` | Username of the broker login the services use. |
 | `MQTT_HOST` | Compose: `mosquitto` | Broker the API and Worker connect to. The gateway container publishes to `mosquitto` (the broker address in its section of `docker-compose.yml`), so change both together. The all-in-one container always uses its own. |
 | `MQTT_PORT` | `1883` | Port of that broker. |
 | `MQTT_EXTERNAL_PORT` | `1883` | Host port the bundled broker is published on (Docker Compose). |
@@ -158,7 +158,7 @@ The Docker images set these themselves.
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `ConnectionStrings__DefaultConnection` | none | PostgreSQL connection string for the API and the Worker, for example `Host=localhost;Database=mgmate;Username=mgmate;Password=...`. |
+| `ConnectionStrings__DefaultConnection` | none | PostgreSQL connection string for the API and the Worker, for example `Host=localhost;Database=garagestack;Username=garagestack;Password=...`. |
 | `ASPNETCORE_ENVIRONMENT` | `Production` | `Development` relaxes CORS and CSRF for local work and serves the API reference (Scalar) at `/scalar/v1`; `Demo` serves the reference too. |
 | `DEMO_MODE` | `false` | `true` runs the API on built-in fake data, without a database, broker or gateway. See [`DEMO.md`](DEMO.md). |
 
