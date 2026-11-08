@@ -20,9 +20,21 @@ The main pages of MGMate, on a desktop and on a phone. They were taken in [demo 
 
 ![The statistics: insight cards for the month's distance, average trip length, peak drive time, 12V trend, parking spots and average speed, above charts of the EV battery and the tyre pressures](desktop-statistics.webp)
 
-### Trip log
+### Trips
 
-![The trip log: totals per purpose for the month, and each trip with its addresses, odometer readings, a business, commute or private choice, a notes field, and buttons to hide it or join it with the next trip](desktop-trip-log.webp)
+![Trips: totals for the month, a calendar with the days driven, and each trip with its places, times, battery used and mi/kWh](desktop-trips.webp)
+
+### Charges
+
+![Charges: energy added, average duration and cost, a calendar with the charging days, and each charge with its times, battery before and after and kWh added](desktop-charges.webp)
+
+### Reports
+
+![Reports: the month against the month before, a 12-month distance chart and the year month by month](desktop-reports.webp)
+
+### Battery health
+
+![Battery health: a gauge, the usable capacity against the pack when new, and the capacity readings over time](desktop-battery-health.webp)
 
 ### Maintenance
 
@@ -43,8 +55,10 @@ The main pages of MGMate, on a desktop and on a phone. They were taken in [demo 
 | Dashboard | Map | A single trip | Light theme |
 | --------- | --- | ------------- | ----------- |
 | <img src="mobile-dashboard.webp" alt="The dashboard on a phone" width="180"> | <img src="mobile-map.webp" alt="The map on a phone" width="180"> | <img src="mobile-map-trip.webp" alt="One trip against the speed limits on a phone" width="180"> | <img src="mobile-dashboard-light.webp" alt="The dashboard on a phone in the light theme" width="180"> |
-| **Statistics** | **Trip log** | **Maintenance** | **Climate schedules** |
-| <img src="mobile-statistics.webp" alt="The statistics on a phone" width="180"> | <img src="mobile-trip-log.webp" alt="The trip log on a phone" width="180"> | <img src="mobile-maintenance.webp" alt="The maintenance list on a phone" width="180"> | <img src="mobile-climate-schedules.webp" alt="The climate schedules on a phone" width="180"> |
+| **Trips** | **Charges** | **Reports** | **Battery health** |
+| <img src="mobile-trips.webp" alt="Trips on a phone" width="180"> | <img src="mobile-charges.webp" alt="Charges on a phone" width="180"> | <img src="mobile-reports.webp" alt="Reports on a phone" width="180"> | <img src="mobile-battery-health.webp" alt="Battery health on a phone" width="180"> |
+| **Statistics** | **Maintenance** | **Climate schedules** | |
+| <img src="mobile-statistics.webp" alt="The statistics on a phone" width="180"> | <img src="mobile-maintenance.webp" alt="The maintenance list on a phone" width="180"> | <img src="mobile-climate-schedules.webp" alt="The climate schedules on a phone" width="180"> | |
 
 <!-- markdownlint-enable MD033 -->
 
@@ -58,4 +72,4 @@ docker compose --env-file .env.demo -f docker-compose.demo.yml up -d --build   #
 cd frontend && pnpm screenshots                                                 # or: pnpm screenshots http://localhost:5173
 ```
 
-It signs in as `demo`, and takes the desktop screenshots at 1280 x 800 and the phone screenshots at 390 x 844 at twice the pixel density, in the dark theme with the date filter on 30 days and the region set to the Netherlands, plus the dashboard in the light theme. The maps need the internet for their tiles; behind a proxy, `HTTPS_PROXY` is used for them. `CHROMIUM_PATH` points it at a Chromium other than Playwright's own. Keep the manifest's `sizes` in `frontend/vite.config.ts` in step if the sizes change.
+It signs in as `demo`, and takes the desktop screenshots at 1280 x 800 and the phone screenshots at 390 x 844 at twice the pixel density, in the dark theme with the date filter on 30 days and the region set to the UK (miles, psi, pounds), plus the dashboard in the light theme. The maps need the internet for their tiles; behind a proxy, `HTTPS_PROXY` is used for them. `CHROMIUM_PATH` points it at a Chromium other than Playwright's own. Keep the manifest's `sizes` in `frontend/vite.config.ts` in step if the sizes change.

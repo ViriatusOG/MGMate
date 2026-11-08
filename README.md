@@ -1,51 +1,84 @@
 # MGMate
 
-**A self-hosted dashboard, trip log and map for your MG.**
-
-> MGMate is based on [GarageStack](https://github.com/joszz/GarageStack) by Jos Nienhuis (joszz), released under the MIT licence. It adds charge sessions and costs, Leapmotor Mate-style Trips and Charges pages, Reports, battery health, an Activity timeline, 12V and temperature charts, a car photo and a redesigned UI. Thanks to Jos for the foundation.
+**A self-hosted dashboard, trip and charge log, and reports for your MG.**
 
 [![Latest release](https://img.shields.io/github/v/release/ViriatusOG/MGMate)](https://github.com/ViriatusOG/MGMate/releases/latest)
 [![Docker image build](https://github.com/ViriatusOG/MGMate/actions/workflows/docker-publish.yml/badge.svg?branch=main)](https://github.com/ViriatusOG/MGMate/actions/workflows/docker-publish.yml)
 [![MIT licence](https://img.shields.io/github/license/ViriatusOG/MGMate)](LICENSE)
 
-![The MGMate dashboard: the car on the road with its speed, tyre pressures and charge, a map of where it is, and cards for the battery, range, doors, windows, climate and today's driving](documentation/screenshots/desktop-dashboard.webp)
+![The MGMate overview: battery and range, the car on the road with its tyre pressures and speed, the last charge with the energy added, where the car is, and the latest trips](documentation/screenshots/desktop-dashboard.webp)
 
-MGMate is a free, open-source web app for **modern MG cars**, the ones built by SAIC Motor such as the MG4, MG5, ZS EV and HS PHEV. It signs in to the SAIC iSmart API, the same backend the official MG iSmart app uses, and turns what your car reports into something worth opening:
+MGMate is a free, open-source web app for **modern MG cars**, the ones built by SAIC Motor such as the MG4, MG5, ZS EV and HS PHEV. It signs in to the SAIC iSmart API, the same backend the official MG iSmart app uses, records everything the car reports, and turns it into a logbook you can actually use, on a desktop or a phone:
 
-- **See the car at a glance.** Fuel, battery, tyre pressures, doors, windows and climate on one live dashboard, with cards that adapt to your hybrid, plug-in hybrid or full electric car.
-- **Relive every drive.** Trips are saved automatically, named by where they went and drawn on the map along the roads you took, with heatmaps and the speed limits along the way.
-- **Keep a trip log for the taxman.** Mark trips as business, commute or private, add notes, and export a month or a year as a spreadsheet.
-- **Control it from anywhere.** Pre-condition the cabin, lock the car or flash its lights to find it, and see whether the car actually carried the command out.
-- **Have it warm when you leave.** Schedule climate for weekday mornings or a one-off trip, with seat heating, the defrosters, and a skip for mild days.
-- **Hear about it when something is off.** Push notifications for low tyre pressure, a car left unlocked, a window left open, charging complete and more.
-- **Fit it into your homelab.** Home Assistant through MQTT discovery, a gethomepage.dev widget, and single sign-on through Authentik, Authelia, Keycloak or any other OpenID Connect provider.
+- **See the car at a glance.** Battery, range, tyre pressures, doors, windows and climate on one overview, with the last charge and your latest trips beside them, and your own photo of the car while it is parked.
+- **Every trip, logged.** Trips are saved automatically with the energy they used, mi/kWh, driving and stopped time, the outside temperature and the battery they started and ended on, drawn on the map along the roads you took.
+- **Every charge, logged.** Each plug-in becomes a charge session: energy added, AC or DC, peak power, how long it took, where it was, and what it cost at your electricity prices, with what came from the wall next to what reached the battery.
+- **Reports, month by month.** Distance, trips, driving time, consumption, energy charged and charging cost for each month, against the month before, with a 12-month chart and a yearly table.
+- **Know your battery.** Battery health works out the usable capacity from your charges, compares it with the pack when new, and shows the trend over time. The 12V battery, temperatures, distance and range get charts of their own on Statistics.
+- **Keep a trip log for the taxman.** Mark trips as business, commute or private, add notes, search them, and export a month or a year as a spreadsheet.
+- **Control it from anywhere.** Pre-condition the cabin, lock the car or flash its lights to find it, and see whether the car actually carried the command out, without waking the car more than it needs.
+- **Hear about it when something is off.** Push notifications for low tyre pressure, a car left unlocked, a window left open, charging complete, maintenance coming due and more.
 - **Keep it yours.** Everything runs in Docker on your own hardware, as one all-in-one container or a Compose stack. No subscription, and no account needed beyond your MG login.
 
 > **Note:** MGMate only works with the current MG brand owned by SAIC Motor. It is **not** compatible with classic British-built MG cars (MGB, Midget, MGF, etc.) produced before SAIC's acquisition of the brand. If your car does not use the MG iSmart app, MGMate will not work with it.
 
 ## Screenshots
 
-Every trip on one map, listed by where it went and drawn along the roads you took, over a heatmap of the roads you drive most:
+The screenshots use the demo's sample car and trips.
 
-![The map: a month of trips listed by where they went, drawn along the roads between Amsterdam, Haarlem, Almere, Utrecht and Amersfoort over a heatmap of the most driven roads](documentation/screenshots/desktop-map.webp)
+### Trips
 
-And on a phone, with a single trip snapped to the roads and coloured against the speed limits:
+Every trip of the month, grouped by day, with a calendar to jump around, search, and totals for what you picked:
+
+![The Trips page: totals for distance, trips, consumption, energy and cost, a month calendar with the days driven, and each trip with its places, times, battery used and mi/kWh](documentation/screenshots/desktop-trips.webp)
+
+### Charges
+
+Every charge, with the energy added, how long it took, AC or DC, and where:
+
+![The Charges page: totals for energy added, average duration and cost, a month calendar with the charging days, and each charge with its times, battery before and after, peak power and kWh added](documentation/screenshots/desktop-charges.webp)
+
+### Reports
+
+![The Reports page: the month's distance, trips, driving time, days driven, consumption, energy, charges and charging cost against the month before, a 12-month distance chart and a table of the year](documentation/screenshots/desktop-reports.webp)
+
+### Battery health
+
+![The Battery health page: a gauge at 100 % health, the usable capacity of 64.1 kWh against a 64 kWh pack, the charges it is based on, the trend, and a chart of the capacity readings over time](documentation/screenshots/desktop-battery-health.webp)
+
+### On a phone
 
 <!-- markdownlint-disable MD033 -->
 
-| Dashboard | Map | A single trip |
-| --------- | --- | ------------- |
-| <img src="documentation/screenshots/mobile-dashboard.webp" alt="The dashboard on a phone" width="240"> | <img src="documentation/screenshots/mobile-map.webp" alt="The map on a phone" width="240"> | <img src="documentation/screenshots/mobile-map-trip.webp" alt="One trip from Amsterdam to Utrecht on a phone, green where it kept to the speed limit and red where it went over" width="240"> |
+| Overview | Trips | Charges | Reports |
+| -------- | ----- | ------- | ------- |
+| <img src="documentation/screenshots/mobile-dashboard.webp" alt="The overview on a phone" width="200"> | <img src="documentation/screenshots/mobile-trips.webp" alt="Trips on a phone, with a week strip and the day's trips" width="200"> | <img src="documentation/screenshots/mobile-charges.webp" alt="Charges on a phone" width="200"> | <img src="documentation/screenshots/mobile-reports.webp" alt="Reports on a phone" width="200"> |
 
 <!-- markdownlint-enable MD033 -->
 
-The statistics, trip log, maintenance list and light theme are in the [screenshot gallery](documentation/screenshots/README.md).
+The map, statistics, maintenance, climate schedules and the light theme are in the [screenshot gallery](documentation/screenshots/README.md).
+
+## Where MGMate comes from
+
+MGMate is based on [GarageStack](https://github.com/joszz/GarageStack) by Jos Nienhuis, released under the MIT licence, and keeps its live dashboard, map, trip log, climate schedules, maintenance and notifications. On top of that MGMate adds:
+
+- **Charge sessions and costs**, with your electricity prices, AC and DC, and energy from the wall against energy into the battery
+- **Trips and Charges pages** with month calendars, a week strip on phones, day-grouped lists, search and totals
+- **Reports** per month and per year
+- **Battery health** from your charges, against the pack when new
+- **Activity**, a 24-hour strip and timeline of driving, charging and parking
+- **Statistics** for the 12V battery, distance, range and temperatures, and consumption against outside temperature
+- **Trip detail** with energy, driving and stopped time, median speed, the battery range used and a GPX download
+- **A car photo** on the overview, and **battery-friendly polling** that only wakes the car when you ask it to
+- **A redesigned interface** with a grouped sidebar, a phone tab bar and a new icon
+
+Thanks to Jos for the foundation.
 
 **Want to try it?** Read [MG iSmart account and session limits](#mg-ismart-account-and-session-limits) first, because MGMate and the MG app cannot be signed in to the same account at once, then pick an [installation option](#installation). A single `docker run` is enough to get going.
 
 ## Contents
 
-- [Features](#features)
+- [Where MGMate comes from](#where-mgmate-comes-from) and [Features](#features)
 - [MG iSmart account and session limits](#mg-ismart-account-and-session-limits)
 - [Prerequisites](#prerequisites) and [Installation](#installation)
 - [Updating](#updating), [Monitoring](#monitoring) and [Backup and restore](#backup-and-restore)
@@ -59,6 +92,10 @@ The statistics, trip log, maintenance list and light theme are in the [screensho
 
 ## Features
 
+- **Charges** -- Every plug-in is saved as a charge session with the energy added, AC or DC, peak power, duration, place, the battery before and after, and the cost at the electricity prices you set (Charges > Prices). On AC the energy drawn from the wall is shown next to what reached the battery.
+- **Reports** -- A page per month with distance, trips, driving time, days driven, consumption, energy used, charges, energy charged and charging cost, each against the month before, plus a 12-month chart and a table of the year.
+- **Battery health** -- The usable capacity worked out from charges that covered at least 20 % of the battery, compared with the pack when new (51, 64 or 77 kWh, or your own), with the trend and every reading on a chart.
+- **Activity** -- A 24-hour strip and a timeline of when the car drove, charged, slept or went quiet, read from the car's own reports.
 - **Live dashboard** -- Real-time vehicle telemetry displayed as configurable cards. Cards are automatically shown or hidden based on your vehicle type (HEV, PHEV, BEV) and can be reordered or toggled individually in the dashboard's edit mode. The car drawn on the dashboard takes your car's colour (Settings > Car colour), and the vehicle type can be set by hand under Settings > Vehicle type when detection gets it wrong.
 - **Tyre history** -- Tap a tyre's pressure on the dashboard's car to see a month of daily pressures for all four tyres, and how each one moved against the other three over the last two weeks: a tyre falling behind the others while they hold is a slow puncture, which also sends a notification.
 - **Trip history** -- Browse past journeys on an interactive map, each drawn on the roads it took and coloured by speed or by the speed limit, with a heatmap of the roads you drive most. Each trip is saved to the database a few minutes after the car parks. After upgrading from a version that did not save trips, the existing history is saved in the background on the Worker's first start.

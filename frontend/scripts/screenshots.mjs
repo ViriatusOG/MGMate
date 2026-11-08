@@ -5,7 +5,7 @@
 //   cd frontend && pnpm screenshots [base URL, http://localhost:8080 by default]
 //
 // Desktop shots are 1280 x 800, phone shots 390 x 844 at twice the density, in the dark theme with
-// the date filter on 30 days, in the Netherlands, and one of each in the light theme. CHROMIUM_PATH points at a
+// the date filter on 30 days, in the UK, and one of each in the light theme. CHROMIUM_PATH points at a
 // browser other than Playwright's own; HTTPS_PROXY, when set, is where the map's tiles are fetched.
 import { copyFile, writeFile } from 'node:fs/promises'
 import { chromium } from '@playwright/test'
@@ -29,7 +29,10 @@ const PAGES = [
   { file: 'map', path: '/map' },
   { file: 'map-trip', path: '/map', prepare: selectTrip },
   { file: 'statistics', path: '/statistics' },
-  { file: 'trip-log', path: '/trip-log' },
+  { file: 'trips', path: '/trip-log' },
+  { file: 'charges', path: '/charges' },
+  { file: 'reports', path: '/reports' },
+  { file: 'battery-health', path: '/battery-health' },
   { file: 'maintenance', path: '/maintenance' },
   { file: 'climate-schedules', path: '/climate-schedules' },
 ]
@@ -64,13 +67,13 @@ try {
 
 async function shoot(device, theme, pages) {
   const { name, ...options } = device
-  // The region follows the browser's time zone: Amsterdam gives the gallery's kilometres, bar and
+  // The region follows the browser's time zone: London gives the gallery's miles, psi, pounds and
   // 24-hour clock whatever machine runs this.
   const context = await browser.newContext({
     ...options,
     colorScheme: theme,
     locale: 'en-GB',
-    timezoneId: 'Europe/Amsterdam',
+    timezoneId: 'Europe/London',
   })
   // The install offer would cover the phone screenshots.
   await context.addInitScript(() => {
@@ -80,7 +83,7 @@ async function shoot(device, theme, pages) {
   await signIn(page)
   // Saved to the demo account, which every page then takes: the theme, English, the gallery's
   // 30 days, and a selected trip coloured against the speed limits.
-  await saveSettings(page, 'ui', { theme, locale: 'en', filterDays: 30 })
+  await saveSettings(page, 'ui', { theme, locale: 'en', filterDays: 30, batteryPackKwh: 64 })
   await saveSettings(page, 'map', { speedLimitOverlayEnabled: true })
 
   for (const shot of pages) {
@@ -131,6 +134,14 @@ async function settled(page) {
 // One trip, snapped to the roads and coloured against the speed limits, as the gallery shows it.
 async function selectTrip(page) {
   const trips = page.locator('.trip-list__button')
+  // On a phone the list can sit in a closed panel; the map alone is shot then.
+  if (
+    !(await trips
+      .first()
+      .isVisible()
+      .catch(() => false))
+  )
+    return
   const toUtrecht = trips.filter({ hasText: 'Utrecht' }).first()
   await ((await toUtrecht.count()) > 0 ? toUtrecht : trips.first()).click()
   await settled(page)
