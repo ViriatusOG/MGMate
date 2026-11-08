@@ -257,7 +257,7 @@ watch(
         <font-awesome-icon :icon="menuOpen ? 'xmark' : 'bars'" />
       </button>
       <RouterLink to="/" class="mobile-brand">
-        <font-awesome-icon icon="car" />
+        <img src="/logo.svg" class="brand-logo" alt="" width="24" height="24" />
         MGMate
       </RouterLink>
       <button
@@ -293,7 +293,7 @@ watch(
         @click="closeMenuOnLink"
       >
         <RouterLink to="/" class="sidebar-brand">
-          <font-awesome-icon icon="car" />
+          <img src="/logo.svg" class="brand-logo" alt="" width="28" height="28" />
           <span>MGMate</span>
         </RouterLink>
         <div v-if="carModel || onlineStatusText" class="sidebar-car">

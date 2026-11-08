@@ -121,9 +121,7 @@ async function submitLogin() {
   <div class="login-page">
     <section class="login-card" :aria-label="t('auth.formLabel')">
       <div class="login-card__brand">
-        <div class="login-card__brand-icon">
-          <font-awesome-icon icon="car" />
-        </div>
+        <img src="/logo.svg" class="login-card__brand-icon" alt="" width="44" height="44" />
         <div>
           <div class="login-card__title">MGMate</div>
           <div class="login-card__subtitle">{{ t('auth.subtitle') }}</div>
