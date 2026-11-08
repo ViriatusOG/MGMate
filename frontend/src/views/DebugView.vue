@@ -153,7 +153,7 @@ const missing = computed(() => {
 
 function display(e: DebugEntity): string {
   if (e.component === 'climate') {
-    const mode = e.states.mode ?? '—'
+    const mode = e.states.mode ?? '-'
     const target = e.states.targetTemperature
     return target ? `${mode} · ${target} °C` : mode
   }
@@ -351,19 +351,19 @@ function commandSupported(e: DebugEntity, key = 'command_topic') {
           <dl class="debug-info">
             <div>
               <dt>{{ t('debug.device.model') }}</dt>
-              <dd>{{ snapshot.device?.model ?? vehicleStore.activeVehicle?.model ?? '—' }}</dd>
+              <dd>{{ snapshot.device?.model ?? vehicleStore.activeVehicle?.model ?? '-' }}</dd>
             </div>
             <div>
               <dt>{{ t('debug.device.make') }}</dt>
-              <dd>{{ snapshot.device?.manufacturer ?? '—' }}</dd>
+              <dd>{{ snapshot.device?.manufacturer ?? '-' }}</dd>
             </div>
             <div>
               <dt>{{ t('debug.device.hardware') }}</dt>
-              <dd>{{ snapshot.device?.hardwareVersion ?? '—' }}</dd>
+              <dd>{{ snapshot.device?.hardwareVersion ?? '-' }}</dd>
             </div>
             <div>
               <dt>{{ t('debug.device.gateway') }}</dt>
-              <dd>{{ snapshot.device?.gatewayVersion ?? '—' }}</dd>
+              <dd>{{ snapshot.device?.gatewayVersion ?? '-' }}</dd>
             </div>
             <div>
               <dt>{{ t('debug.device.broker') }}</dt>
@@ -529,7 +529,7 @@ function commandSupported(e: DebugEntity, key = 'command_topic') {
                         )
                       "
                     >
-                      <option v-if="e.value == null" value="" disabled>—</option>
+                      <option v-if="e.value == null" value="" disabled>-</option>
                       <option v-for="o in attrList(e, 'options')" :key="o" :value="o">
                         {{ o }}
                       </option>
@@ -617,7 +617,7 @@ function commandSupported(e: DebugEntity, key = 'command_topic') {
                           )
                         "
                       >
-                        <option v-if="!e.states.mode" value="" disabled>—</option>
+                        <option v-if="!e.states.mode" value="" disabled>-</option>
                         <option v-for="m in attrList(e, 'modes')" :key="m" :value="m">
                           {{ m }}
                         </option>
