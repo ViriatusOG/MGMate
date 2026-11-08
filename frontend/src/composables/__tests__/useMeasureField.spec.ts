@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { shallowRef } from 'vue'
+import { nextTick, shallowRef } from 'vue'
 import { useMeasureField } from '../useMeasureField'
 import { METRIC_UNITS, UnitFormatter } from '@/utils/units'
 
@@ -29,6 +29,31 @@ describe('useMeasureField', () => {
     field.shown = 10_000
 
     expect(field.metric()).toBeCloseTo(16_093.44)
+  })
+
+  it('keeps a value typed before the unit setting changed', async () => {
+    const units = shallowRef(miles.value)
+    const field = useMeasureField(units, 'distance')
+    field.load(15_000)
+    field.shown = 10_000
+
+    units.value = kilometres.value
+    await nextTick()
+
+    expect(field.shown).toBe(16_093)
+    expect(field.metric()).toBe(16_093)
+  })
+
+  it('still sends the exact loaded value when the unit changes on an untouched field', async () => {
+    const units = shallowRef(miles.value)
+    const field = useMeasureField(units, 'distance')
+    field.load(15_000)
+
+    units.value = kilometres.value
+    await nextTick()
+
+    expect(field.shown).toBe(15_000)
+    expect(field.metric()).toBe(15_000)
   })
 
   it('passes kilometres straight through', () => {

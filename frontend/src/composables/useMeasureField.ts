@@ -1,4 +1,4 @@
-import { reactive, ref, type Ref } from 'vue'
+import { reactive, ref, watch, type Ref } from 'vue'
 import type { Quantity, UnitFormatter } from '@/utils/units'
 
 /**
@@ -26,6 +26,18 @@ export function useMeasureField(units: Ref<UnitFormatter>, quantity: Quantity) {
     if (value === loadedShown) return loadedMetric
     return units.value.toMetric(quantity, value)
   }
+
+  // The unit setting changed while the form is open: show the same quantity in the new unit, so
+  // a value typed before the change is not read as if it had been typed in the new one.
+  watch(units, (now, before) => {
+    const value = shown.value
+    if (typeof value !== 'number' || !Number.isFinite(value)) return
+    if (value === loadedShown) {
+      load(loadedMetric)
+      return
+    }
+    shown.value = Math.round(now.convert(quantity, before.toMetric(quantity, value)))
+  })
 
   // Reactive, so a template reaches the field as `field.shown` rather than `field.shown.value`.
   return reactive({ shown, load, metric })
