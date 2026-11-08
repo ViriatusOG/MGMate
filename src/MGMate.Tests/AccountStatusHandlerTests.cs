@@ -20,6 +20,7 @@ public sealed class AccountStatusHandlerTests : IDisposable
     private readonly ServiceProvider _services;
     private readonly FakePushSender _push = new();
     private readonly AccountStatusHandler _handler;
+    private readonly GatewaySignInState _signIn = new();
 
     public AccountStatusHandlerTests()
     {
@@ -34,7 +35,8 @@ public sealed class AccountStatusHandlerTests : IDisposable
             _services.GetRequiredService<IServiceScopeFactory>(),
             _push,
             WorkerLocalizer.Notifications(),
-            new FixedTimeProvider(Now));
+            new FixedTimeProvider(Now),
+            _signIn);
     }
 
     public void Dispose() => _services.Dispose();
@@ -110,4 +112,37 @@ public sealed class AccountStatusHandlerTests : IDisposable
             new MqttMessage("saic/user/vehicles/FAKEVN00000000001/drivetrain/soc", "80", false),
             TestContext.Current.CancellationToken));
     }
+
+    [Fact]
+    public async Task FailureAfterTheLastSignIn_ReadsAsFailing()
+    {
+        await ReceiveAsync("lastLogin", "2026-10-11T18:00:00Z", retained: true);
+        await ReceiveAsync("lastLoginError", "2026-10-11T19:00:00Z");
+
+        var state = _signIn.Current;
+        Assert.True(state.Failing);
+        Assert.Equal(new DateTimeOffset(2026, 10, 11, 18, 0, 0, TimeSpan.Zero), state.LastSignInAt);
+    }
+
+    [Fact]
+    public async Task RetainedFailureBeforeALaterSignIn_ReadsAsFine()
+    {
+        // The broker hands a new Worker both retained topics: an old failure, fixed since.
+        await ReceiveAsync("lastLoginError", "2026-10-11T07:44:00Z", retained: true);
+        await ReceiveAsync("lastLogin", "2026-10-11T08:08:00Z", retained: true);
+
+        Assert.False(_signIn.Current.Failing);
+    }
+
+    [Fact]
+    public async Task FailureWithNoSignInSeen_ReadsAsFailing()
+    {
+        await ReceiveAsync("lastLoginError", "2026-10-11T19:00:00Z", retained: true);
+
+        Assert.True(_signIn.Current.Failing);
+        Assert.Null(_signIn.Current.LastSignInAt);
+    }
+
+    [Fact]
+    public void NothingHeard_ReadsAsFine() => Assert.False(_signIn.Current.Failing);
 }

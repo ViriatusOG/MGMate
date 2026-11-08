@@ -19,6 +19,7 @@ import { useSignalR } from '@/composables/useSignalR'
 import { useFavicon } from '@/composables/useFavicon'
 import { useRelativeTime } from '@/composables/useRelativeTime'
 import { useEscapeKey } from '@/composables/useEscapeKey'
+import { useGatewaySignIn } from '@/composables/useGatewaySignIn'
 import { formatDateTime, formatTime } from '@/utils/format'
 
 const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true'
@@ -31,13 +32,26 @@ const auth = useAuthStore()
 const vehicleStore = useVehicleStore()
 const vehicleStatus = computed(() => vehicleStore.currentStatus)
 
+// Demo mode has no gateway to ask about.
+const { status: gatewaySignIn } = useGatewaySignIn(
+  computed(() => !isDemoMode && auth.isAuthenticated),
+)
+// While the gateway cannot sign in, the car's last reported state is not current: say so instead.
+const gatewaySignInFailing = computed(() => gatewaySignIn.value?.failing === true)
+const gatewayLastSignIn = computed(() => {
+  const at = gatewaySignIn.value?.lastSignInAt
+  return at ? t('gatewaySignIn.lastSignIn', { time: formatDateTime(at) }) : t('gatewaySignIn.never')
+})
+
 const onlineStatusText = computed(() => {
+  if (gatewaySignInFailing.value) return t('gatewaySignIn.failed')
   const s = vehicleStatus.value
   if (!s || s.isAvailable === null) return null
   return s.isAvailable ? t('common.online') : t('common.offline')
 })
 
 const onlineStatusVariant = computed(() => {
+  if (gatewaySignInFailing.value) return 'offline'
   const s = vehicleStatus.value
   if (!s || s.isAvailable === null) return null
   return s.isAvailable ? 'online' : 'offline'
@@ -395,6 +409,14 @@ watch(
       </nav>
 
       <main ref="mainContent" class="main-content">
+        <div v-if="gatewaySignInFailing" class="gateway-signin-banner" role="alert">
+          <font-awesome-icon icon="triangle-exclamation" aria-hidden="true" />
+          <div>
+            <p class="gateway-signin-banner__title">{{ t('gatewaySignIn.bannerTitle') }}</p>
+            <p>{{ t('gatewaySignIn.bannerBody') }}</p>
+            <p class="gateway-signin-banner__meta">{{ gatewayLastSignIn }}</p>
+          </div>
+        </div>
         <RouterView />
       </main>
     </div>

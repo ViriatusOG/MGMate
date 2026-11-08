@@ -14,7 +14,8 @@ namespace MGMate.Worker.Services;
 public sealed class WorkerHeartbeatService(
     ILogger<WorkerHeartbeatService> logger,
     IServiceScopeFactory scopeFactory,
-    MqttConnectionState mqtt) : PeriodicBackgroundService(logger)
+    MqttConnectionState mqtt,
+    GatewaySignInState signIn) : PeriodicBackgroundService(logger)
 {
     /// <summary>The file the Worker's and the all-in-one image's HEALTHCHECK read (/tmp in the images).</summary>
     public static readonly string HeartbeatFile = Path.Combine(Path.GetTempPath(), "mgmate-worker.heartbeat");
@@ -65,7 +66,7 @@ public sealed class WorkerHeartbeatService(
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             if (!await db.Database.CanConnectAsync(ct)) return false;
 
-            await db.Database.NotifyAsync(PgChannels.WorkerHeartbeat, new WorkerHeartbeatPayload(mqttConnected).ToJson(), ct);
+            await db.Database.NotifyAsync(PgChannels.WorkerHeartbeat, new WorkerHeartbeatPayload(mqttConnected, signIn.Current).ToJson(), ct);
             return true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

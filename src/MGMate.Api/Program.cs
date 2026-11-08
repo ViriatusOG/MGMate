@@ -192,6 +192,7 @@ try
     app.MapRdwEndpoints();
     app.MapWidgetEndpoints();
     app.MapUpdateEndpoints();
+    app.MapGatewayEndpoints();
     app.MapClientErrorEndpoints();
     app.MapMapEndpoints();
 

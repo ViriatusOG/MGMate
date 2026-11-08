@@ -60,4 +60,31 @@ public class WorkerHeartbeatMonitorTests
 
         Assert.Equal(HealthStatus.Unhealthy, monitor.Evaluate(MaxSilence).Status);
     }
+
+    [Fact]
+    public void GatewaySignIn_IsTheLatestHeartbeats()
+    {
+        var monitor = new WorkerHeartbeatMonitor(new FixedTimeProvider(Start));
+        Assert.Null(monitor.GatewaySignIn);
+
+        var failing = new GatewaySignIn(LastSignInAt: Start.AddHours(-2), LastFailureAt: Start.AddMinutes(-1));
+        monitor.Record(new WorkerHeartbeatPayload(MqttConnected: true, failing));
+        Assert.True(monitor.GatewaySignIn!.Failing);
+
+        // An older Worker sends no sign-in state at all.
+        monitor.Record(new WorkerHeartbeatPayload(MqttConnected: true));
+        Assert.Null(monitor.GatewaySignIn);
+    }
+
+    [Fact]
+    public void HeartbeatJson_CarriesTheGatewaySignIn()
+    {
+        var sent = new WorkerHeartbeatPayload(true, new GatewaySignIn(Start.AddHours(-1), Start));
+        var read = WorkerHeartbeatPayload.FromJson(sent.ToJson());
+
+        Assert.Equal(sent, read);
+        Assert.True(read!.GatewaySignIn!.Failing);
+        // A heartbeat from before this field still reads.
+        Assert.Null(WorkerHeartbeatPayload.FromJson("""{"mqttConnected":true}""")!.GatewaySignIn);
+    }
 }

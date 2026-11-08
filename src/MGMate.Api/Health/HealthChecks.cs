@@ -13,11 +13,25 @@ public sealed class WorkerHeartbeatMonitor(TimeProvider clock)
 {
     private readonly DateTimeOffset _startedAt = clock.GetUtcNow();
     private (DateTimeOffset At, bool MqttConnected)? _last;
+    private GatewaySignIn? _gatewaySignIn;
     private readonly Lock _lock = new();
 
     public void Record(WorkerHeartbeatPayload heartbeat)
     {
-        lock (_lock) _last = (clock.GetUtcNow(), heartbeat.MqttConnected);
+        lock (_lock)
+        {
+            _last = (clock.GetUtcNow(), heartbeat.MqttConnected);
+            _gatewaySignIn = heartbeat.GatewaySignIn;
+        }
+    }
+
+    /// <summary>The gateway's sign-in to the MG account, by the Worker's latest heartbeat; null before one.</summary>
+    public GatewaySignIn? GatewaySignIn
+    {
+        get
+        {
+            lock (_lock) return _gatewaySignIn;
+        }
     }
 
     /// <summary>

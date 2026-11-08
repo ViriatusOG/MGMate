@@ -2117,3 +2117,36 @@ textarea.form-control {
   opacity: 0;
   transform: translateX(-50%) translateY(8px);
 }
+
+/* The gateway cannot sign in to the MG account: no new car data until it can. */
+.gateway-signin-banner {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-danger);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+.gateway-signin-banner > svg {
+  margin-top: 0.2rem;
+  color: var(--color-danger);
+}
+
+.gateway-signin-banner p {
+  margin: 0;
+}
+
+.gateway-signin-banner__title {
+  font-weight: 600;
+}
+
+.gateway-signin-banner .gateway-signin-banner__meta {
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
