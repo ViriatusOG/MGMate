@@ -1,94 +1,5 @@
-/* The trip and charge logs share one layout: coloured figure tiles, a small month calendar to the
-   side, and the entries grouped by day in a list. */
-
-.ll-tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.ll-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
-  min-height: 6.5rem;
-  padding: 0.85rem 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  text-align: center;
-}
-
-.ll-tile__icon {
-  display: inline-grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  margin-bottom: 0.2rem;
-  border-radius: 8px;
-  background: rgb(255 255 255 / 12%);
-}
-
-.ll-tile__value {
-  font-size: 1.55rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.15;
-}
-
-.ll-tile__value small {
-  margin-left: 0.2em;
-  font-size: 0.8rem;
-  font-weight: 500;
-  opacity: 0.8;
-}
-
-.ll-tile__label {
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  opacity: 0.85;
-}
-
-.ll-tile__note {
-  font-size: 0.7rem;
-  opacity: 0.75;
-}
-
-/* Colour carries which figure is which across both pages; text on them stays white. */
-.ll-tile--teal,
-.ll-tile--indigo,
-.ll-tile--blue,
-.ll-tile--green,
-.ll-tile--amber {
-  border-color: transparent;
-  color: #fff;
-}
-
-.ll-tile--teal {
-  background: linear-gradient(135deg, #0f766e, #14b8a6);
-}
-
-.ll-tile--indigo {
-  background: linear-gradient(135deg, #3730a3, #6366f1);
-}
-
-.ll-tile--blue {
-  background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
-}
-
-.ll-tile--green {
-  background: linear-gradient(135deg, #166534, #22c55e);
-}
-
-.ll-tile--amber {
-  background: linear-gradient(135deg, #b45309, #f59e0b);
-}
+/* The trip and charge logs share one layout: figure tiles (statTile.css), a small month calendar
+   to the side, and the entries grouped by day in a list. */
 
 .ll-layout {
   display: grid;
@@ -121,6 +32,79 @@
   .ll-days {
     order: 1;
   }
+}
+
+/* ── Phone: the list first ────────────────────────────────── */
+
+/* On a phone a week strip stands in for the calendar, and the calendar and search open from it. */
+.week-strip {
+  display: none;
+}
+
+@media (width <= 767px) {
+  .week-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .ll-layout:not(.ll-layout--picker-open) .ll-side > .month-cal,
+  .ll-layout:not(.ll-layout--picker-open) .ll-side > .log-search {
+    display: none;
+  }
+}
+
+.week-strip__days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+.week-strip__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  padding: 0.35rem 0 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.week-strip__day small {
+  font-size: 0.65rem;
+}
+
+.week-strip__day b {
+  font-size: 0.95rem;
+}
+
+.week-strip__day.is-busy {
+  border-color: color-mix(in srgb, var(--color-primary) 60%, var(--color-border));
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.week-strip__day i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+}
+
+.week-strip__day.is-selected {
+  background: color-mix(in srgb, var(--color-primary) 25%, var(--color-surface));
+}
+
+.week-strip__day.is-outside {
+  opacity: 0.45;
+}
+
+.week-strip__more {
+  align-self: flex-start;
 }
 
 @media (width >= 1024px) {
@@ -555,81 +539,66 @@
   background: #f59e0b;
 }
 
-/* ── Split ring ─────────────────────────────────────────── */
+/* ── Split bar (components/SplitCard.vue) ──────────────── */
 
-.donut-card {
-  padding: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-surface);
-}
-
-.donut-card__title {
-  margin: 0 0 0.75rem;
-  font-size: 0.95rem;
-  font-weight: 700;
-}
-
-.donut-card__body {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem;
-}
-
-.donut-card__ring {
-  display: grid;
-  place-items: center;
-  width: 7.5rem;
-  height: 7.5rem;
-  border-radius: 50%;
-}
-
-.donut-card__hole {
+.split-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 4.6rem;
-  height: 4.6rem;
-  border-radius: 50%;
-  background: var(--color-surface);
+  gap: 0.6rem;
 }
 
-.donut-card__hole strong {
-  font-size: 1.3rem;
+.split-card__title {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
 }
 
-.donut-card__legend {
+.split-card__bar {
   display: flex;
-  flex: 1;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--color-surface-2);
+}
+
+.split-card__legend {
+  display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  min-width: 10rem;
+  gap: 0.3rem;
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.donut-card__legend li {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
-  align-items: baseline;
-  column-gap: 0.4rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: 8px;
-  background: var(--color-bg);
   font-size: 0.85rem;
 }
 
-.donut-card__dot {
-  width: 0.6rem;
-  height: 0.6rem;
+.split-card__legend li {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 0.45rem;
+}
+
+.split-card__legend li.is-empty {
+  opacity: 0.55;
+}
+
+.split-card__dot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
 }
 
-.donut-card__note {
-  grid-column: 2 / -1;
+.split-card__note {
+  overflow: hidden;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
 }
 
 /* ── Trip detail ────────────────────────────────────────── */

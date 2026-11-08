@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import '@/assets/dashboard.css'
+import '@/assets/overview.css'
 import { onMounted, onUnmounted, computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useVehicleStore } from '@/stores/vehicle'
@@ -20,6 +21,10 @@ import SkeletonLocationMap from '@/components/SkeletonLocationMap.vue'
 import { useUnits } from '@/composables/useUnits'
 import { mayBurnFuel } from '@/utils/vehicleType'
 import ViewHeader from '@/components/ViewHeader.vue'
+import BatteryOverviewCard from '@/components/overview/BatteryOverviewCard.vue'
+import LastChargeCard from '@/components/overview/LastChargeCard.vue'
+import RecentTripsCard from '@/components/overview/RecentTripsCard.vue'
+import NeedsAttention from '@/components/overview/NeedsAttention.vue'
 
 // Only edit mode drags cards around, and the drag-and-drop library is the size of every card on
 // this page together, so it loads when the layout editor opens rather than with the dashboard.
@@ -232,6 +237,11 @@ onUnmounted(() => {
         </EditableCardSlot>
       </div>
 
+      <label class="ov-tiles-toggle">
+        <input v-model="settings.showStatusCards" type="checkbox" />
+        {{ t('overview.showTiles') }}
+      </label>
+
       <EditableCardGrid
         v-model="editableCards"
         class="status-grid status-grid--edit"
@@ -262,7 +272,7 @@ onUnmounted(() => {
           <SkeletonCarDiagram v-if="settings.showTyreDiagram" class="overview-row__car" />
           <SkeletonLocationMap v-if="settings.showLocationMap" class="overview-row__map" />
         </div>
-        <div class="status-grid">
+        <div v-if="settings.showStatusCards" class="status-grid">
           <SkeletonCard v-for="card in skeletonCards" :key="card.id" :icon="cardIcon(card.id)" />
         </div>
       </template>
@@ -277,16 +287,24 @@ onUnmounted(() => {
       </div>
 
       <template v-else>
-        <div v-if="settings.showTyreDiagram || settings.showLocationMap" class="overview-row mb-4">
+        <NeedsAttention />
+
+        <div class="ov-hero">
+          <BatteryOverviewCard class="ov-hero__battery" />
           <CarDiagram
             v-if="settings.showTyreDiagram"
             v-bind="carDiagramProps"
-            class="overview-row__car"
+            class="ov-hero__car"
           />
-          <LocationMapWidget v-if="settings.showLocationMap" class="overview-row__map" />
+          <LastChargeCard class="ov-hero__charge" />
         </div>
 
-        <div class="status-grid">
+        <div class="ov-row">
+          <LocationMapWidget v-if="settings.showLocationMap" class="ov-row__map" />
+          <RecentTripsCard class="ov-row__trips" />
+        </div>
+
+        <div v-if="settings.showStatusCards" class="status-grid">
           <template v-for="card in settings.cards" :key="card.id">
             <template v-if="card.visible && hasData(card.id)">
               <CardInfoWrap

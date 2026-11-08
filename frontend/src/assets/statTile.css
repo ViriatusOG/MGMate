@@ -1,0 +1,104 @@
+/* The figure tiles every page opens with (components/StatTile.vue). A row of them sits in
+   .stat-tiles: a grid on a wide screen, a strip to swipe on a phone so the page's content starts
+   right under the header. */
+
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.stat-tile--highlight {
+  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-primary) 12%, var(--color-surface)),
+    var(--color-surface)
+  );
+}
+
+.stat-tile__label {
+  overflow: hidden;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+.stat-tile__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.stat-tile__value small {
+  margin-left: 0.2em;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--color-text-muted);
+}
+
+.stat-tile__note {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.stat-tile__note--good {
+  color: var(--color-success-text);
+}
+
+.stat-tile__note--bad {
+  color: var(--color-danger-text);
+}
+
+.stat-tile__note button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary-light);
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (width <= 767px) {
+  .stat-tiles {
+    display: flex;
+    gap: 0.5rem;
+    margin-inline: calc(-1 * var(--content-padding));
+    padding-inline: var(--content-padding);
+    padding-bottom: 0.25rem;
+    overflow-x: auto;
+    scroll-padding-inline: var(--content-padding);
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .stat-tile {
+    flex: 0 0 42%;
+    scroll-snap-align: start;
+  }
+
+  .stat-tile__value {
+    font-size: 1.25rem;
+  }
+}

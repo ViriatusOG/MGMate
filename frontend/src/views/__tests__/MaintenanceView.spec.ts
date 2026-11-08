@@ -28,9 +28,9 @@ async function mountView() {
         FontAwesomeIcon: true,
         MaintenanceItemFormModal: true,
         MaintenanceItemDetailModal: true,
-        StatusCard: {
-          props: ['label', 'variant'],
-          template: '<div class="item" :data-variant="variant">{{ label }}</div>',
+        MaintenanceDueCard: {
+          props: ['item'],
+          template: '<div class="item">{{ item.name }}</div>',
         },
       },
     },
@@ -57,11 +57,7 @@ describe('MaintenanceView', () => {
     const wrapper = await mountView()
 
     expect(maintenanceApi.list).toHaveBeenCalledWith('FAKEVN00000000001')
-    expect(wrapper.findAll('.item').map((i) => [i.text(), i.attributes('data-variant')])).toEqual([
-      ['Oil', 'danger'],
-      ['Brakes', 'warning'],
-      ['Tyres', 'success'],
-    ])
+    expect(wrapper.findAll('.item').map((i) => i.text())).toEqual(['Oil', 'Brakes', 'Tyres'])
   })
 
   it('says so when there are no items yet', async () => {

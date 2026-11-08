@@ -1,20 +1,34 @@
 {
   "nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "Overzicht",
     "statistics": "Statistieken",
     "map": "Kaart",
     "charges": "Laadbeurten",
-    "tripLog": "Rittenregistratie",
-    "climateSchedules": "Klimaatschema's",
+    "tripLog": "Ritten",
+    "climateSchedules": "Klimaat",
     "maintenance": "Onderhoud",
-    "logs": "Logboek",
+    "logs": "Systeemlogs",
     "menuLabel": "Menu",
     "batteryHealth": "Accugezondheid",
     "activity": "Activiteit",
-    "reports": "Rapporten"
+    "reports": "Rapporten",
+    "tabsLabel": "Hoofdpagina's",
+    "groups": {
+      "car": "Auto",
+      "logbook": "Logboek",
+      "insights": "Inzicht",
+      "upkeep": "Onderhoud"
+    },
+    "tabs": {
+      "overview": "Overzicht",
+      "trips": "Ritten",
+      "charges": "Laden",
+      "statistics": "Statistiek",
+      "more": "Meer"
+    }
   },
   "dashboard": {
-    "title": "Dashboard",
+    "title": "Overzicht",
     "noData": "Geen gegevens beschikbaar",
     "editLayout": "Indeling bewerken",
     "doneEditing": "Klaar",
@@ -115,7 +129,13 @@
         "custom": "Eigen datums"
       },
       "from": "Van",
-      "to": "Tot en met"
+      "to": "Tot en met",
+      "chip": {
+        "last7": "7 d",
+        "last30": "30 d",
+        "last90": "90 d",
+        "thisYear": "Jaar"
+      }
     },
     "months": {
       "title": "Per maand",
@@ -143,9 +163,15 @@
       "outsideHigh": "Hoog",
       "inside": "Binnen",
       "trips": "Ritten",
-      "trend": "Trend"
+      "trend": "Trend",
+      "lowPressure": "Waarschuwing"
     },
-    "consumptionTempChart": "Verbruik vs buitentemperatuur"
+    "consumptionTempChart": "Verbruik vs buitentemperatuur",
+    "sections": {
+      "driving": "Rijden",
+      "energy": "Energie en accu",
+      "health": "12V, banden en temperatuur"
+    }
   },
   "vehicle": {
     "diagramLabel": "Voertuigstatusdiagram",
@@ -749,7 +775,7 @@
     "speed": "Snelheid"
   },
   "tripLog": {
-    "title": "Rittenregistratie",
+    "title": "Ritten",
     "subtitle": "Leg per rit vast waarvoor die was en exporteer de registratie als spreadsheet, met de adressen en kilometerstanden die een rittenregistratie vraagt. Ritten verschijnen hier een paar minuten nadat de auto geparkeerd is.",
     "year": "Jaar",
     "month": "Maand",
@@ -894,7 +920,8 @@
       "trips": "Ritten",
       "efficiency": "Gem. verbruik",
       "energy": "Energie verbruikt",
-      "cost": "Kosten"
+      "cost": "Kosten",
+      "noPrice": "Geen prijs ingesteld"
     },
     "tripCount": "{n} rit | {n} ritten",
     "showWholeYear": "Heel {year}",
@@ -965,7 +992,8 @@
       "lastServiceHint": "Optioneel. Laat leeg als dit nog niet onderhouden is.",
       "save": "Opslaan",
       "validationNameRequired": "Naam is verplicht",
-      "validationIntervalRequired": "Stel minstens één interval in (afstand of tijd)"
+      "validationIntervalRequired": "Stel minstens één interval in (afstand of tijd)",
+      "suggestions": "Gebruikelijk voor een elektrische auto"
     },
     "logForm": {
       "performedAt": "Servicedatum",
@@ -982,6 +1010,24 @@
     "dashboard": {
       "allOk": "Alle onderhoudsitems zijn up-to-date",
       "moreCount": "+{count} meer"
+    },
+    "left": "nog {amount}",
+    "over": "{amount} over tijd",
+    "leftDays": "vandaag | nog {n} dag | nog {n} dagen",
+    "overDays": "vandaag | {n} dag over tijd | {n} dagen over tijd",
+    "dueOn": "Gepland {when}",
+    "atOdometer": "bij {distance}",
+    "lastDone": "Laatst gedaan {when}",
+    "neverDone": "Nog niet gedaan",
+    "suggestions": {
+      "service": "Jaarlijkse beurt",
+      "mot": "APK",
+      "cabinFilter": "Interieurfilter",
+      "brakeFluid": "Remvloeistof",
+      "tyreRotation": "Banden wisselen",
+      "coolant": "Accukoelvloeistof",
+      "wipers": "Ruitenwissers",
+      "battery12v": "12V-accu controleren"
     }
   },
   "climateSchedules": {
@@ -1287,7 +1333,9 @@
     "loss": "Laadverlies",
     "lossNote": "{kwh} kWh verloren als warmte ({percent}%)",
     "searchPlaceholder": "Notitie, plaats, AC of DC",
-    "searchResults": "Geen laadsessies gevonden | 1 laadsessie gevonden | {n} laadsessies gevonden"
+    "searchResults": "Geen laadsessies gevonden | 1 laadsessie gevonden | {n} laadsessies gevonden",
+    "peakNote": "piek {power}",
+    "totalsLabel": "Laadtotalen"
   },
   "tariff": {
     "button": "Prijzen",
@@ -1332,7 +1380,11 @@
     "reading": "Eén laadbeurt (groter = meer van de accu)",
     "trend": "Trend",
     "none": "Nog geen metingen. Een meting komt van een laadbeurt die {percent}% of meer toevoegt en waarvan de auto de energie mat.",
-    "disclaimer": "Een schatting uit de energie die elke laadbeurt in de accu stopte, gedeeld door het percentage dat erbij kwam; geen labtest. Metingen schommelen met de temperatuur en hoe de auto het percentage afrondt."
+    "disclaimer": "Een schatting uit de energie die elke laadbeurt in de accu stopte, gedeeld door het percentage dat erbij kwam; geen labtest. Metingen schommelen met de temperatuur en hoe de auto het percentage afrondt.",
+    "margin": "Marge",
+    "newLine": "Nieuw ({kwh} kWh)",
+    "health": "Gezondheid",
+    "pack": "Accu nieuw:"
   },
   "activity": {
     "title": "Activiteit",
@@ -1342,7 +1394,7 @@
     "events": "Gebeurtenissen",
     "reporting": "Bereikbaar",
     "gaps": "geen gaten | {n} gat | {n} gaten",
-    "longestGap": "Langste gat",
+    "longestGap": "Langste stilte",
     "readings": "Metingen",
     "perHour": "Metingen per uur",
     "none": "Niets vastgelegd op deze dag.",
@@ -1361,12 +1413,24 @@
       "climateOff": "Klimaat uit",
       "driveStarted": "Rit gestart",
       "driveEnded": "Geparkeerd"
-    }
+    },
+    "driving": "Rijden",
+    "charging": "Laden",
+    "drives": "{n} rit | {n} ritten",
+    "sessions": "{n} sessie | {n} sessies",
+    "woken": "Keer gewekt",
+    "readingsNote": "geen metingen | {n} meting | {n} metingen",
+    "dayStrip": "De dag in één oogopslag",
+    "quiet": "Geen data",
+    "otherEvents": "Deuren, sloten, klimaat"
   },
   "calendar": {
     "previousMonth": "Vorige maand",
     "nextMonth": "Volgende maand",
-    "jumpToToday": "Naar vandaag"
+    "jumpToToday": "Naar vandaag",
+    "week": "Deze week",
+    "close": "Sluiten",
+    "monthAndSearch": "Maand en zoeken"
   },
   "logSearch": {
     "label": "Zoeken",
@@ -1412,6 +1476,56 @@
       "charged": "Geladen (kWh)",
       "cost": "Kosten",
       "total": "Totaal"
+    },
+    "emptyRun": "{from} – {to}: niets vastgelegd",
+    "barsTitle": "Afstand per maand ({unit})"
+  },
+  "overview": {
+    "battery": "Accu",
+    "range": "Bereik",
+    "limit": "Laadlimiet {percent}%",
+    "atLimit": "Bij {percent}%: {range}",
+    "atFull": "Bij 100%: {range}",
+    "state": "Status",
+    "states": {
+      "driving": "Rijdt",
+      "charging": "Laadt",
+      "pluggedIn": "Aan de stekker",
+      "parked": "Geparkeerd"
+    },
+    "outside": "Buiten",
+    "cabin": "Binnen",
+    "drivenToday": "Vandaag gereden",
+    "sinceCharge": "Sinds laatste laadbeurt",
+    "lastUpdate": "Laatste update",
+    "showTiles": "Toon de statustegels onder het overzicht",
+    "charge": {
+      "title": "Laatste laadbeurt",
+      "all": "Alle laadbeurten →",
+      "added": "Geladen",
+      "battery": "Accu",
+      "when": "Wanneer",
+      "where": "Waar",
+      "fromWall": "Uit het stopcontact",
+      "cost": "Kosten",
+      "none": "Geen laadbeurten in de afgelopen 60 dagen."
+    },
+    "trips": {
+      "title": "Recente ritten",
+      "all": "Alle ritten →",
+      "none": "Geen ritten in de afgelopen twee weken.",
+      "week": "Afgelopen 7 dagen",
+      "count": "{n} rit | {n} ritten"
+    },
+    "attention": {
+      "title": "Aandacht nodig",
+      "overdue": "{name} is te laat",
+      "dueSoon": "{name} moet binnenkort",
+      "dueOn": "uiterlijk {date}",
+      "past": "{distance} over tijd",
+      "left": "nog {distance}",
+      "low12v": "12V-accu is laag",
+      "lowTyre": "Een band is zacht | {n} banden zijn zacht"
     }
   }
 }

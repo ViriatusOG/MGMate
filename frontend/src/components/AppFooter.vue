@@ -39,6 +39,9 @@ function refresh() {
   if (!vin.value || !window.confirm(t('control.refreshConfirm'))) return
   send(vin.value, 'refresh', 'force')
 }
+
+// On a phone the footer gives its place to the tab bar, and the top bar offers these two instead.
+defineExpose({ openSettings: openModal, refresh })
 </script>
 
 <template>

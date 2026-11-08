@@ -276,8 +276,8 @@ describe('useStatisticsCharts', () => {
     const labels = (locale: 'en' | 'nl') =>
       chart('bev', 'tyreChart', TWO_DAYS, locale).data.datasets.map((d) => d.label)
 
-    expect(labels('en')).toEqual(['FL (bar)', 'FR (bar)', 'RL (bar)', 'RR (bar)'])
-    expect(labels('nl')).toEqual(['LV (bar)', 'RV (bar)', 'LA (bar)', 'RA (bar)'])
+    expect(labels('en')).toEqual(['FL (bar)', 'FR (bar)', 'RL (bar)', 'RR (bar)', 'Warning'])
+    expect(labels('nl')).toEqual(['LV (bar)', 'RV (bar)', 'LA (bar)', 'RA (bar)', 'Waarschuwing'])
   })
 
   it('shows tyre pressure in the chosen unit', () => {

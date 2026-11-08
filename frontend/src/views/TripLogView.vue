@@ -28,6 +28,8 @@ import { useUnits } from '@/composables/useUnits'
 import { useErrorMessage } from '@/composables/useErrorMessage'
 import { useTripRoute } from '@/composables/useTripRoute'
 import ViewHeader from '@/components/ViewHeader.vue'
+import StatTile from '@/components/StatTile.vue'
+import WeekStrip from '@/components/WeekStrip.vue'
 import MonthCalendar, { type CalendarDay } from '@/components/MonthCalendar.vue'
 import { groupByDay } from '@/utils/dayGroups'
 import { loggedDistanceKm } from '@/utils/tripLog'
@@ -294,43 +296,38 @@ const tiles = computed(() => {
   return [
     {
       key: 'distance',
-      variant: 'teal',
-      icon: 'road',
       value: distance?.value ?? '-',
       unit: distance?.unit,
       label: t('tripLog.tiles.distance'),
+      note: null,
     },
     {
       key: 'trips',
-      variant: 'indigo',
-      icon: 'car',
       value: String(m.trips),
       unit: undefined,
       label: t('tripLog.tiles.trips'),
+      note: null,
     },
     {
       key: 'efficiency',
-      variant: '',
-      icon: 'bolt',
       value: efficiency?.value ?? '-',
       unit: efficiency?.unit,
       label: t('tripLog.tiles.efficiency'),
+      note: null,
     },
     {
       key: 'energy',
-      variant: 'blue',
-      icon: 'plug-circle-bolt',
       value: m.kwh > 0 ? formatNumber(m.kwh, 1) : '-',
       unit: m.kwh > 0 ? t('common.kwh') : undefined,
       label: t('tripLog.tiles.energy'),
+      note: null,
     },
     {
       key: 'cost',
-      variant: 'green',
-      icon: 'coins',
       value: rate !== null && m.kwh > 0 ? money(m.kwh * rate) : '-',
       unit: undefined,
       label: t('tripLog.tiles.cost'),
+      note: rate === null ? t('tripLog.tiles.noPrice') : null,
     },
   ]
 })
@@ -379,6 +376,8 @@ const calendarDays = computed(() => {
 })
 
 const selectedDay = ref<string | null>(null)
+// A phone shows a week strip; the month calendar and the search open from it.
+const pickerOpen = ref(false)
 
 async function selectDay(key: string) {
   selectedDay.value = key
@@ -534,19 +533,16 @@ function exportCsv() {
       </template>
     </ViewHeader>
 
-    <section class="ll-tiles" :aria-label="t('tripLog.totalsLabel')">
-      <div
+    <section class="stat-tiles" :aria-label="t('tripLog.totalsLabel')">
+      <StatTile
         v-for="tile in tiles"
         :key="tile.key"
-        class="ll-tile"
-        :class="tile.variant ? `ll-tile--${tile.variant}` : ''"
-      >
-        <span class="ll-tile__icon"><font-awesome-icon :icon="tile.icon" /></span>
-        <span class="ll-tile__value"
-          >{{ tile.value }}<small v-if="tile.unit">{{ tile.unit }}</small></span
-        >
-        <span class="ll-tile__label">{{ tile.label }}</span>
-      </div>
+        :label="tile.label"
+        :value="tile.value"
+        :unit="tile.unit"
+        :note="tile.note"
+        :highlight="tile.key === 'distance'"
+      />
     </section>
 
     <div v-if="unclassified > 0 && !store.loading && !search" class="trip-log-bulk">
@@ -578,7 +574,16 @@ function exportCsv() {
       {{ errorMessage(store.actionError) }}
     </p>
 
-    <div class="ll-layout">
+    <WeekStrip
+      :month="shownMonth"
+      :days="calendarDays"
+      :selected="selectedDay"
+      :open="pickerOpen"
+      @select="selectDay"
+      @toggle="pickerOpen = !pickerOpen"
+    />
+
+    <div class="ll-layout" :class="{ 'll-layout--picker-open': pickerOpen }">
       <aside class="ll-side">
         <LogSearch
           :active="search !== null"

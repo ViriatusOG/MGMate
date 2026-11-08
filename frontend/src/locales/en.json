@@ -1,20 +1,34 @@
 {
   "nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "Overview",
     "statistics": "Statistics",
     "map": "Map",
-    "tripLog": "Trip log",
+    "tripLog": "Trips",
     "charges": "Charges",
-    "climateSchedules": "Climate schedules",
+    "climateSchedules": "Climate",
     "maintenance": "Maintenance",
-    "logs": "Logs",
+    "logs": "System logs",
     "menuLabel": "Menu",
     "batteryHealth": "Battery health",
     "activity": "Activity",
-    "reports": "Reports"
+    "reports": "Reports",
+    "tabsLabel": "Main pages",
+    "groups": {
+      "car": "Car",
+      "logbook": "Logbook",
+      "insights": "Insights",
+      "upkeep": "Upkeep"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "trips": "Trips",
+      "charges": "Charges",
+      "statistics": "Stats",
+      "more": "More"
+    }
   },
   "dashboard": {
-    "title": "Dashboard",
+    "title": "Overview",
     "noData": "No data available",
     "editLayout": "Edit layout",
     "doneEditing": "Done",
@@ -115,7 +129,13 @@
         "custom": "Custom dates"
       },
       "from": "From",
-      "to": "To"
+      "to": "To",
+      "chip": {
+        "last7": "7 d",
+        "last30": "30 d",
+        "last90": "90 d",
+        "thisYear": "Year"
+      }
     },
     "months": {
       "title": "Per month",
@@ -143,9 +163,15 @@
       "outsideHigh": "High",
       "inside": "Inside",
       "trips": "Trips",
-      "trend": "Trend"
+      "trend": "Trend",
+      "lowPressure": "Warning"
     },
-    "consumptionTempChart": "Consumption vs Outside Temperature"
+    "consumptionTempChart": "Consumption vs Outside Temperature",
+    "sections": {
+      "driving": "Driving",
+      "energy": "Energy and battery",
+      "health": "12V, tyres and temperature"
+    }
   },
   "vehicle": {
     "diagramLabel": "Vehicle status diagram",
@@ -749,7 +775,7 @@
     "speed": "Speed"
   },
   "tripLog": {
-    "title": "Trip log",
+    "title": "Trips",
     "subtitle": "Record what each trip was for and export the log as a spreadsheet, with the addresses and odometer readings a tax trip log asks for. Trips appear here a few minutes after the car parks.",
     "year": "Year",
     "month": "Month",
@@ -894,7 +920,8 @@
       "trips": "Trips",
       "efficiency": "Avg consumption",
       "energy": "Energy used",
-      "cost": "Cost"
+      "cost": "Cost",
+      "noPrice": "No price set"
     },
     "tripCount": "{n} trip | {n} trips",
     "showWholeYear": "Whole of {year}",
@@ -965,7 +992,8 @@
       "lastServiceHint": "Optional. Leave empty if this hasn't been serviced yet.",
       "save": "Save",
       "validationNameRequired": "Name is required",
-      "validationIntervalRequired": "Set at least one interval (distance or time)"
+      "validationIntervalRequired": "Set at least one interval (distance or time)",
+      "suggestions": "Common for an electric car"
     },
     "logForm": {
       "performedAt": "Service date",
@@ -982,6 +1010,24 @@
     "dashboard": {
       "allOk": "All maintenance items are up to date",
       "moreCount": "+{count} more"
+    },
+    "left": "{amount} left",
+    "over": "{amount} over",
+    "leftDays": "due today | {n} day left | {n} days left",
+    "overDays": "due today | {n} day over | {n} days over",
+    "dueOn": "Due {when}",
+    "atOdometer": "at {distance}",
+    "lastDone": "Last done {when}",
+    "neverDone": "Not done yet",
+    "suggestions": {
+      "service": "Annual service",
+      "mot": "MOT",
+      "cabinFilter": "Cabin air filter",
+      "brakeFluid": "Brake fluid",
+      "tyreRotation": "Tyre rotation",
+      "coolant": "Battery coolant",
+      "wipers": "Wiper blades",
+      "battery12v": "12V battery check"
     }
   },
   "climateSchedules": {
@@ -1287,7 +1333,9 @@
     "loss": "Charging loss",
     "lossNote": "{kwh} kWh lost as heat ({percent}%)",
     "searchPlaceholder": "Note, place, AC or DC",
-    "searchResults": "No charges found | 1 charge found | {n} charges found"
+    "searchResults": "No charges found | 1 charge found | {n} charges found",
+    "peakNote": "peak {power}",
+    "totalsLabel": "Charging totals"
   },
   "tariff": {
     "button": "Prices",
@@ -1332,7 +1380,11 @@
     "reading": "One charge (bigger = more of the battery)",
     "trend": "Trend",
     "none": "No readings yet. A reading comes from a charge that adds {percent}% or more and whose energy the car measured.",
-    "disclaimer": "An estimate from the energy each charge put into the battery over the battery percentage it added, not a lab test. Readings vary with temperature and how the car rounds its percentage."
+    "disclaimer": "An estimate from the energy each charge put into the battery over the battery percentage it added, not a lab test. Readings vary with temperature and how the car rounds its percentage.",
+    "margin": "Margin",
+    "newLine": "New ({kwh} kWh)",
+    "health": "Health",
+    "pack": "Pack when new:"
   },
   "activity": {
     "title": "Activity",
@@ -1342,7 +1394,7 @@
     "events": "Events",
     "reporting": "Reporting",
     "gaps": "no gaps | {n} gap | {n} gaps",
-    "longestGap": "Longest gap",
+    "longestGap": "Longest silence",
     "readings": "Readings",
     "perHour": "Readings per hour",
     "none": "Nothing recorded on this day.",
@@ -1361,12 +1413,24 @@
       "climateOff": "Climate off",
       "driveStarted": "Drive started",
       "driveEnded": "Parked"
-    }
+    },
+    "driving": "Driving",
+    "charging": "Charging",
+    "drives": "{n} drive | {n} drives",
+    "sessions": "{n} session | {n} sessions",
+    "woken": "Times woken",
+    "readingsNote": "no readings | {n} reading | {n} readings",
+    "dayStrip": "The day at a glance",
+    "quiet": "No data",
+    "otherEvents": "Doors, locks, climate"
   },
   "calendar": {
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
-    "jumpToToday": "Jump to today"
+    "jumpToToday": "Jump to today",
+    "week": "This week",
+    "close": "Close",
+    "monthAndSearch": "Month and search"
   },
   "logSearch": {
     "label": "Search",
@@ -1412,6 +1476,56 @@
       "charged": "Charged (kWh)",
       "cost": "Cost",
       "total": "Total"
+    },
+    "emptyRun": "{from} – {to}: nothing recorded",
+    "barsTitle": "Distance per month ({unit})"
+  },
+  "overview": {
+    "battery": "Battery",
+    "range": "Range",
+    "limit": "Charge limit {percent}%",
+    "atLimit": "At {percent}%: {range}",
+    "atFull": "At 100%: {range}",
+    "state": "State",
+    "states": {
+      "driving": "Driving",
+      "charging": "Charging",
+      "pluggedIn": "Plugged in",
+      "parked": "Parked"
+    },
+    "outside": "Outside",
+    "cabin": "Cabin",
+    "drivenToday": "Driven today",
+    "sinceCharge": "Since last charge",
+    "lastUpdate": "Last update",
+    "showTiles": "Show the status tiles under the overview",
+    "charge": {
+      "title": "Last charge",
+      "all": "All charges →",
+      "added": "Added",
+      "battery": "Battery",
+      "when": "When",
+      "where": "Where",
+      "fromWall": "From the wall",
+      "cost": "Cost",
+      "none": "No charges in the last 60 days."
+    },
+    "trips": {
+      "title": "Recent trips",
+      "all": "All trips →",
+      "none": "No trips in the last two weeks.",
+      "week": "Last 7 days",
+      "count": "{n} trip | {n} trips"
+    },
+    "attention": {
+      "title": "Needs attention",
+      "overdue": "{name} is overdue",
+      "dueSoon": "{name} is due soon",
+      "dueOn": "due {date}",
+      "past": "{distance} past",
+      "left": "{distance} left",
+      "low12v": "12V battery is low",
+      "lowTyre": "A tyre is low | {n} tyres are low"
     }
   }
 }
