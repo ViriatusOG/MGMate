@@ -423,3 +423,16 @@
   margin-bottom: 0.75rem;
   font-size: 0.9rem;
 }
+
+.ov-controls {
+  margin-top: 1rem;
+}
+
+.ov-controls__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

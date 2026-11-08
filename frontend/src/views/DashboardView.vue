@@ -115,6 +115,9 @@ function hasData(id: CardId): boolean {
   return cardData.value !== null && cardHasData(id, cardData.value)
 }
 
+const CONTROL_CARDS: readonly CardId[] = ['doors', 'climate', 'windows', 'findMyCar']
+const controlCards = computed(() => CONTROL_CARDS.filter((id) => hasData(id)))
+
 function resetLayout() {
   settings.resetLayout(vehicleType.value, hasData)
 }
@@ -303,6 +306,21 @@ onUnmounted(() => {
           <LocationMapWidget v-if="settings.showLocationMap" class="ov-row__map" />
           <RecentTripsCard class="ov-row__trips" />
         </div>
+
+        <!-- Locks, climate and windows stay one tap away when the full tile wall is hidden. -->
+        <section v-if="!settings.showStatusCards && controlCards.length" class="ov-controls">
+          <h2 class="ov-controls__title">{{ t('overview.controls') }}</h2>
+          <div class="status-grid">
+            <CardInfoWrap
+              v-for="id in controlCards"
+              :key="id"
+              :title="t(`settings.cards.${id}`)"
+              :description="t(`dashboard.cardDesc.${id}`, cardDescriptionParams)"
+            >
+              <DashboardCardContent :card-id="id" />
+            </CardInfoWrap>
+          </div>
+        </section>
 
         <div v-if="settings.showStatusCards" class="status-grid">
           <template v-for="card in settings.cards" :key="card.id">
