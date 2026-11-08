@@ -1,13 +1,13 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using Lib.Net.Http.WebPush;
+using Lib.Net.Http.WebPush.Authentication;
 using MGMate.Core.Configuration;
 using MGMate.Core.Helpers;
 using MGMate.Core.Interfaces;
 using MGMate.Core.Models;
 using MGMate.Data;
 using MGMate.Data.Extensions;
-using Lib.Net.Http.WebPush;
-using Lib.Net.Http.WebPush.Authentication;
 using ModelPushSubscription = MGMate.Core.Models.PushSubscription;
 using WebPushSubscription = Lib.Net.Http.WebPush.PushSubscription;
 
