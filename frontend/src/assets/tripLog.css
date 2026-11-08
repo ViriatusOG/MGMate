@@ -89,10 +89,10 @@
     grid-template-columns: minmax(0, 1fr) minmax(22rem, 30rem);
   }
 
-  /* No taller than the column it scrolls in: the window less the footer, the demo banner when
-     there is one, and a margin above and below. */
+  /* No taller than the column it scrolls in: the window less the demo banner when there is one,
+     and a margin above and below. */
   .trip-log-layout__detail {
-    --detail-chrome: var(--footer-height);
+    --detail-chrome: 0px;
 
     position: sticky;
     top: 1rem;
@@ -106,7 +106,7 @@
   }
 
   .has-demo-banner .trip-log-layout__detail {
-    --detail-chrome: calc(var(--footer-height) + var(--demo-banner-height));
+    --detail-chrome: var(--demo-banner-height);
   }
 }
 

@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useUiSettingsStore } from '@/stores/settingsUi'
-import AppFooter from '@/components/AppFooter.vue'
+import AppVersion from '@/components/AppVersion.vue'
 import MobileTabBar from '@/components/MobileTabBar.vue'
 import NotificationPanel from '@/components/NotificationPanel.vue'
 import DemoBanner from '@/components/DemoBanner.vue'
@@ -301,7 +301,7 @@ watch(
     <!-- Backdrop (mobile only) -->
     <div v-if="menuOpen" class="sidebar-backdrop" @click="closeMenu" />
 
-    <!-- Sidebar + main body (fills space between topbar and footer) -->
+    <!-- Sidebar + main body (fills the space below the topbar on a phone) -->
     <div class="app-body">
       <!-- Sidebar / drawer -->
       <nav
@@ -431,6 +431,7 @@ watch(
             <font-awesome-icon icon="arrow-right-from-bracket" />
             <span>{{ t('auth.logout') }}</span>
           </button>
+          <AppVersion />
         </div>
       </nav>
 
@@ -463,7 +464,6 @@ watch(
       </Transition>
     </div>
 
-    <AppFooter />
     <MobileTabBar :more-open="menuOpen" @more="toggleMenu" />
 
     <NotificationPanel

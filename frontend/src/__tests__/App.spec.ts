@@ -84,7 +84,7 @@ async function mountAt(path: string) {
       plugins: [i18n, router],
       stubs: {
         FontAwesomeIcon: true,
-        AppFooter: true,
+        AppVersion: true,
         NotificationPanel: true,
         DemoBanner: true,
         PwaInstallModal: true,
