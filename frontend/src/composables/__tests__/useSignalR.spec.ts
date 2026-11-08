@@ -134,6 +134,19 @@ describe('useSignalR', () => {
     expect(callbacks.onReconnected).toHaveBeenCalledOnce()
   })
 
+  it('closes the connection to start over when joining again after a reconnect fails', async () => {
+    const { api } = mountSignalR()
+    await api.start(7)
+    const connection = hub.connections[0]!
+    vi.mocked(connection.invoke).mockRejectedValueOnce(new Error('hub method failed'))
+
+    await handlerOf(connection, 'onreconnected')()
+
+    expect(connection.stop).toHaveBeenCalledOnce()
+    expect(callbacks.onReconnected).not.toHaveBeenCalled()
+    expect(api.connected.value).toBe(false)
+  })
+
   it('reports a reconnect after the connection closed and was started again', async () => {
     const { api } = mountSignalR()
     await api.start(7)

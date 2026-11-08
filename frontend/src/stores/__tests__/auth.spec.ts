@@ -3,6 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { authApi } from '@/services/authApi'
 import type { MeResponse, LoginResponse, AuthConfigResponse } from '@/services/authApi'
 import { useAuthStore } from '@/stores/auth'
+import { ApiError } from '@/services/apiCore'
 
 vi.mock('@/services/authApi', () => ({
   authApi: {
@@ -154,7 +155,7 @@ describe('useAuthStore', () => {
   it('verifySession() on API failure clears the session from the store and localStorage', async () => {
     localStorage.setItem(AUTH_USERNAME_KEY, 'testuser')
     localStorage.setItem(AUTH_EXPIRES_KEY, futureExpiry())
-    vi.mocked(authApi.me).mockRejectedValue(new Error('Unauthorized'))
+    vi.mocked(authApi.me).mockRejectedValue(new ApiError(401, '/api/auth/me'))
 
     const store = useAuthStore()
     await store.verifySession()
@@ -163,6 +164,42 @@ describe('useAuthStore', () => {
     expect(store.isAuthenticated).toBe(false)
     expect(localStorage.getItem(AUTH_USERNAME_KEY)).toBeNull()
     expect(localStorage.getItem(AUTH_EXPIRES_KEY)).toBeNull()
+  })
+
+  it('verifySession() keeps the session when the API cannot be reached, and asks again later', async () => {
+    localStorage.setItem(AUTH_USERNAME_KEY, 'testuser')
+    localStorage.setItem(AUTH_EXPIRES_KEY, futureExpiry())
+    vi.mocked(authApi.me)
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce({ username: 'testuser', expiresAtUtc: futureExpiry() })
+
+    const store = useAuthStore()
+    await store.ensureVerified()
+
+    expect(store.isAuthenticated).toBe(true)
+    expect(localStorage.getItem(AUTH_USERNAME_KEY)).toBe('testuser')
+
+    await store.ensureVerified()
+    expect(vi.mocked(authApi.me)).toHaveBeenCalledTimes(2)
+  })
+
+  it('logout() is not undone by a verifySession() that answers afterwards', async () => {
+    let answer!: (value: MeResponse) => void
+    vi.mocked(authApi.me).mockReturnValueOnce(
+      new Promise<MeResponse>((resolve) => {
+        answer = resolve
+      }),
+    )
+    vi.mocked(authApi.logout).mockResolvedValue(undefined)
+
+    const store = useAuthStore()
+    const verifying = store.verifySession()
+    await store.logout()
+    answer({ username: 'testuser', expiresAtUtc: futureExpiry() })
+    await verifying
+
+    expect(store.isAuthenticated).toBe(false)
+    expect(localStorage.getItem(AUTH_USERNAME_KEY)).toBeNull()
   })
 
   it('verifySession() does not authenticate when API returns null expiresAtUtc', async () => {
