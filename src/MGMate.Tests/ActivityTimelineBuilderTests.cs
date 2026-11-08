@@ -49,4 +49,34 @@ public class ActivityTimelineBuilderTests
         var timeline = ActivityTimelineBuilder.Build([], T0, T0.AddHours(3), TimeSpan.FromHours(1));
         Assert.Equal([new ActivityGap(T0, T0.AddHours(3))], timeline.Gaps);
     }
+
+    [Fact]
+    public void Build_KeepsTheLevelOnlyWhereItMoves()
+    {
+        var samples = new[]
+        {
+            S(0, soc: 80),
+            S(10, soc: 80),
+            S(20),                       // no level: nothing
+            S(30, soc: 80),              // last reading before the drop: kept so the line stays flat
+            S(40, soc: 70),
+            S(50, soc: 70),              // last reading: kept so the line reaches it
+        };
+
+        var timeline = ActivityTimelineBuilder.Build(samples, T0, T0.AddMinutes(60), TimeSpan.FromHours(1));
+
+        Assert.Equal(
+            [
+                new ActivitySocPoint(T0, 80), new ActivitySocPoint(T0.AddMinutes(30), 80),
+                new ActivitySocPoint(T0.AddMinutes(40), 70), new ActivitySocPoint(T0.AddMinutes(50), 70),
+            ],
+            timeline.Soc);
+    }
+
+    [Fact]
+    public void Build_WithNoLevels_HasNoLevelLine()
+    {
+        var timeline = ActivityTimelineBuilder.Build([S(0, locked: true)], T0, T0.AddMinutes(10), TimeSpan.FromHours(1));
+        Assert.Empty(timeline.Soc);
+    }
 }

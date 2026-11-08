@@ -25,6 +25,7 @@ import BatteryOverviewCard from '@/components/overview/BatteryOverviewCard.vue'
 import LastChargeCard from '@/components/overview/LastChargeCard.vue'
 import RecentTripsCard from '@/components/overview/RecentTripsCard.vue'
 import NeedsAttention from '@/components/overview/NeedsAttention.vue'
+import CarStatusCard from '@/components/overview/CarStatusCard.vue'
 
 // Only edit mode drags cards around, and the drag-and-drop library is the size of every card on
 // this page together, so it loads when the layout editor opens rather than with the dashboard.
@@ -117,6 +118,12 @@ function hasData(id: CardId): boolean {
 
 const CONTROL_CARDS: readonly CardId[] = ['doors', 'climate', 'windows', 'findMyCar']
 const controlCards = computed(() => CONTROL_CARDS.filter((id) => hasData(id)))
+
+const controlsSection = ref<HTMLElement | null>(null)
+
+function scrollToControls() {
+  controlsSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 function resetLayout() {
   settings.resetLayout(vehicleType.value, hasData)
@@ -304,11 +311,20 @@ onUnmounted(() => {
 
         <div class="ov-row">
           <LocationMapWidget v-if="settings.showLocationMap" class="ov-row__map" />
+          <CarStatusCard
+            class="ov-row__status"
+            :has-controls="!settings.showStatusCards && controlCards.length > 0"
+            @controls="scrollToControls"
+          />
           <RecentTripsCard class="ov-row__trips" />
         </div>
 
         <!-- Locks, climate and windows stay one tap away when the full tile wall is hidden. -->
-        <section v-if="!settings.showStatusCards && controlCards.length" class="ov-controls">
+        <section
+          v-if="!settings.showStatusCards && controlCards.length"
+          ref="controlsSection"
+          class="ov-controls"
+        >
           <h2 class="ov-controls__title">{{ t('overview.controls') }}</h2>
           <div class="status-grid">
             <CardInfoWrap

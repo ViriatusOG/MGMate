@@ -125,8 +125,32 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
         return Task.FromResult<IReadOnlyList<TripTelemetryPoint>>(points);
     }
 
-    public Task<IReadOnlyList<ActivitySample>> GetActivitySamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<ActivitySample>>([]);
+    // The history's readings in the window, then the live status, so the overview's level line
+    // and the activity page have something to draw.
+    public Task<IReadOnlyList<ActivitySample>> GetActivitySamplesAsync(int vehicleId, DateTime from, DateTime to, CancellationToken ct = default)
+    {
+        var samples = _history.Value
+            .Where(s => s.RecordedAt >= from && s.RecordedAt <= to)
+            .OrderBy(s => s.RecordedAt)
+            .Select(ToActivitySample)
+            .ToList();
+        TelemetrySnapshot now;
+        lock (_lock) { now = _current.Clone(); }
+        if (now.RecordedAt >= from && now.RecordedAt <= to) samples.Add(ToActivitySample(now));
+        return Task.FromResult<IReadOnlyList<ActivitySample>>(samples);
+    }
+
+    private static ActivitySample ToActivitySample(TelemetrySnapshot s) => new(
+        s.RecordedAt,
+        s.IsLocked,
+        s.DriverDoorOpen is null && s.PassengerDoorOpen is null && s.RearLeftDoorOpen is null && s.RearRightDoorOpen is null && s.TrunkOpen is null
+            ? null
+            : s.DriverDoorOpen == true || s.PassengerDoorOpen == true || s.RearLeftDoorOpen == true || s.RearRightDoorOpen == true || s.TrunkOpen == true,
+        s.ChargerConnected,
+        s.IsCharging,
+        s.ClimateOn,
+        s.EngineRunning,
+        s.EvSocPercent);
 
     public Task<DateTime?> GetFirstChargingAtAsync(int vehicleId, CancellationToken ct = default) =>
         Task.FromResult<DateTime?>(null);

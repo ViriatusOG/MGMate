@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
-import { isRegion, REGIONS, regionHourCycle, regionName } from '@/utils/region'
+import {
+  isRegion,
+  REGIONS,
+  regionHourCycle,
+  regionIsRightHandDrive,
+  regionName,
+} from '@/utils/region'
 
 // test-setup pins detectRegion for every other test; this file tests the real one.
 const { detectRegion } = await vi.importActual<typeof import('@/utils/region')>('@/utils/region')
@@ -59,5 +65,14 @@ describe('regions', () => {
   it('names a region in the interface language', () => {
     expect(regionName('NL', 'en')).toBe('Netherlands')
     expect(regionName('NL', 'nl')).toBe('Nederland')
+  })
+})
+
+describe('regionIsRightHandDrive', () => {
+  it('puts the wheel on the right where traffic keeps left', () => {
+    expect(regionIsRightHandDrive('GB')).toBe(true)
+    expect(regionIsRightHandDrive('IE')).toBe(true)
+    expect(regionIsRightHandDrive('NL')).toBe(false)
+    expect(regionIsRightHandDrive('US')).toBe(false)
   })
 })

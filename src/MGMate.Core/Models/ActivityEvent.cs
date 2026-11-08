@@ -24,8 +24,12 @@ public sealed record ActivityGap(DateTime From, DateTime To);
 /// <summary>How many readings arrived in one hour: the link to the car, as the database saw it.</summary>
 public sealed record ActivityHour(DateTime Hour, int Readings);
 
+/// <summary>The battery's charge level at one reading, kept only where it differs from the one before.</summary>
+public sealed record ActivitySocPoint(DateTime At, double Percent);
+
 public sealed record ActivityTimeline(
     IReadOnlyList<ActivityEvent> Events,
     IReadOnlyList<ActivityGap> Gaps,
     IReadOnlyList<ActivityHour> Hours,
-    int Readings);
+    int Readings,
+    IReadOnlyList<ActivitySocPoint> Soc);

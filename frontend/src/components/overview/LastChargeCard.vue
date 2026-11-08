@@ -5,7 +5,10 @@ import { RouterLink } from 'vue-router'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useUiSettingsStore } from '@/stores/settingsUi'
 import { useCommutePlacesStore } from '@/stores/commutePlaces'
-import { chargesApi, type ChargeSession } from '@/services/chargesApi'
+import { chargesApi, type ChargeChartPoint, type ChargeSession } from '@/services/chargesApi'
+import { useUnits } from '@/composables/useUnits'
+import OverviewSparkline from './OverviewSparkline.vue'
+import type { SparkSeries } from './sparkline'
 import { chargeEnergy, chargeMinutes } from '@/utils/charges'
 import { chargeCost, chargePlace, formatMoney } from '@/utils/tariff'
 import { formatNumber, formatDateTime } from '@/utils/format'
@@ -17,8 +20,10 @@ const { t } = useI18n()
 const store = useVehicleStore()
 const uiSettings = useUiSettingsStore()
 const places = useCommutePlacesStore()
+const units = useUnits()
 
 const charge = ref<ChargeSession | null>(null)
+const chart = ref<ChargeChartPoint[]>([])
 const loaded = ref(false)
 
 const capacityKwh = computed(
@@ -37,12 +42,58 @@ async function load() {
       list
         .filter((c) => !c.isHidden)
         .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt))[0] ?? null
+    void loadChart(vin)
   } catch {
     charge.value = null
   } finally {
     loaded.value = true
   }
 }
+
+// The power curve under the card: its own request, so the card shows before the curve does.
+async function loadChart(vin: string) {
+  const id = charge.value?.id
+  chart.value = []
+  if (id == null) return
+  try {
+    chart.value = await chargesApi.chart(vin, id)
+  } catch {
+    chart.value = []
+  }
+}
+
+const curve = computed((): SparkSeries[] => {
+  const power: [number, number][] = []
+  const level: [number, number][] = []
+  for (const p of chart.value) {
+    const at = Date.parse(p.recordedAt)
+    if (p.powerKw != null) power.push([at, Math.abs(p.powerKw)])
+    if (p.socPercent != null) level.push([at, p.socPercent])
+  }
+  const series: SparkSeries[] = []
+  if (power.length > 1) series.push({ points: power, tone: 'warning', min: 0, fill: true })
+  if (level.length > 1)
+    series.push({ points: level, tone: 'success', min: 0, max: 100, dashed: true })
+  return series
+})
+
+// How far the car has gone on it, by its own counters since the last charge.
+const sinceThen = computed(() => {
+  const x = store.currentStatus
+  const km = x?.mileageSinceLastCharge ?? null
+  if (km === null || !charge.value) return null
+  const kwh = x?.powerUsageSinceLastCharge ?? null
+  const parts = [units.value.format('distance', km, { decimals: 0 })]
+  if (kwh && kwh > 0 && km > 0)
+    parts.push(units.value.format('energyPerDistance', (kwh * 1000) / km))
+  return parts.join(' · ')
+})
+
+const socBar = computed(() => {
+  const c = charge.value
+  if (!c || c.socStartPercent === null || c.socEndPercent === null) return null
+  return { start: c.socStartPercent, end: c.socEndPercent }
+})
 
 onMounted(load)
 watch(() => store.activeVin, load)
@@ -73,7 +124,8 @@ const rows = computed(() => {
     .filter(Boolean)
     .join(' · ')
   return [
-    { key: 'battery', label: t('overview.charge.battery'), value: soc },
+    // The bar above says it when both ends are known.
+    { key: 'battery', label: t('overview.charge.battery'), value: socBar.value ? null : soc },
     {
       key: 'when',
       label: t('overview.charge.when'),
@@ -97,6 +149,7 @@ const rows = computed(() => {
       label: t('overview.charge.cost'),
       value: cost ? formatMoney(cost.amount, uiSettings.tariff?.currency ?? 'GBP') : null,
     },
+    { key: 'since', label: t('overview.charge.sinceThen'), value: sinceThen.value },
   ].filter((r) => r.value)
 })
 
@@ -118,12 +171,41 @@ const added = computed(() => {
         <span class="ov-card__label">{{ t('overview.charge.added') }}</span>
         <strong>{{ added ?? '-' }}</strong>
       </div>
+      <div v-if="socBar">
+        <div
+          class="ov-battery__bar"
+          role="meter"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :aria-valuenow="socBar.end"
+          :aria-label="t('overview.charge.battery')"
+        >
+          <span class="ov-battery__bar-before" :style="{ width: `${socBar.start}%` }" />
+          <span
+            class="ov-battery__bar-now"
+            :style="{
+              left: `${socBar.start}%`,
+              width: `${Math.max(0, socBar.end - socBar.start)}%`,
+            }"
+          />
+        </div>
+        <p class="ov-battery__ranges ov-charge__ends">
+          <span>{{ Math.round(socBar.start) }}%</span>
+          <span>{{ Math.round(socBar.end) }}%</span>
+        </p>
+      </div>
       <dl class="ov-facts">
         <div v-for="r in rows" :key="r.key">
           <dt>{{ r.label }}</dt>
           <dd>{{ r.value }}</dd>
         </div>
       </dl>
+      <figure v-if="curve.length" class="ov-spark-wrap">
+        <OverviewSparkline :series="curve" :label="t('overview.charge.curve')" />
+        <figcaption class="ov-spark-cap">
+          <span>{{ t('overview.charge.curve') }}</span>
+        </figcaption>
+      </figure>
     </template>
     <p v-else-if="loaded" class="text-muted text-sm">{{ t('overview.charge.none') }}</p>
   </section>
