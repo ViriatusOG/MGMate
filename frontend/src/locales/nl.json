@@ -28,7 +28,7 @@
     }
   },
   "dashboard": {
-    "title": "Dashboard",
+    "title": "Overzicht",
     "noData": "Geen gegevens beschikbaar",
     "editLayout": "Indeling bewerken",
     "doneEditing": "Klaar",
@@ -1429,6 +1429,54 @@
       "charged": "Geladen (kWh)",
       "cost": "Kosten",
       "total": "Totaal"
+    }
+  },
+  "overview": {
+    "battery": "Accu",
+    "range": "Bereik",
+    "limit": "Laadlimiet {percent}%",
+    "atLimit": "Bij {percent}%: {range}",
+    "atFull": "Bij 100%: {range}",
+    "state": "Status",
+    "states": {
+      "driving": "Rijdt",
+      "charging": "Laadt",
+      "pluggedIn": "Aan de stekker",
+      "parked": "Geparkeerd"
+    },
+    "outside": "Buiten",
+    "cabin": "Binnen",
+    "drivenToday": "Vandaag gereden",
+    "sinceCharge": "Sinds laatste laadbeurt",
+    "lastUpdate": "Laatste update",
+    "showTiles": "Toon de statustegels onder het overzicht",
+    "charge": {
+      "title": "Laatste laadbeurt",
+      "all": "Alle laadbeurten →",
+      "added": "Geladen",
+      "battery": "Accu",
+      "when": "Wanneer",
+      "where": "Waar",
+      "fromWall": "Uit het stopcontact",
+      "cost": "Kosten",
+      "none": "Geen laadbeurten in de afgelopen 60 dagen."
+    },
+    "trips": {
+      "title": "Recente ritten",
+      "all": "Alle ritten →",
+      "none": "Geen ritten in de afgelopen twee weken.",
+      "week": "Afgelopen 7 dagen",
+      "count": "{n} rit | {n} ritten"
+    },
+    "attention": {
+      "title": "Aandacht nodig",
+      "overdue": "{name} is te laat",
+      "dueSoon": "{name} moet binnenkort",
+      "dueOn": "uiterlijk {date}",
+      "past": "{distance} over tijd",
+      "left": "nog {distance}",
+      "low12v": "12V-accu is laag",
+      "lowTyre": "Een band is zacht | {n} banden zijn zacht"
     }
   }
 }

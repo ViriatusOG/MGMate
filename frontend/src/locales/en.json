@@ -28,7 +28,7 @@
     }
   },
   "dashboard": {
-    "title": "Dashboard",
+    "title": "Overview",
     "noData": "No data available",
     "editLayout": "Edit layout",
     "doneEditing": "Done",
@@ -1429,6 +1429,54 @@
       "charged": "Charged (kWh)",
       "cost": "Cost",
       "total": "Total"
+    }
+  },
+  "overview": {
+    "battery": "Battery",
+    "range": "Range",
+    "limit": "Charge limit {percent}%",
+    "atLimit": "At {percent}%: {range}",
+    "atFull": "At 100%: {range}",
+    "state": "State",
+    "states": {
+      "driving": "Driving",
+      "charging": "Charging",
+      "pluggedIn": "Plugged in",
+      "parked": "Parked"
+    },
+    "outside": "Outside",
+    "cabin": "Cabin",
+    "drivenToday": "Driven today",
+    "sinceCharge": "Since last charge",
+    "lastUpdate": "Last update",
+    "showTiles": "Show the status tiles under the overview",
+    "charge": {
+      "title": "Last charge",
+      "all": "All charges →",
+      "added": "Added",
+      "battery": "Battery",
+      "when": "When",
+      "where": "Where",
+      "fromWall": "From the wall",
+      "cost": "Cost",
+      "none": "No charges in the last 60 days."
+    },
+    "trips": {
+      "title": "Recent trips",
+      "all": "All trips →",
+      "none": "No trips in the last two weeks.",
+      "week": "Last 7 days",
+      "count": "{n} trip | {n} trips"
+    },
+    "attention": {
+      "title": "Needs attention",
+      "overdue": "{name} is overdue",
+      "dueSoon": "{name} is due soon",
+      "dueOn": "due {date}",
+      "past": "{distance} past",
+      "left": "{distance} left",
+      "low12v": "12V battery is low",
+      "lowTyre": "A tyre is low | {n} tyres are low"
     }
   }
 }
