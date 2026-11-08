@@ -7,8 +7,8 @@ import { useRelativeTime } from '@/composables/useRelativeTime'
 import { activityApi, type ActivityTimeline } from '@/services/activityApi'
 import { formatNumber, formatTimeOfDay } from '@/utils/format'
 import { formatDurationMs } from '@/utils/tripRows'
-import OverviewSparkline from './OverviewSparkline.vue'
-import type { SparkSeries } from './sparkline'
+import OverviewChart from './OverviewChart.vue'
+import type { ChartSeries } from './chart'
 
 // The battery first, the way Leapmotor Mate opens: charge, range, the charge limit on the bar, and
 // the few readings people check before they leave.
@@ -132,14 +132,24 @@ watch(
   },
 )
 
-const socSeries = computed((): SparkSeries[] => {
+const socSeries = computed((): ChartSeries[] => {
   const points: [number, number][] = (timeline.value?.soc ?? []).map((p) => [
     Date.parse(p.at),
     p.percent,
   ])
   if (soc.value !== null) points.push([now.value, soc.value])
   if (points.length < 2) return []
-  return [{ points, tone: 'success', min: 0, max: 100, fill: true }]
+  return [
+    {
+      points,
+      tone: 'success',
+      name: t('overview.chart.soc'),
+      unit: '%',
+      min: 0,
+      max: 100,
+      fill: true,
+    },
+  ]
 })
 
 const socDayFrom = computed(() => {
@@ -396,14 +406,15 @@ const live = computed(() => {
     </template>
 
     <figure v-if="socSeries.length" class="ov-spark-wrap">
-      <OverviewSparkline
+      <OverviewChart
         :series="socSeries"
         :from="now - DAY_MS"
         :to="now"
+        ends-now
         :label="t('overview.socDay')"
       />
       <figcaption class="ov-spark-cap">
-        <span>{{ t('overview.socDay') }}</span>
+        <span>{{ t('overview.chart.last24h') }}</span>
         <span v-if="socDayFrom !== null && soc !== null"
           >{{ socDayFrom }}% → {{ Math.round(soc) }}%</span
         >

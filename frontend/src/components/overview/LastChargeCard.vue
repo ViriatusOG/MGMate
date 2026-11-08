@@ -7,8 +7,8 @@ import { useUiSettingsStore } from '@/stores/settingsUi'
 import { useCommutePlacesStore } from '@/stores/commutePlaces'
 import { chargesApi, type ChargeChartPoint, type ChargeSession } from '@/services/chargesApi'
 import { useUnits } from '@/composables/useUnits'
-import OverviewSparkline from './OverviewSparkline.vue'
-import type { SparkSeries } from './sparkline'
+import OverviewChart from './OverviewChart.vue'
+import type { ChartSeries } from './chart'
 import { chargeEnergy, chargeMinutes } from '@/utils/charges'
 import { chargeCost, chargePlace, formatMoney } from '@/utils/tariff'
 import { formatNumber, formatDateTime } from '@/utils/format'
@@ -62,7 +62,7 @@ async function loadChart(vin: string) {
   }
 }
 
-const curve = computed((): SparkSeries[] => {
+const curve = computed((): ChartSeries[] => {
   const power: [number, number][] = []
   const level: [number, number][] = []
   for (const p of chart.value) {
@@ -70,10 +70,29 @@ const curve = computed((): SparkSeries[] => {
     if (p.powerKw != null) power.push([at, Math.abs(p.powerKw)])
     if (p.socPercent != null) level.push([at, p.socPercent])
   }
-  const series: SparkSeries[] = []
-  if (power.length > 1) series.push({ points: power, tone: 'warning', min: 0, fill: true })
+  const series: ChartSeries[] = []
+  if (power.length > 1)
+    series.push({
+      points: power,
+      tone: 'warning',
+      name: t('overview.chart.power'),
+      unit: 'kW',
+      axis: 'left',
+      min: 0,
+      fill: true,
+      peak: (kw) => t('overview.chart.peak', { value: formatNumber(kw, 1) }),
+    })
   if (level.length > 1)
-    series.push({ points: level, tone: 'success', min: 0, max: 100, dashed: true })
+    series.push({
+      points: level,
+      tone: 'success',
+      name: t('overview.chart.soc'),
+      unit: '%',
+      axis: 'right',
+      min: 0,
+      max: 100,
+      dashed: true,
+    })
   return series
 })
 
@@ -105,6 +124,13 @@ watch(
   },
 )
 
+// "Sat 13:41 · 14 min": the row, and the line under the chart.
+const chargeWhen = computed(() => {
+  const c = charge.value
+  if (!c) return ''
+  return `${formatDateTime(c.startedAt, { weekday: 'short', hour: '2-digit', minute: '2-digit' })} · ${formatDurationMs(chargeMinutes(c) * 60_000, t)}`
+})
+
 const rows = computed(() => {
   const c = charge.value
   if (!c) return []
@@ -129,7 +155,7 @@ const rows = computed(() => {
     {
       key: 'when',
       label: t('overview.charge.when'),
-      value: `${formatDateTime(c.startedAt, { weekday: 'short', hour: '2-digit', minute: '2-digit' })} · ${formatDurationMs(chargeMinutes(c) * 60_000, t)}`,
+      value: chargeWhen.value,
     },
     {
       key: 'where',
@@ -201,9 +227,10 @@ const added = computed(() => {
         </div>
       </dl>
       <figure v-if="curve.length" class="ov-spark-wrap">
-        <OverviewSparkline :series="curve" :label="t('overview.charge.curve')" />
+        <OverviewChart :series="curve" :label="t('overview.charge.curve')" />
         <figcaption class="ov-spark-cap">
-          <span>{{ t('overview.charge.curve') }}</span>
+          <span>{{ chargeWhen }}</span>
+          <span v-if="socBar">{{ Math.round(socBar.start) }}% → {{ Math.round(socBar.end) }}%</span>
         </figcaption>
       </figure>
     </template>

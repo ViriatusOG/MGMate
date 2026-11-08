@@ -1543,6 +1543,13 @@
     },
     "controls": "Controls",
     "socDay": "Charge level, last 24 h",
+    "chart": {
+      "now": "Now",
+      "soc": "Charge level (SOC %)",
+      "power": "Power (kW)",
+      "peak": "{value} kW peak",
+      "last24h": "Last 24 h"
+    },
     "live": {
       "title": "Charging",
       "target": "Target {percent}%",
