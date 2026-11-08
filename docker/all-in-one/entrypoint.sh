@@ -76,6 +76,9 @@ export ASPNETCORE_URLS="http://127.0.0.1:9000"
 # contents may be root-owned from an image built before these processes dropped root, or
 # from a fresh named volume Docker always creates as root -- reclaim them on every start.
 chown -R appuser:appuser /data/api /data/worker /data/dataprotection
+# Only appuser may read them: the Data Protection key ring signs the session cookies, and nginx,
+# mosquitto and postgres run as other users in this same container.
+chmod 700 /data/api /data/worker /data/dataprotection
 
 # Generate Mosquitto password and ACL files: the internal broker login above, plus the optional
 # Home Assistant login (HA_MQTT_USERNAME / HA_MQTT_PASSWORD, see documentation/HOME_ASSISTANT.md).

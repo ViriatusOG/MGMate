@@ -25,6 +25,11 @@ RUN echo "os patch date: ${OS_PATCH_DATE}" \
 	&& apt-get upgrade -y \
 	&& apt-get install -y --no-install-recommends libgssapi-krb5-2 curl tzdata \
 	&& rm -rf /var/lib/apt/lists/*
+# The entrypoint drops root to APP_UID. The dotnet base image sets APP_UID=1654 and creates the
+# "app" user with that uid; say so here and check it while building, so a base image that renames
+# the user or drops the variable fails the build instead of crash-looping the container.
+ENV APP_UID=1654
+RUN test "$(id -u app)" = "$APP_UID"
 COPY --from=build /app .
 COPY --chmod=755 src/MGMate.Api/docker-entrypoint.sh /docker-entrypoint.sh
 EXPOSE 8080
