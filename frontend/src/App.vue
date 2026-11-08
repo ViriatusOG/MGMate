@@ -21,6 +21,7 @@ import { useFavicon } from '@/composables/useFavicon'
 import { useRelativeTime } from '@/composables/useRelativeTime'
 import { useEscapeKey } from '@/composables/useEscapeKey'
 import { useGatewaySignIn } from '@/composables/useGatewaySignIn'
+import { useForcedRefresh } from '@/composables/useForcedRefresh'
 import { formatDateTime, formatTime } from '@/utils/format'
 
 const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true'
@@ -208,7 +209,8 @@ const lastRecorded = computed(() => {
 })
 
 const menuOpen = ref(false)
-const footer = ref<InstanceType<typeof AppFooter> | null>(null)
+// Refresh lives in the sidebar on a wide screen and in the top bar on a phone.
+const { refresh, refreshing, canRefresh } = useForcedRefresh()
 const isLoginRoute = computed(() => route.name === 'login')
 const mainContent = ref<HTMLElement | null>(null)
 
@@ -280,10 +282,10 @@ watch(
         class="topbar-btn"
         :aria-label="t('control.refresh')"
         :title="t('control.refreshHint')"
-        :disabled="vehicleStore.loading"
-        @click="footer?.refresh()"
+        :disabled="!canRefresh"
+        @click="refresh"
       >
-        <font-awesome-icon icon="rotate" :spin="vehicleStore.loading" />
+        <font-awesome-icon icon="rotate" :spin="refreshing" />
       </button>
       <RouterLink to="/settings" class="topbar-btn" :aria-label="t('settings.title')">
         <font-awesome-icon icon="gear" />
@@ -350,18 +352,23 @@ watch(
             <font-awesome-icon icon="triangle-exclamation" aria-hidden="true" />
             <span class="sidebar-footer__text">{{ t('common.liveUpdatesPaused') }}</span>
           </div>
-          <div v-if="isInitialLoading || lastFetched" class="sidebar-timestamp">
-            <template v-if="isInitialLoading">
-              <span class="skeleton skeleton--icon" />
-              <span class="skeleton skeleton--text skeleton--text-sm" />
-            </template>
-            <template v-else>
-              <font-awesome-icon icon="rotate" :spin="vehicleStore.loading" aria-hidden="true" />
-              <span class="sidebar-footer__text" :title="`${t('common.fetched')} ${lastFetched}`"
-                >{{ t('common.fetched') }} {{ lastFetched }}</span
-              >
-            </template>
+          <div v-if="isInitialLoading" class="sidebar-timestamp">
+            <span class="skeleton skeleton--icon" />
+            <span class="skeleton skeleton--text skeleton--text-sm" />
           </div>
+          <!-- The time of the last fetch doubles as the Refresh button, so it is not repeated
+               below the page. -->
+          <button
+            v-else-if="lastFetched"
+            class="sidebar-timestamp sidebar-refresh"
+            :aria-label="t('control.refresh')"
+            :title="t('control.refreshHint')"
+            :disabled="!canRefresh"
+            @click="refresh"
+          >
+            <font-awesome-icon icon="rotate" :spin="refreshing" aria-hidden="true" />
+            <span class="sidebar-footer__text">{{ t('common.fetched') }} {{ lastFetched }}</span>
+          </button>
           <div v-if="isInitialLoading || lastRecorded" class="sidebar-timestamp">
             <template v-if="isInitialLoading">
               <span class="skeleton skeleton--icon" />
@@ -456,7 +463,7 @@ watch(
       </Transition>
     </div>
 
-    <AppFooter ref="footer" />
+    <AppFooter />
     <MobileTabBar :more-open="menuOpen" @more="toggleMenu" />
 
     <NotificationPanel
