@@ -1511,7 +1511,9 @@
       "where": "Where",
       "fromWall": "From the wall",
       "cost": "Cost",
-      "none": "No charges in the last 60 days."
+      "none": "No charges in the last 60 days.",
+      "sinceThen": "Since then",
+      "curve": "Power and charge level during it"
     },
     "trips": {
       "title": "Recent trips",
@@ -1530,7 +1532,51 @@
       "low12v": "12V battery is low",
       "lowTyre": "A tyre is low | {n} tyres are low"
     },
-    "controls": "Controls"
+    "controls": "Controls",
+    "socDay": "Charge level, last 24 h",
+    "live": {
+      "title": "Charging",
+      "target": "Target {percent}%",
+      "started": "Started at {percent}%",
+      "voltage": "Voltage",
+      "current": "Current",
+      "timeLeft": "Time left",
+      "fullBy": "At target by",
+      "added": "Added so far",
+      "rangeNow": "Range now",
+      "chargingFor": "Charging for",
+      "power": "Charging power",
+      "dc": "DC rapid",
+      "ac": "AC",
+      "note": "Updates each time the car reports while charging."
+    },
+    "status": {
+      "title": "Car status",
+      "controls": "Controls ↓",
+      "locks": "Locks",
+      "locked": "Locked",
+      "unlocked": "Unlocked",
+      "doors": "Doors",
+      "windows": "Windows",
+      "boot": "Boot",
+      "bonnet": "Bonnet",
+      "sunroof": "Sunroof",
+      "lights": "Lights",
+      "cable": "Charge cable",
+      "closed": "Closed",
+      "open": "Open",
+      "on": "On",
+      "off": "Off",
+      "nOpen": "{n} open",
+      "cableCharging": "Charging",
+      "cablePlugged": "Plugged in",
+      "cableNone": "Not plugged in",
+      "drawing": "Top view of the car: open doors swing out, and open windows, boot, bonnet and sunroof are marked",
+      "driver": "Driver",
+      "passenger": "Passenger",
+      "rearLeft": "Rear left",
+      "rearRight": "Rear right"
+    }
   },
   "gatewaySignIn": {
     "failed": "MG sign-in failed",

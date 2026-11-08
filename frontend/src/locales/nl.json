@@ -1511,7 +1511,9 @@
       "where": "Waar",
       "fromWall": "Uit het stopcontact",
       "cost": "Kosten",
-      "none": "Geen laadbeurten in de afgelopen 60 dagen."
+      "none": "Geen laadbeurten in de afgelopen 60 dagen.",
+      "sinceThen": "Sindsdien",
+      "curve": "Vermogen en laadniveau tijdens het laden"
     },
     "trips": {
       "title": "Recente ritten",
@@ -1530,7 +1532,51 @@
       "low12v": "12V-accu is laag",
       "lowTyre": "Een band is zacht | {n} banden zijn zacht"
     },
-    "controls": "Bediening"
+    "controls": "Bediening",
+    "socDay": "Laadniveau, laatste 24 u",
+    "live": {
+      "title": "Laden",
+      "target": "Doel {percent}%",
+      "started": "Begonnen op {percent}%",
+      "voltage": "Spanning",
+      "current": "Stroom",
+      "timeLeft": "Nog",
+      "fullBy": "Op doel om",
+      "added": "Tot nu toe geladen",
+      "rangeNow": "Bereik nu",
+      "chargingFor": "Laadt al",
+      "power": "Laadvermogen",
+      "dc": "DC snelladen",
+      "ac": "AC",
+      "note": "Werkt bij telkens als de auto tijdens het laden iets meldt."
+    },
+    "status": {
+      "title": "Status van de auto",
+      "controls": "Bediening ↓",
+      "locks": "Sloten",
+      "locked": "Op slot",
+      "unlocked": "Open",
+      "doors": "Deuren",
+      "windows": "Ramen",
+      "boot": "Achterklep",
+      "bonnet": "Motorkap",
+      "sunroof": "Schuifdak",
+      "lights": "Verlichting",
+      "cable": "Laadkabel",
+      "closed": "Dicht",
+      "open": "Open",
+      "on": "Aan",
+      "off": "Uit",
+      "nOpen": "{n} open",
+      "cableCharging": "Laadt",
+      "cablePlugged": "Aangesloten",
+      "cableNone": "Niet aangesloten",
+      "drawing": "Bovenaanzicht van de auto: open deuren draaien naar buiten, en open ramen, achterklep, motorkap en schuifdak zijn gemarkeerd",
+      "driver": "Bestuurder",
+      "passenger": "Passagier",
+      "rearLeft": "Linksachter",
+      "rearRight": "Rechtsachter"
+    }
   },
   "gatewaySignIn": {
     "failed": "MG-aanmelding mislukt",

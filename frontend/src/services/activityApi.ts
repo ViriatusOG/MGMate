@@ -31,11 +31,19 @@ export interface ActivityHour {
   readings: number
 }
 
+/** The charge level at a reading, kept only where it moved (and the reading before each move). */
+export interface ActivitySocPoint {
+  at: string
+  percent: number
+}
+
 export interface ActivityTimeline {
   events: ActivityEvent[]
   gaps: ActivityGap[]
   hours: ActivityHour[]
   readings: number
+  /** Missing from servers older than the overview's level line. */
+  soc?: ActivitySocPoint[]
 }
 
 export const activityApi = {
