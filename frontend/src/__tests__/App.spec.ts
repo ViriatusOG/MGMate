@@ -53,6 +53,14 @@ vi.mock('@/composables/useBrowserNotifications', () => ({
   useBrowserNotifications: () => ({ show: vi.fn<() => void>() }),
 }))
 
+vi.mock('@/composables/useForcedRefresh', () => ({
+  useForcedRefresh: () => ({
+    refresh: vi.fn<() => void>(),
+    refreshing: ref(false),
+    canRefresh: ref(false),
+  }),
+}))
+
 vi.mock('@/composables/useFavicon', () => ({ useFavicon: vi.fn<() => void>() }))
 
 // Its template imports the app icon from public/, which only Vite resolves.
@@ -76,7 +84,7 @@ async function mountAt(path: string) {
       plugins: [i18n, router],
       stubs: {
         FontAwesomeIcon: true,
-        AppFooter: true,
+        AppVersion: true,
         NotificationPanel: true,
         DemoBanner: true,
         PwaInstallModal: true,

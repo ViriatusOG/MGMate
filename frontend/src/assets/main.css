@@ -55,13 +55,12 @@
   --content-padding: 2rem;
   --title-top: 0.25rem;
   --page-title-height: 2rem;
-  --footer-height: 48px;
   --radius: 10px;
   --demo-banner-height: 2.2rem;
 
   /* Stacking layers, lowest first. Leaflet draws its own controls at 1000, so whatever sits on a
      map uses --z-map-overlay, and the open drawer and the dialogs rise above it. */
-  --z-footer: 100;
+  --z-tab-bar: 100;
   --z-demo-banner: 199;
   --z-topbar: 200;
   --z-drawer: 300;
@@ -212,7 +211,7 @@ body,
   height: 100%;
 }
 
-/* Fills the space between the topbar (mobile) and footer */
+/* Fills the window, less the top bar and tab bar on a phone */
 .app-body {
   display: flex;
   flex: 1;
@@ -412,7 +411,7 @@ body,
 
 /* ── Phone tab bar ────────────────────────────────────────── */
 
-/* Takes the footer's place on a phone (see the mobile breakpoint), so the pages people open most
+/* Shown on a phone only (see the mobile breakpoint), so the pages people open most
    are a thumb away instead of behind the menu. */
 .tab-bar {
   display: none;
@@ -421,7 +420,7 @@ body,
   padding: 0.3rem 0.25rem calc(0.3rem + env(safe-area-inset-bottom, 0px));
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
-  z-index: var(--z-footer);
+  z-index: var(--z-tab-bar);
 }
 
 .tab-bar__tab {
@@ -1728,35 +1727,25 @@ textarea.form-control {
   flex-shrink: 0;
 }
 
-/* ── App footer ───────────────────────────────────────────── */
+/* ── App version (bottom of the sidebar) ─────────────────── */
 
-.app-footer {
-  height: var(--footer-height);
-  flex-shrink: 0;
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+.app-version {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 1.5rem;
-  z-index: var(--z-footer);
-}
-
-.app-footer__meta {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  gap: 0.25rem 0.75rem;
+  padding: 0.25rem 0.75rem 0;
   min-width: 0;
 }
 
-.app-footer__copyright {
-  font-size: 0.75rem;
+.app-version__copyright {
+  font-size: 0.72rem;
   color: var(--color-text-muted);
   text-decoration: none;
 }
 
-/* A newer release: the one footer link worth noticing, so it takes the accent colour. */
-.app-footer__update {
+/* A newer release: the one link here worth noticing, so it takes the accent colour. */
+.app-version__update {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -1766,41 +1755,8 @@ textarea.form-control {
   white-space: nowrap;
 }
 
-.app-footer__update:hover {
+.app-version__update:hover {
   text-decoration: underline;
-}
-
-.app-footer__actions {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.app-footer__btn {
-  background: var(--field-bg);
-  text-decoration: none;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-  cursor: pointer;
-  height: 32px;
-  padding: 0 0.65rem;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  border-radius: 6px;
-  white-space: nowrap;
-}
-
-.app-footer__btn:hover {
-  background: var(--color-surface);
-  border-color: var(--color-primary);
-  color: var(--color-text);
-}
-
-.app-footer__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* ── Modal control row (toggle switch inline with label) ──── */
@@ -1840,7 +1796,7 @@ textarea.form-control {
     display: flex;
   }
 
-  /* The tab bar takes the footer's place; Refresh and Settings move to the top bar. */
+  /* The tab bar, with Refresh and Settings in the top bar. */
   .tab-bar {
     display: grid;
   }
@@ -1892,8 +1848,8 @@ textarea.form-control {
     box-shadow: 4px 0 24px var(--shadow-pop);
   }
 
-  /* The same gutter as the topbar, so the page title and cards line up under the menu button and
-     the footer under both. The title starts a gutter below the topbar, and the drawer's logo opens
+  /* The same gutter as the topbar, so the page title and cards line up under the menu button. The
+     title starts a gutter below the topbar, and the drawer's logo opens
      level with the topbar's. */
   :root {
     --content-padding: 0.75rem;
@@ -1902,16 +1858,6 @@ textarea.form-control {
 
   .main-content {
     overflow-x: hidden;
-  }
-
-  /* The tab bar takes the footer's place; Refresh and Settings move to the top bar. */
-  .app-footer {
-    display: none;
-  }
-
-  /* The buttons keep their labels on a phone, so the update link shrinks to its icon. */
-  .app-footer__update-text {
-    display: none;
   }
 
   /* Icon sits flush at button left so it aligns with card left edge */
@@ -1945,23 +1891,6 @@ textarea.form-control {
 
   .status-card__value {
     font-size: 0.95rem;
-  }
-}
-
-/* ── Narrow phone (up to 479px) ───────────────────────────── */
-
-@media (width <= 479px) {
-  /* The copyright, the update icon and both labelled buttons need about 450px in Dutch; narrower,
-     the copyright wrapped over three lines and the update icon ran into Refresh. The buttons keep
-     their aria-labels, so they turn into square icon buttons. */
-  .app-footer__btn {
-    width: 32px;
-    padding: 0;
-    justify-content: center;
-  }
-
-  .app-footer__btn-label {
-    display: none;
   }
 }
 
@@ -2033,6 +1962,26 @@ textarea.form-control {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Fetched: also the Refresh button. Reads as the timestamp until pointed at. */
+.sidebar-refresh {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar-refresh:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.sidebar-refresh:disabled {
+  cursor: default;
 }
 
 /* The sidebar footer's buttons: demo controls, notifications and log out. */
