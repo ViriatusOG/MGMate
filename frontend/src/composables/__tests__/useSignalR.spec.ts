@@ -138,7 +138,7 @@ describe('useSignalR', () => {
     const { api } = mountSignalR()
     await api.start(7)
     const connection = hub.connections[0]!
-    vi.mocked(connection.invoke).mockRejectedValueOnce(new Error('hub method failed'))
+    connection.invoke!.mockRejectedValueOnce(new Error('hub method failed'))
 
     await handlerOf(connection, 'onreconnected')()
 
