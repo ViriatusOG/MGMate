@@ -110,10 +110,10 @@ describe('DashboardView', () => {
       expect(call).toHaveBeenCalledWith('FAKEVN00000000001')
   })
 
-  it('leaves the status tiles out until they are switched on', async () => {
+  it('shows only the control tiles until the full set is switched on', async () => {
     const wrapper = await mountView()
 
-    expect(cardIds(wrapper)).toEqual([])
+    expect(cardIds(wrapper)).toEqual(['doors', 'climate', 'windows', 'findMyCar'])
   })
 
   it("shows the cards the car's drivetrain has, and leaves out the ones it has no use for", async () => {
