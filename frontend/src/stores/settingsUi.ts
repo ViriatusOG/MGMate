@@ -66,6 +66,8 @@ interface UiSettings {
   tariff: Tariff | null
   /** What the traction battery held new, picked on the battery health page; null until picked. */
   batteryPackKwh: number | null
+  /** Settings > Advanced: whether the menu offers the Debug page. */
+  showDebugPage: boolean
 }
 
 function defaultsFor(): UiSettings {
@@ -87,6 +89,7 @@ function defaultsFor(): UiSettings {
     units: { ...AUTO_UNITS },
     tariff: null,
     batteryPackKwh: null,
+    showDebugPage: false,
   }
 }
 
@@ -186,6 +189,7 @@ function parseUiFields(parsed: Record<string, unknown>, fallback: UiSettings): U
       parsed.batteryPackKwh < 250
         ? parsed.batteryPackKwh
         : null,
+    showDebugPage: parsed.showDebugPage === true,
   }
 }
 

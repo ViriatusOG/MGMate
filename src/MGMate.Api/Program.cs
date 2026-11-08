@@ -52,6 +52,8 @@ try
         // Demo mode's gateway carries commands out on the demo car and answers them.
         builder.Services.AddSingleton<IMqttPublisher>(sp => ActivatorUtilities.CreateInstance<DemoCommandPublisher>(
             sp, (DemoTelemetryRepository)sp.GetRequiredService<ITelemetryRepository>()));
+        builder.Services.AddSingleton<IGatewayCatalog>(sp => DemoGatewayCatalog.Create(
+            sp.GetRequiredService<ILogger<GatewayCatalog>>()));
     }
     else
     {
@@ -64,6 +66,9 @@ try
         builder.Services.AddSingleton<VehicleCommandRequestHandler>();
         builder.Services.AddHostedService<TelemetryNotificationService>();
         builder.Services.AddHostedService<HomeAssistantPublisher>();
+        builder.Services.AddSingleton<GatewayCatalog>();
+        builder.Services.AddSingleton<IGatewayCatalog>(sp => sp.GetRequiredService<GatewayCatalog>());
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<GatewayCatalog>());
     }
     builder.Services.AddOpenApi(opts =>
     {
@@ -193,6 +198,7 @@ try
     app.MapWidgetEndpoints();
     app.MapUpdateEndpoints();
     app.MapGatewayEndpoints();
+    app.MapDebugEndpoints();
     app.MapClientErrorEndpoints();
     app.MapMapEndpoints();
 

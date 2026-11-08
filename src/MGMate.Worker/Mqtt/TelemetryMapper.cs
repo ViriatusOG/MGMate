@@ -377,6 +377,21 @@ public static class TelemetryMapper
                     s.LastChargeStateAt = lcs.UtcDateTime;
                 return true;
 
+            case "refresh/lastStatusTime":
+                if (DateTimeOffset.TryParse(payload, null, DateTimeStyles.RoundtripKind, out var lst))
+                    s.LastStatusAt = lst.UtcDateTime;
+                return true;
+
+            case "refresh/lastActivity":
+                if (DateTimeOffset.TryParse(payload, null, DateTimeStyles.RoundtripKind, out var lact))
+                    s.LastActivityAt = lact.UtcDateTime;
+                return true;
+
+            case "refresh/lastCachedState":
+                if (DateTimeOffset.TryParse(payload, null, DateTimeStyles.RoundtripKind, out var lcached))
+                    s.LastCachedStateAt = lcached.UtcDateTime;
+                return true;
+
             // Active journey
             case "drivetrain/currentJourney/distance":
                 s.CurrentJourneyDistance = N(numeric);
@@ -484,6 +499,10 @@ public static class TelemetryMapper
             // Battery heating
             case "drivetrain/batteryHeating":
                 s.BatteryHeating = asBool;
+                return true;
+
+            case "drivetrain/batteryHeatingStopReason":
+                s.BatteryHeatingStopReason = string.IsNullOrWhiteSpace(payload) ? null : payload;
                 return true;
 
             case "drivetrain/batteryHeatingSchedule/mode":

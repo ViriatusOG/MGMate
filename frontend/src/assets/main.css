@@ -449,6 +449,7 @@ body,
 
 .topbar-btn {
   display: flex;
+  text-decoration: none;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -1777,6 +1778,7 @@ textarea.form-control {
 
 .app-footer__btn {
   background: var(--field-bg);
+  text-decoration: none;
   border: 1px solid var(--color-border);
   color: var(--color-text-muted);
   font-size: 0.85rem;

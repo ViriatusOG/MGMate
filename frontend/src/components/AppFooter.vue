@@ -1,32 +1,16 @@
 <script setup lang="ts">
-import { computed, nextTick, shallowRef } from 'vue'
+import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useVehicleCommand } from '@/composables/useVehicleCommand'
-import { useModal } from '@/composables/useModal'
 import { useUpdateNotice } from '@/composables/useUpdateNotice'
 import { APP_VERSION } from '@/utils/appVersion'
-import type SettingsModalComponent from './settings/SettingsModal.vue'
 
 const { t } = useI18n()
 const vehicleStore = useVehicleStore()
 const { sending, send } = useVehicleCommand()
-const { isOpen: modalOpen, open: showModal, close: closeModal } = useModal()
 const { notice: updateNotice } = useUpdateNotice()
-
-// The settings modal used to ship with the footer on every page, for a dialog most visits never
-// open. It loads on first use instead.
-const settingsModal = shallowRef<typeof SettingsModalComponent | null>(null)
-
-async function openModal() {
-  if (!settingsModal.value) {
-    settingsModal.value = (await import('./settings/SettingsModal.vue')).default
-    // Mount it closed first: its transition only plays for a change of `open`, not for a
-    // dialog that arrives already open.
-    await nextTick()
-  }
-  showModal()
-}
 
 // Joined in script rather than the template, which drops a whitespace-only text node before the version
 const copyrightLabel = ['© 2026 MGMate', APP_VERSION].filter(Boolean).join(' ')
@@ -40,8 +24,8 @@ function refresh() {
   send(vin.value, 'refresh', 'force')
 }
 
-// On a phone the footer gives its place to the tab bar, and the top bar offers these two instead.
-defineExpose({ openSettings: openModal, refresh })
+// On a phone the footer gives its place to the tab bar, and the top bar offers refresh instead.
+defineExpose({ refresh })
 </script>
 
 <template>
@@ -80,12 +64,10 @@ defineExpose({ openSettings: openModal, refresh })
         <font-awesome-icon icon="rotate" :spin="vehicleStore.loading || sending === 'refresh'" />
         <span class="app-footer__btn-label">{{ t('control.refresh') }}</span>
       </button>
-      <button class="app-footer__btn" :aria-label="t('settings.title')" @click="openModal">
+      <RouterLink to="/settings" class="app-footer__btn" :aria-label="t('settings.title')">
         <font-awesome-icon icon="gear" />
         <span class="app-footer__btn-label">{{ t('settings.title') }}</span>
-      </button>
+      </RouterLink>
     </div>
   </footer>
-
-  <component :is="settingsModal" v-if="settingsModal" :open="modalOpen" @close="closeModal" />
 </template>

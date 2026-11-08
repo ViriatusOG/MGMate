@@ -81,6 +81,17 @@ const router = createRouter({
       component: () => import('@/views/MaintenanceView.vue'),
     },
     {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('@/views/SettingsView.vue'),
+    },
+    {
+      // Shown in the menu once Settings > Advanced turns it on; reachable by its address either way.
+      path: '/debug',
+      name: 'debug',
+      component: () => import('@/views/DebugView.vue'),
+    },
+    {
       path: '/logs',
       name: 'logs',
       component: () => import('@/views/LogsView.vue'),

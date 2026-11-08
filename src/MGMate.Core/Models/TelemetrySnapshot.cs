@@ -82,6 +82,11 @@ public class TelemetrySnapshot
     public bool? IsAvailable { get; set; }
     public DateTime? LastVehicleStateAt { get; set; }
     public DateTime? LastChargeStateAt { get; set; }
+    // When the car's status was last read (lastStatusTime), when it last did anything the gateway
+    // noticed (lastActivity), and when MG's cached copy was last read (lastCachedState).
+    public DateTime? LastStatusAt { get; set; }
+    public DateTime? LastActivityAt { get; set; }
+    public DateTime? LastCachedStateAt { get; set; }
 
     // Active journey
     public double? CurrentJourneyDistance { get; set; }
@@ -115,6 +120,8 @@ public class TelemetrySnapshot
 
     // Battery heating
     public bool? BatteryHeating { get; set; }
+    // Why the battery stopped heating, as the gateway names it.
+    public string? BatteryHeatingStopReason { get; set; }
     public string? BatteryHeatingScheduleMode { get; set; }
     public string? BatteryHeatingScheduleStartTime { get; set; }
 

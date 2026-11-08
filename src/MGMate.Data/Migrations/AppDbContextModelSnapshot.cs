@@ -742,6 +742,9 @@ namespace MGMate.Data.Migrations
                     b.Property<string>("BatteryHeatingScheduleStartTime")
                         .HasColumnType("text");
 
+                    b.Property<string>("BatteryHeatingStopReason")
+                        .HasColumnType("text");
+
                     b.Property<double?>("BatteryVoltage")
                         .HasColumnType("double precision");
 
@@ -856,10 +859,19 @@ namespace MGMate.Data.Migrations
                     b.Property<bool?>("IsLocked")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("LastActivityAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastCachedStateAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<double?>("LastChargeEndingPower")
                         .HasColumnType("double precision");
 
                     b.Property<DateTime?>("LastChargeStateAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastStatusAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("LastVehicleStateAt")
