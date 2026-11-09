@@ -26,11 +26,38 @@ public class ChargeRecorderTests
         var recorder = new ChargeRecorder(telemetry, charges, NullLogger.Instance);
 
         db.TelemetrySnapshots.AddRange(
-            new TelemetrySnapshot { VehicleId = vehicle.Id, RecordedAt = T0, IsCharging = true, EvSocPercent = 50, HvPower = -7 },
-            new TelemetrySnapshot { VehicleId = vehicle.Id, RecordedAt = T0.AddMinutes(10), IsCharging = true, EvSocPercent = 52, HvPower = -7 },
-            new TelemetrySnapshot { VehicleId = vehicle.Id, RecordedAt = T0.AddMinutes(15), IsCharging = false, EvSocPercent = 53 },
+            new TelemetrySnapshot
+            {
+                VehicleId = vehicle.Id,
+                RecordedAt = T0,
+                IsCharging = true,
+                EvSocPercent = 50,
+                HvPower = -7,
+            },
+            new TelemetrySnapshot
+            {
+                VehicleId = vehicle.Id,
+                RecordedAt = T0.AddMinutes(10),
+                IsCharging = true,
+                EvSocPercent = 52,
+                HvPower = -7,
+            },
+            new TelemetrySnapshot
+            {
+                VehicleId = vehicle.Id,
+                RecordedAt = T0.AddMinutes(15),
+                IsCharging = false,
+                EvSocPercent = 53,
+            },
             // A second charge still going at the time of the run.
-            new TelemetrySnapshot { VehicleId = vehicle.Id, RecordedAt = T0.AddHours(5), IsCharging = true, EvSocPercent = 53, HvPower = -7 });
+            new TelemetrySnapshot
+            {
+                VehicleId = vehicle.Id,
+                RecordedAt = T0.AddHours(5),
+                IsCharging = true,
+                EvSocPercent = 53,
+                HvPower = -7,
+            });
         await db.SaveChangesAsync(ct);
 
         var now = T0.AddHours(5).AddMinutes(5);
@@ -66,13 +93,46 @@ public class ChargeRecorderTests
         db.Vehicles.Add(vehicle);
         await db.SaveChangesAsync(ct);
         db.TelemetrySnapshots.AddRange(
-            new TelemetrySnapshot { VehicleId = vehicle.Id, RecordedAt = T0, IsCharging = true, EvSocPercent = 50, HvPower = -5.5, ChargingType = "AC" },
-            new TelemetrySnapshot { VehicleId = vehicle.Id, RecordedAt = T0.AddMinutes(5), IsCharging = true, EvSocPercent = 51, HvPower = -30 },
-            new TelemetrySnapshot { VehicleId = vehicle.Id, RecordedAt = T0.AddMinutes(10), IsCharging = true, EvSocPercent = 52, HvPower = -5.5 },
-            new TelemetrySnapshot { VehicleId = vehicle.Id, RecordedAt = T0.AddMinutes(15), IsCharging = false, EvSocPercent = 52, HvPower = 40 });
+            new TelemetrySnapshot
+            {
+                VehicleId = vehicle.Id,
+                RecordedAt = T0,
+                IsCharging = true,
+                EvSocPercent = 50,
+                HvPower = -5.5,
+                ChargingType = "AC",
+            },
+            new TelemetrySnapshot
+            {
+                VehicleId = vehicle.Id,
+                RecordedAt = T0.AddMinutes(5),
+                IsCharging = true,
+                EvSocPercent = 51,
+                HvPower = -30,
+            },
+            new TelemetrySnapshot
+            {
+                VehicleId = vehicle.Id,
+                RecordedAt = T0.AddMinutes(10),
+                IsCharging = true,
+                EvSocPercent = 52,
+                HvPower = -5.5,
+            },
+            new TelemetrySnapshot
+            {
+                VehicleId = vehicle.Id,
+                RecordedAt = T0.AddMinutes(15),
+                IsCharging = false,
+                EvSocPercent = 52,
+                HvPower = 40,
+            });
         db.ChargeSessions.Add(new ChargeSession
         {
-            VehicleId = vehicle.Id, StartedAt = T0, EndedAt = T0.AddMinutes(10), MaxPowerKw = 5.5, ChargeType = "AC",
+            VehicleId = vehicle.Id,
+            StartedAt = T0,
+            EndedAt = T0.AddMinutes(10),
+            MaxPowerKw = 5.5,
+            ChargeType = "AC",
         });
         await db.SaveChangesAsync(ct);
 
