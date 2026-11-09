@@ -27,7 +27,7 @@ Contents:
 
    > A build with a possible fix is ready to try. If you're not on the latest release yet, update to it first. Then switch your MGMate image to `pr-123` as described in [this comment](link to the preview comment), use the car as usual for a day, and let me know what the dashboard shows. Afterwards switch back to the latest release. Step by step: [Testing a preview build](https://github.com/ViriatusOG/MGMate/blob/main/documentation/PREVIEW_BUILDS.md#testing-a-preview-build).
 
-5. **Iterate.** Push more commits to the same branch. The `pr-123` tag follows the pull request, so the tester only has to pull again (Unraid: *Force update*; Compose: run the same command again). The footer version ends in `.pr.123`, and the comment shows which commit it is.
+5. **Iterate.** Push more commits to the same branch. The `pr-123` tag follows the pull request, so the tester only has to pull again (Unraid: *Force update*; Compose: run the same command again). The version under Log out ends in `.pr.123`, and the comment shows which commit it is.
 6. **Finish.**
    - **It works:** merge. The images are deleted and the fix reaches everyone through `latest`. Ask the tester to switch back to `latest`.
    - **It does not work:** close the pull request (or just remove the label while you rethink). The images are deleted and nothing else changed.
@@ -93,7 +93,7 @@ On a system where you cannot put a variable in front of the command (PowerShell,
 
 ### Checking that it runs
 
-The version in the footer ends in `.pr.123` (for example `v0.13.2-preview.0.4.pr.123`).
+The version under Log out ends in `.pr.123` (for example `v0.13.2-preview.0.4.pr.123`).
 
 ### Going back
 
@@ -159,7 +159,7 @@ Details worth knowing:
 - **Images per build.** All four: the all-in-one image and the three Compose services. A new push replaces `pr-<number>`; the older build keeps its `pr-<number>-<commit>` tag until the cleanup removes it. Only rebuilding the very same commit (label off and on) leaves the previous build untagged, which costs a little registry space and nothing else.
 - **Concurrency.** The build and the cleanup share the group `preview-<number>`: closing a pull request stops a build that is still pushing before the images are deleted. A newer push cancels the build of the previous one.
 - **Who can trigger it.** Only people who can label pull requests (triage access and up), and only for branches in this repository. A fork's pull request never gets the packages permission.
-- **Update check.** A preview's version is a pre-release of the next patch, so the footer does not offer the current release as an update.
+- **Update check.** A preview's version is a pre-release of the next patch, so the sidebar does not offer the current release as an update.
 - **Trivy and the security workflow** do not scan previews; they scan `latest` after merge as before.
 
 ---
