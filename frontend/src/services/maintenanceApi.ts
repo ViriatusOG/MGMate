@@ -17,6 +17,9 @@ export interface MaintenanceItem {
   daysRemaining: number | null
   kmRemaining: number | null
   createdAt: string
+  /** What the interval counts from: the latest service, the car's first registration, or nothing yet. */
+  countingFrom: 'service' | 'registration' | null
+  countingFromDate: string | null
 }
 
 export interface MaintenanceLogEntry {

@@ -58,7 +58,11 @@ const dueLine = computed(() => {
 })
 
 const lastLine = computed(() => {
-  const { lastServiceDate, lastServiceOdometerKm } = props.item
+  const { lastServiceDate, lastServiceOdometerKm, countingFrom, countingFromDate } = props.item
+  if (countingFrom === 'registration' && countingFromDate)
+    return t('maintenance.countingFromRegistration', {
+      when: formatDate(countingFromDate, { day: 'numeric', month: 'short', year: 'numeric' }),
+    })
   if (!lastServiceDate && lastServiceOdometerKm == null) return t('maintenance.neverDone')
   const parts: string[] = []
   if (lastServiceDate)
@@ -86,7 +90,8 @@ const lastLine = computed(() => {
       <span class="due-card__bar-text" :class="{ 'is-over': bar.over }">{{ bar.text }}</span>
     </span>
     <span v-if="dueLine" class="due-card__meta">{{ dueLine }}</span>
-    <span class="due-card__meta">{{ lastLine }}</span>
+    <span v-if="item.countingFrom" class="due-card__meta">{{ lastLine }}</span>
+    <span v-else class="due-card__start">{{ t('maintenance.noStartPoint') }} →</span>
   </button>
 </template>
 
@@ -154,6 +159,12 @@ const lastLine = computed(() => {
 .due-card__meta {
   font-size: 0.8rem;
   color: var(--color-text-muted);
+}
+
+.due-card__start {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-primary, #3b82f6);
 }
 
 .due-card__bar-row {

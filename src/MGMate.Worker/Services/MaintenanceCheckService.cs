@@ -43,10 +43,7 @@ public class MaintenanceCheckService(
 
             foreach (var item in items)
             {
-                var result = MaintenanceDueCalculator.Calculate(
-                    item.IntervalKm, item.IntervalMonths,
-                    item.LastServiceDate, item.LastServiceOdometerKm,
-                    odometerKm, DateTime.UtcNow);
+                var result = MaintenanceDueCalculator.Calculate(item, vehicle, odometerKm, DateTime.UtcNow);
 
                 var alert = BuildAlert(item, result, strings);
                 if (alert is null) continue;

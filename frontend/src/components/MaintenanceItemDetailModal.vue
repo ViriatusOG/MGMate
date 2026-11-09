@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import DetailModal from './DetailModal.vue'
 import ConfirmFooter from './ConfirmFooter.vue'
 import { useMaintenanceStore } from '@/stores/maintenance'
+import { useWarrantyStore } from '@/stores/warranty'
 import { useVehicleStore } from '@/stores/vehicle'
 import type { MaintenanceItem } from '@/services/maintenanceApi'
 import { dueStatusVariant, formatIntervalSummary } from '@/utils/maintenance'
@@ -26,6 +27,7 @@ const emit = defineEmits<{ (e: 'close'): void; (e: 'edit', item: MaintenanceItem
 
 const { t } = useI18n()
 const store = useMaintenanceStore()
+const warrantyStore = useWarrantyStore()
 const vehicleStore = useVehicleStore()
 const units = useUnits()
 
@@ -38,6 +40,34 @@ const { busy: logSaving, error: logError, run: runLog } = useStoreAction(failure
 const { error: historyError, run: runHistory } = useStoreAction(failure)
 const { busy: deleting, error: deleteError, run: runDelete } = useStoreAction(failure)
 const pendingDelete = ref(false)
+
+// An item with nothing to count from offers the car's first registration first: MG counts the
+// first service from it. A past service is the existing log form.
+const countFrom = ref<'registration' | 'pastService'>('registration')
+const registrationDate = ref('')
+const {
+  busy: startSaving,
+  error: startError,
+  run: runStart,
+} = useStoreAction(() => warrantyStore.actionError)
+const needsStart = computed(() => currentItem.value?.countingFrom == null)
+const showLogForm = computed(() => !needsStart.value || countFrom.value === 'pastService')
+
+async function startFromRegistration() {
+  if (!registrationDate.value) return
+  // Saving the dates replaces all three, so the delivery the car already has must be known.
+  if (!warrantyStore.warranty) await warrantyStore.fetch(props.vin)
+  const current = warrantyStore.warranty
+  // The page reloads the items when the registration date changes: it moves every item
+  // without a service, not only this one.
+  await runStart(() =>
+    warrantyStore.setDates(props.vin, {
+      registrationDate: registrationDate.value,
+      deliveryDate: current?.deliveryDate?.slice(0, 10) ?? null,
+      deliveryOdometerKm: current?.deliveryOdometerKm ?? null,
+    }),
+  )
+}
 // A log entry goes on the second tap: it moves the item's last service back, and there is no undo.
 const { armed: armedEntry, tap: tapEntry } = useTwoTapConfirm<number>()
 
@@ -55,6 +85,9 @@ watch(
     performedAt.value = localDateKey(new Date())
     odometer.load(vehicleStore.currentStatus?.odometerKm ?? null)
     logNotes.value = ''
+    countFrom.value = 'registration'
+    startError.value = null
+    registrationDate.value = warrantyStore.warranty?.registrationDate?.slice(0, 10) ?? ''
     store.fetchLog(props.vin, props.item.id)
   },
 )
@@ -123,7 +156,52 @@ async function confirmDelete() {
         <p v-if="currentItem.notes" class="text-muted text-sm">{{ currentItem.notes }}</p>
       </section>
 
-      <section class="detail-modal__section">
+      <section v-if="needsStart" class="detail-modal__section">
+        <h4 class="detail-modal__section-title">{{ t('maintenance.countFrom.title') }}</h4>
+        <div class="maintenance-count-from" role="radiogroup">
+          <button
+            v-for="option in ['registration', 'pastService'] as const"
+            :key="option"
+            type="button"
+            role="radio"
+            :aria-checked="countFrom === option"
+            class="btn btn-sm"
+            :class="countFrom === option ? 'btn-primary' : 'btn-outline-secondary'"
+            @click="countFrom = option"
+          >
+            {{ t(`maintenance.countFrom.${option}`) }}
+          </button>
+        </div>
+        <form
+          v-if="countFrom === 'registration'"
+          class="form-stack maintenance-log-form"
+          @submit.prevent="startFromRegistration"
+        >
+          <div class="form-group">
+            <label for="count-from-registration">{{
+              t('maintenance.countFrom.registrationDate')
+            }}</label>
+            <input
+              id="count-from-registration"
+              v-model="registrationDate"
+              type="date"
+              class="form-control"
+              required
+            />
+          </div>
+          <p class="text-muted text-xs">{{ t('maintenance.countFrom.hint') }}</p>
+          <p v-if="startError" class="text-danger text-sm" role="alert">{{ startError }}</p>
+          <button
+            type="submit"
+            class="btn btn-primary btn-sm"
+            :disabled="startSaving || !registrationDate"
+          >
+            {{ t('maintenance.countFrom.submit') }}
+          </button>
+        </form>
+      </section>
+
+      <section v-if="showLogForm" class="detail-modal__section">
         <h4 class="detail-modal__section-title">{{ t('maintenance.logService') }}</h4>
         <form class="form-stack maintenance-log-form" @submit.prevent="submitLog">
           <div class="form-row">

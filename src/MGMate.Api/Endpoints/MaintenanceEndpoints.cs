@@ -21,7 +21,7 @@ public static class MaintenanceEndpoints
             var items = await maintenance.ListAsync(vehicle.Id, ct);
             var odometerKm = await telemetry.GetOdometerAtAsync(vehicle.Id, DateTime.UtcNow, ct);
 
-            return Results.Ok(items.Select(m => ToDto(m, odometerKm)));
+            return Results.Ok(items.Select(m => ToDto(m, vehicle, odometerKm)));
         })
         .WithSummary("List maintenance items with computed due status");
 
@@ -46,7 +46,7 @@ public static class MaintenanceEndpoints
                 LastServiceOdometerKm = req.LastServiceOdometerKm,
             }, ct);
 
-            return Results.Ok(await ToDtoAsync(item, telemetry, ct));
+            return Results.Ok(await ToDtoAsync(item, vehicle, telemetry, ct));
         })
         .WithSummary("Create a maintenance item");
 
@@ -68,7 +68,7 @@ public static class MaintenanceEndpoints
             }, ct);
             if (item is null) return Results.NotFound();
 
-            return Results.Ok(await ToDtoAsync(item, telemetry, ct));
+            return Results.Ok(await ToDtoAsync(item, vehicle, telemetry, ct));
         })
         .WithSummary("Update a maintenance item's name, notes and intervals");
 
@@ -106,7 +106,7 @@ public static class MaintenanceEndpoints
             }, ct);
             if (logged is null) return Results.NotFound();
 
-            return Results.Ok(new LogMaintenanceServiceResponse(await ToDtoAsync(logged.Item, telemetry, ct), ToDto(logged.Entry)));
+            return Results.Ok(new LogMaintenanceServiceResponse(await ToDtoAsync(logged.Item, vehicle, telemetry, ct), ToDto(logged.Entry)));
         })
         .WithSummary("Log a completed service, updating the item's baseline");
 
@@ -119,7 +119,7 @@ public static class MaintenanceEndpoints
             var item = await maintenance.DeleteLogEntryAsync(vehicle.Id, id, logId, ct);
             if (item is null) return Results.NotFound();
 
-            return Results.Ok(await ToDtoAsync(item, telemetry, ct));
+            return Results.Ok(await ToDtoAsync(item, vehicle, telemetry, ct));
         })
         .WithSummary("Remove a service log entry, recomputing the item's baseline");
 
@@ -184,15 +184,14 @@ public static class MaintenanceEndpoints
         new(entry.Id, entry.MaintenanceItemId, entry.PerformedAt, entry.OdometerKm, entry.Notes, entry.CreatedAt);
 
     // An item as it stands now: due against the car's current odometer reading.
-    private static async Task<MaintenanceItemDto> ToDtoAsync(MaintenanceItem item, ITelemetryRepository telemetry, CancellationToken ct) =>
-        ToDto(item, await telemetry.GetOdometerAtAsync(item.VehicleId, DateTime.UtcNow, ct));
+    private static async Task<MaintenanceItemDto> ToDtoAsync(
+        MaintenanceItem item, Vehicle vehicle, ITelemetryRepository telemetry, CancellationToken ct) =>
+        ToDto(item, vehicle, await telemetry.GetOdometerAtAsync(item.VehicleId, DateTime.UtcNow, ct));
 
-    private static MaintenanceItemDto ToDto(MaintenanceItem item, double? currentOdometerKm)
+    internal static MaintenanceItemDto ToDto(MaintenanceItem item, Vehicle vehicle, double? currentOdometerKm)
     {
-        var result = MaintenanceDueCalculator.Calculate(
-            item.IntervalKm, item.IntervalMonths,
-            item.LastServiceDate, item.LastServiceOdometerKm,
-            currentOdometerKm, DateTime.UtcNow);
+        var baseline = MaintenanceDueCalculator.BaselineFor(item, vehicle);
+        var result = MaintenanceDueCalculator.Calculate(item, vehicle, currentOdometerKm, DateTime.UtcNow);
 
         var status = result.Status.ApiName();
 
@@ -201,7 +200,8 @@ public static class MaintenanceEndpoints
             item.IntervalKm, item.IntervalMonths,
             item.LastServiceDate, item.LastServiceOdometerKm,
             status, result.NextDueDate, result.NextDueOdometerKm,
-            result.DaysRemaining, result.KmRemaining, item.CreatedAt);
+            result.DaysRemaining, result.KmRemaining, item.CreatedAt,
+            baseline.ApiName, baseline.Source == MaintenanceBaselineSource.None ? null : baseline.Date);
     }
 }
 
@@ -210,7 +210,8 @@ public record MaintenanceItemDto(
     double? IntervalKm, int? IntervalMonths,
     DateTime? LastServiceDate, double? LastServiceOdometerKm,
     string DueStatus, DateTime? NextDueDate, double? NextDueOdometerKm,
-    int? DaysRemaining, double? KmRemaining, DateTime CreatedAt);
+    int? DaysRemaining, double? KmRemaining, DateTime CreatedAt,
+    string? CountingFrom, DateTime? CountingFromDate);
 
 public record CreateMaintenanceItemRequest(
     string Name, string? Notes, double? IntervalKm, int? IntervalMonths,

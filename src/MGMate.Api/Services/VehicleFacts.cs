@@ -64,7 +64,7 @@ public sealed class VehicleFactsService(
             : null;
 
         var odometerKm = await telemetry.GetOdometerAtAsync(vehicle.Id, now, ct);
-        var next = MostUrgent(await maintenance.ListAsync(vehicle.Id, ct), odometerKm, now);
+        var next = MostUrgent(await maintenance.ListAsync(vehicle.Id, ct), vehicle, odometerKm, now);
 
         var trip = await trips.GetLatestAsync(vehicle.Id, now, ct);
 
@@ -85,12 +85,11 @@ public sealed class VehicleFactsService(
     }
 
     // Overdue before due soon before fine; among equals, the one with the fewest days, then the
-    // fewest kilometres, to go. Items that cannot be judged yet (no last service) come last.
+    // fewest kilometres, to go. Items that cannot be judged yet (no last service and no registration date) come last.
     private static (MaintenanceItem Item, MaintenanceDueResult Due)? MostUrgent(
-        IReadOnlyList<MaintenanceItem> items, double? odometerKm, DateTime now) =>
+        IReadOnlyList<MaintenanceItem> items, Vehicle vehicle, double? odometerKm, DateTime now) =>
         items
-            .Select(item => (Item: item, Due: MaintenanceDueCalculator.Calculate(
-                item.IntervalKm, item.IntervalMonths, item.LastServiceDate, item.LastServiceOdometerKm, odometerKm, now)))
+            .Select(item => (Item: item, Due: MaintenanceDueCalculator.Calculate(item, vehicle, odometerKm, now)))
             .OrderByDescending(x => x.Due.Status == MaintenanceDueStatus.Unknown ? -1 : (int)x.Due.Status)
             .ThenBy(x => x.Due.DaysRemaining ?? int.MaxValue)
             .ThenBy(x => x.Due.KmRemaining ?? double.MaxValue)
