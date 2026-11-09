@@ -259,7 +259,7 @@ The `stale` workflow runs every Monday at 08:00 UTC:
 
 ## Versioning (MinVer)
 
-MGMate uses MinVer for .NET assembly version metadata and for the version shown in the UI footer.
+MGMate uses MinVer for .NET assembly version metadata and for the version shown in the sidebar under Log out.
 
 - Source of truth is git history + tags with `v` prefix (e.g. `v1.2.3`)
 - On non-tag commits, MinVer produces prerelease versions using `preview.0` as the identifier (e.g. `0.5.1-preview.0.12`, so `latest` images built from `main` show that instead of the last release)
