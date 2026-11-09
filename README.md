@@ -92,6 +92,7 @@ MGMate is based on [GarageStack](https://github.com/joszz/GarageStack) by Jos Ni
 - **Trip detail** with energy, driving and stopped time, median speed, the battery range used and a GPX download
 - **A car photo** on the overview, and **battery-friendly polling** that only wakes the car when you ask it to
 - **A redesigned overview** with a live charging card, a car status drawing traced from an MG4 seen from above, and small charge level and charging power charts
+- **Warranty tracking** on the Maintenance page, counted from the first registration
 - **Settings as a page**, with your **home location** and its radius, and an **Advanced** switch for a **Debug** page of everything the gateway reports
 - **A clear warning when the MG sign-in fails**, in the sidebar and as a banner, instead of data that silently stops
 - **A redesigned interface** with a grouped sidebar, a phone tab bar, the version and Refresh in the sidebar, and a new icon
@@ -113,7 +114,7 @@ Thanks to Jos for the foundation.
 - [Prerequisites](#prerequisites) and [Installation](#installation)
 - [Updating](#updating), [Monitoring](#monitoring) and [Backup and restore](#backup-and-restore)
 - [Push notifications](#push-notifications)
-- [Trip log](#trip-log), [Climate schedules](#climate-schedules) and [Maintenance](#maintenance)
+- [Trip log](#trip-log), [Climate schedules](#climate-schedules), [Maintenance](#maintenance) and [Warranty](#warranty)
 - [Dutch registration (RDW)](#dutch-registration-rdw)
 - [Homepage dashboard widget](#homepage-dashboard-widget) and [Read-only API tokens](#read-only-api-tokens)
 - [Map overlays](#map-overlays)
@@ -134,6 +135,7 @@ Thanks to Jos for the foundation.
 - **Tyre history** -- Tap a tyre's pressure on the dashboard's car to see a month of daily pressures for all four tyres, and how each one moved against the other three over the last two weeks: a tyre falling behind the others while they hold is a slow puncture, which also sends a notification.
 - **Trip history** -- Browse past journeys on an interactive map, each drawn on the roads it took and coloured by speed or by the speed limit, with a heatmap of the roads you drive most. Each trip is saved to the database a few minutes after the car parks. After upgrading from a version that did not save trips, the existing history is saved in the background on the Worker's first start.
 - **Trip log** -- Mark each trip as business, commute or private (commutes between your home and work are marked automatically), add notes, hide a GPS glitch, join two trips a fuel stop split, and export a month or a year as a spreadsheet with the addresses and odometer readings a tax trip log (such as the Dutch *rittenregistratie*) asks for. See [Trip log](#trip-log).
+- **Warranty** -- On the Maintenance page, every part of the manufacturer's warranty (MG UK's covers to start with, all editable), counted from the first registration, with the time and miles left on each and a warning as one ends. See [Warranty](#warranty).
 - **Maintenance** -- Keep the car's service items (oil, tyres, the yearly inspection, ...) with a distance interval, a time interval or both. MGMate works out from the odometer and your service log when each one is due, shows the most urgent on the dashboard, and sends a notification when an item reaches 90 % of its interval. Log each service with its date, odometer reading and notes.
 - **Dutch registration (RDW)** -- For a car with a Dutch licence plate, a dashboard card with the date the APK runs out and the days left, open recalls with what can go wrong and what the dealer does about it, and whether the car is insured, from the [RDW's open data](https://opendata.rdw.nl). Notifications come for a new recall, the APK a month and a week ahead, and a car with no insurance on record. Off until `RDW_ENABLED=true`; the plate, entered under Settings, is the only thing sent. See [Dutch registration (RDW)](#dutch-registration-rdw).
 - **Energy statistics** -- Track daily energy consumption, efficiency (Wh/km on a plug-in car, L/100 km on a hybrid), fuel use, electric share, average driving speed, and more, for any period from the last 24 hours to several years.
@@ -523,6 +525,16 @@ Commands sent by hand at the same moment as a scheduled run share the car's one 
 - **When it is due.** From the last service you logged and the car's odometer, an item is *OK*, *due soon* once 90 % of its interval has passed, or *overdue*. One without a service logged yet is *not tracked yet*.
 - **Logging a service.** Record the date, the odometer reading (the current one is filled in) and notes. The item's interval starts again from there, and its history is kept.
 - **Where it shows.** The dashboard's maintenance card shows the most urgent item, and so does the [Homepage widget](#homepage-dashboard-widget). A notification comes when an item becomes due soon or overdue (checked every 6 hours, at most once a week per item).
+
+### Warranty
+
+Below the service items, **Warranty** shows when each part of the manufacturer's warranty runs out, so you know what is still covered.
+
+- **Where it starts.** Every cover counts from the car's first registration date, which you set at the top of the section (the date is kept on the car, together with the delivery date and the odometer at delivery).
+- **The covers.** They start as MG UK's warranty statement for electric cars: the vehicle (7 years or 80,000 miles), the high voltage battery (8 years or 100,000 miles, repaired or replaced below 70 % of its capacity), anti-perforation (7 years, any mileage), and shorter covers such as the 12V battery, the charging cable and wear items. **Edit warranty** changes, adds or removes covers, or resets them to MG's list.
+- **When it ends.** A cover ends at its time limit or its mileage limit, whichever comes first, counted on the total odometer. Each one is *active*, *ending soon* (in its last 30 days or last 10 % of its miles), *expired* or *not covered*. The main covers are shown as cards with what is left, the rest as a table (a list on a phone), soonest first.
+
+![The Maintenance page: service items with their due bars, and the Warranty section starting from the first registration, with cards for the vehicle, high voltage battery and anti-perforation covers and a table of the shorter ones](documentation/screenshots/desktop-maintenance.webp)
 
 ---
 
