@@ -112,7 +112,7 @@ function searchTexts(charge: ChargeSession): (string | null)[] {
     charge.notes,
     charge.chargeType,
     charge.stopReason,
-    t(`charges.places.${chargePlace(charge, placesStore.places)}`),
+    t(`charges.places.${chargePlace(charge, placesStore.chargePlaces)}`),
   ]
 }
 
@@ -161,7 +161,7 @@ const searchSummary = computed(() => {
 
 function costOf(charge: ChargeSession): ChargeCost | null {
   const kwh = billedKwh(charge, capacityKwh.value)
-  return chargeCost(charge, kwh, uiSettings.tariff, placesStore.places)
+  return chargeCost(charge, kwh, uiSettings.tariff, placesStore.chargePlaces)
 }
 
 function money(amount: number): string {
@@ -177,7 +177,7 @@ const spend = computed(() => {
   let away = 0
   for (const c of listedCharges.value) {
     if (c.isHidden) continue
-    if (chargePlace(c, placesStore.places) === 'home') home++
+    if (chargePlace(c, placesStore.chargePlaces) === 'home') home++
     else away++
     const cost = costOf(c)
     const energy = billedKwh(c, capacityKwh.value)
@@ -402,7 +402,7 @@ function kwhOf(charge: ChargeSession): number | null {
 }
 
 function placeOf(charge: ChargeSession): 'home' | 'work' | 'public' {
-  return chargePlace(charge, placesStore.places)
+  return chargePlace(charge, placesStore.chargePlaces)
 }
 
 function socChange(charge: ChargeSession): string | null {
@@ -890,7 +890,7 @@ const monthStats = computed(() => {
                               {{
                                 t('charges.placeAuto', {
                                   place: t(
-                                    `charges.places.${chargePlace({ ...charge, place: null }, placesStore.places)}`,
+                                    `charges.places.${chargePlace({ ...charge, place: null }, placesStore.chargePlaces)}`,
                                   ),
                                 })
                               }}

@@ -23,6 +23,10 @@ public static class ChargeSegmenter
     // An MG's on-board charger tops out at 11 kW; anything clearly above it is a DC charger.
     internal const double DcPowerThresholdKw = 12.5;
 
+    // No AC supply charges faster than 22 kW (three-phase 32 A). A higher reading on an AC charge is
+    // the car drawing on the battery while plugged in, such as pre-heating, not charging power.
+    internal const double AcMaxPowerKw = 22;
+
     /// <param name="samples">Readings oldest first.</param>
     /// <param name="horizon">The time up to which readings are known to be complete.</param>
     public static ChargeSegmentation Segment(IReadOnlyList<ChargeSample> samples, DateTime horizon)
@@ -85,14 +89,10 @@ public static class ChargeSegmenter
                        ?? charging.Select(s => s.SocPercent).FirstOrDefault(v => v is not null);
         var socEnd = tail.Select(s => s.SocPercent).LastOrDefault(v => v is not null);
 
+        var chargeType = ChargeTypeOf(charging);
+        charging = ChargingPower(charging, chargeType);
         var powers = charging.Where(s => s.PowerKw is not null).Select(s => Math.Abs(s.PowerKw!.Value)).ToList();
         double? maxPower = powers.Count > 0 ? powers.Max() : null;
-
-        var type = charging.Select(s => s.ChargingType).LastOrDefault(t => !string.IsNullOrWhiteSpace(t));
-        string? chargeType = type is not null && type.Contains("DC", StringComparison.OrdinalIgnoreCase) ? "DC"
-            : maxPower > DcPowerThresholdKw ? "DC"
-            : maxPower is not null || type is not null ? "AC"
-            : null;
 
         var where = run.LastOrDefault(s => s.Latitude is not null && s.Longitude is not null && s.RecordedAt <= endedAt);
 
@@ -113,6 +113,36 @@ public static class ChargeSegmenter
             SocTargetPercent = run.Select(s => s.SocTargetPercent).LastOrDefault(v => v is not null),
         };
     }
+
+    /// <summary>
+    /// "AC" or "DC": the charging type the car reports, else from the typical power while charging.
+    /// The typical (median) power rather than the highest, so a moment of the car drawing hard on
+    /// the battery, as pre-heating does, does not make a home charge a rapid one.
+    /// </summary>
+    public static string? ChargeTypeOf(IReadOnlyList<ChargeSample> charging)
+    {
+        var type = charging.Select(s => s.ChargingType).LastOrDefault(t => !string.IsNullOrWhiteSpace(t));
+        if (type is not null && type.Contains("DC", StringComparison.OrdinalIgnoreCase)) return "DC";
+        var powers = charging.Where(s => s.PowerKw is not null).Select(s => Math.Abs(s.PowerKw!.Value)).Order().ToList();
+        if (powers.Count > 0 && type is null && powers[powers.Count / 2] > DcPowerThresholdKw) return "DC";
+        return powers.Count > 0 || type is not null ? "AC" : null;
+    }
+
+    /// <summary>
+    /// The charging readings with any power that cannot be charging power left out (null): readings
+    /// of the other sign than most of the charge, which is the battery being drawn on rather than
+    /// filled, and on an AC charge anything an AC supply cannot deliver. The readings themselves stay
+    /// saved as reported; only what the charge's figures and chart are worked out from changes.
+    /// </summary>
+    public static List<ChargeSample> ChargingPower(IReadOnlyList<ChargeSample> charging, string? chargeType)
+    {
+        var signs = charging.Where(s => s.PowerKw is { } p && p != 0).Sum(s => Math.Sign(s.PowerKw!.Value));
+        return [.. charging.Select(s => s.PowerKw is { } p && !IsChargingPower(p, signs, chargeType) ? s with { PowerKw = null } : s)];
+    }
+
+    private static bool IsChargingPower(double powerKw, int signs, string? chargeType) =>
+        !(signs != 0 && powerKw != 0 && Math.Sign(powerKw) != Math.Sign(signs))
+        && !(chargeType == "AC" && Math.Abs(powerKw) > AcMaxPowerKw);
 
     // An on-board charger turns at least this share of its input into battery energy, and never all
     // of it: a figure outside the range is the wrong phase guess or a broken reading.

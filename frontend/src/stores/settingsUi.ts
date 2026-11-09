@@ -68,6 +68,8 @@ interface UiSettings {
   batteryPackKwh: number | null
   /** Settings > Advanced: whether the menu offers the Debug page. */
   showDebugPage: boolean
+  /** Settings > Home location: charges inside the home place count as home unless set by hand. */
+  autoHomeCharges: boolean
 }
 
 function defaultsFor(): UiSettings {
@@ -90,6 +92,7 @@ function defaultsFor(): UiSettings {
     tariff: null,
     batteryPackKwh: null,
     showDebugPage: false,
+    autoHomeCharges: true,
   }
 }
 
@@ -190,6 +193,7 @@ function parseUiFields(parsed: Record<string, unknown>, fallback: UiSettings): U
         ? parsed.batteryPackKwh
         : null,
     showDebugPage: parsed.showDebugPage === true,
+    autoHomeCharges: parsed.autoHomeCharges !== false,
   }
 }
 

@@ -120,4 +120,34 @@ public class ChargeSegmenterTests
 
         Assert.Equal(7.0 * 10 / 60, charge.EnergyAddedKwh!.Value, 2);
     }
+
+    // Pre-heating while still plugged in on a home charger: the battery reading jumps far past what
+    // any AC supply delivers, and the other way round. Neither is the charge's power.
+    [Fact]
+    public void PreHeatingOnAnAcCharge_IsNotItsPeak()
+    {
+        var samples = new[]
+        {
+            S(0, true, soc: 33, powerKw: -5.5),
+            S(10, true, soc: 35, powerKw: -5.5),
+            S(20, true, soc: 37, powerKw: -40),
+            S(30, true, soc: 39, powerKw: 6),
+            S(40, true, soc: 41, powerKw: -5.4),
+        };
+
+        var charge = Assert.Single(ChargeSegmenter.Segment(samples, T0.AddHours(3)).Closed);
+
+        Assert.Equal("AC", charge.ChargeType);
+        Assert.Equal(5.5, charge.MaxPowerKw);
+        // The two readings left out leave a gap too long to integrate across: only 0-10 minutes count.
+        Assert.Equal(5.5 * 10 / 60, charge.EnergyAddedKwh!.Value, 2);
+    }
+
+    [Fact]
+    public void ADcCharge_KeepsItsHighPower()
+    {
+        var samples = new[] { S(0, true, powerKw: -90, type: "DC"), S(10, true, powerKw: -85) };
+
+        Assert.Equal(90, ChargeSegmenter.Segment(samples, T0.AddHours(1)).Closed[0].MaxPowerKw);
+    }
 }

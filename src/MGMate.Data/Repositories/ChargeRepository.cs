@@ -72,10 +72,24 @@ public class ChargeRepository(AppDbContext db, ITelemetryRepository telemetry) :
         // A little either side, so the chart shows the level it started from and where it ended.
         var samples = await telemetry.GetChargeSamplesAsync(
             vehicleId, session.StartedAt.AddMinutes(-5), session.EndedAt + ChargeSegmenter.PauseThreshold, ct);
-        var points = samples
-            .Where(s => s.PowerKw is not null || s.SocPercent is not null)
-            .Select(s => new ChargeChartPoint(s.RecordedAt, s.PowerKw is { } p ? Math.Abs(p) : null, s.SocPercent, s.OutsideTemperature))
-            .ToList();
+        // Power is charging power: only readings while the car charged, less what cannot be charging
+        // (the car pre-heating on the battery while still plugged in). Before and after the charge,
+        // and in a pause, nothing went in, whatever the battery itself was doing.
+        bool InCharge(ChargeSample s) =>
+            s.RecordedAt >= session.StartedAt && s.RecordedAt <= session.EndedAt && s.IsCharging != false;
+        var inCharge = samples.Where(InCharge).ToList();
+        var chargingPower = new Queue<ChargeSample>(
+            ChargeSegmenter.ChargingPower(inCharge, session.ChargeType ?? ChargeSegmenter.ChargeTypeOf(inCharge)));
+
+        var points = new List<ChargeChartPoint>();
+        foreach (var s in samples)
+        {
+            // In step with inCharge, which keeps the samples' order.
+            var power = InCharge(s) ? chargingPower.Dequeue().PowerKw is { } p ? Math.Abs(p) : (double?)null
+                : s.PowerKw is null ? null : 0;
+            if (s.PowerKw is not null || s.SocPercent is not null)
+                points.Add(new ChargeChartPoint(s.RecordedAt, power, s.SocPercent, s.OutsideTemperature));
+        }
         if (points.Count <= MaxChartPoints) return points;
 
         var step = (double)points.Count / MaxChartPoints;

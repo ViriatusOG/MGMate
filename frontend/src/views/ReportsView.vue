@@ -110,7 +110,7 @@ const reports = computed(() =>
         charge,
         billedKwh(charge, capacityKwh.value),
         uiSettings.tariff,
-        placesStore.places,
+        placesStore.chargePlaces,
       )?.amount ?? null,
   }),
 )
