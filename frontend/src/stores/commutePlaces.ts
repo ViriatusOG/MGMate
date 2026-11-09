@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useUiSettingsStore } from '@/stores/settingsUi'
 import { useLoadingTracker } from '@/composables/useLoadingTracker'
 import {
   commutePlacesApi,
@@ -13,6 +14,10 @@ export const useCommutePlacesStore = defineStore('commutePlaces', () => {
   const { loading, withLoading } = useLoadingTracker()
   const loadError = ref<Error | null>(null)
   const actionError = ref<Error | null>(null)
+  const uiSettings = useUiSettingsStore()
+
+  /** The places a charge's place is told from: none when Settings turns home charges off. */
+  const chargePlaces = computed(() => (uiSettings.autoHomeCharges ? places.value : []))
 
   async function fetchPlaces(vin: string) {
     await withLoading(loadError, async () => {
@@ -50,5 +55,14 @@ export const useCommutePlacesStore = defineStore('commutePlaces', () => {
     return change
   }
 
-  return { places, loading, loadError, actionError, fetchPlaces, savePlace, removePlace }
+  return {
+    places,
+    chargePlaces,
+    loading,
+    loadError,
+    actionError,
+    fetchPlaces,
+    savePlace,
+    removePlace,
+  }
 })

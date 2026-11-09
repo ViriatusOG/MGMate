@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useCommutePlacesStore } from '@/stores/commutePlaces'
+import { useUiSettingsStore } from '@/stores/settingsUi'
 import { commutePlaceAt } from '@/utils/commutePlaces'
 import type { CommutePlace, CommutePlaceChange } from '@/services/commutePlacesApi'
 
@@ -74,6 +75,19 @@ describe('useCommutePlacesStore', () => {
 
     expect(change?.cleared).toBe(2)
     expect(store.places).toEqual([home])
+  })
+})
+
+describe('chargePlaces', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('offers the places to tell charges by, unless Settings turns home charges off', () => {
+    const store = useCommutePlacesStore()
+    store.places = [home, work]
+    expect(store.chargePlaces).toEqual([home, work])
+
+    useUiSettingsStore().autoHomeCharges = false
+    expect(store.chargePlaces).toEqual([])
   })
 })
 

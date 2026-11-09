@@ -135,12 +135,12 @@ const rows = computed(() => {
   const c = charge.value
   if (!c) return []
   const energy = chargeEnergy(c, capacityKwh.value)
-  const place = chargePlace(c, places.places)
+  const place = chargePlace(c, places.chargePlaces)
   const cost = chargeCost(
     c,
     c.chargerEnergyKwh ?? energy?.kwh ?? null,
     uiSettings.tariff,
-    places.places,
+    places.chargePlaces,
   )
   const soc =
     c.socStartPercent !== null && c.socEndPercent !== null

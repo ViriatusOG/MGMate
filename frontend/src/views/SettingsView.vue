@@ -17,6 +17,7 @@ import VehicleTypeSetting from '@/components/settings/VehicleTypeSetting.vue'
 import LicensePlateSetting from '@/components/settings/LicensePlateSetting.vue'
 import NotificationTypeSettings from '@/components/settings/NotificationTypeSettings.vue'
 import ApiTokenSettings from '@/components/settings/ApiTokenSettings.vue'
+import HomeLocationSetting from '@/components/settings/HomeLocationSetting.vue'
 import { apiUrl } from '@/services/apiCore'
 
 // Every setting on one page, in cards: a section list beside them on a wide screen, one column on
@@ -55,6 +56,7 @@ const sections = computed(() => [
   { id: 'overview', title: t('settings.dashboard.title') },
   { id: 'map', title: t('settings.map.title') },
   { id: 'car', title: t('settings.yourCar') },
+  { id: 'home', title: t('settings.home.title') },
   { id: 'notifications', title: t('settings.notificationTypes.title') },
   { id: 'tokens', title: t('settings.apiTokens.title') },
   { id: 'export', title: t('settings.export.title') },
@@ -161,6 +163,11 @@ function jumpTo(id: string) {
             <h3 class="settings-card__subtitle">{{ t('settings.licensePlate.title') }}</h3>
             <LicensePlateSetting />
           </div>
+        </section>
+
+        <section id="settings-home" class="settings-card">
+          <h2 class="settings-card__title">{{ t('settings.home.title') }}</h2>
+          <HomeLocationSetting />
         </section>
 
         <section id="settings-notifications" class="settings-card">
