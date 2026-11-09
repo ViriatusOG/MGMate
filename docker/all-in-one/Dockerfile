@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ── Stage 1: Build frontend ───────────────────────────────────────────────────
-FROM node:26-alpine AS frontend-build
+FROM node:26-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS frontend-build
 WORKDIR /app
 # OS_PATCH_DATE busts the layer cache so apk upgrade actually re-runs instead of
 # reusing a stale cached layer from before an OS package fix was published.
@@ -37,7 +37,7 @@ ENV VITE_MAP_STYLE_COLORFUL=$MAP_STYLE_COLORFUL
 RUN pnpm run build
 
 # ── Stage 2: Build .NET API and Worker ────────────────────────────────────────
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dotnet-build
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e AS dotnet-build
 WORKDIR /src
 ARG APP_VERSION=0.0.0-local
 # Shared build settings (target framework, analyzers) and central package versions. MSBuild
@@ -72,12 +72,12 @@ RUN printf '%s\n' "${RELEASE_VERSION:-unknown}" > /tmp/release-version
 # image, the one the separate API image runs on. Trixie replaced gnupg with sqv for apt signature
 # verification, and sqv rejects SHA1-signed keys (policy change since 2026-02-01), which breaks
 # the Microsoft apt repo. Copying also needs no install script fetched and run at build time.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS dotnet-runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:1a48394b6f29d3a32c79d9edecd4abda0ecbe8776d567dbfc4590ed6979c740c AS dotnet-runtime
 
 # ── Stage 5: Final all-in-one runtime image ───────────────────────────────────
 # python:3.14-slim is Debian trixie (13) -- the same base the saic gateway uses,
 # so the copied venv's Python symlinks resolve correctly.
-FROM python:3.14-slim
+FROM python:3.14-slim@sha256:9aaa474097d094040649f2162a627c0049b408f52138d980916788d80f04802f
 
 ARG DEBIAN_FRONTEND=noninteractive
 
