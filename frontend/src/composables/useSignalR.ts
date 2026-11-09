@@ -14,7 +14,19 @@ export interface SignalRCallbacks {
    * is the moment to read the live state again.
    */
   onReconnected?: () => void
+  /**
+   * Called every {@link CATCH_UP_INTERVAL_MS} for as long as the connection is down, while the
+   * page is visible, so the page can read the live state over plain HTTP until pushes resume.
+   */
+  onCatchUp?: () => void
 }
+
+/**
+ * How often {@link SignalRCallbacks.onCatchUp} runs while live updates are down. It only reads
+ * what the server already stored, so it never wakes the car, and it stops as soon as the
+ * connection is back.
+ */
+export const CATCH_UP_INTERVAL_MS = 60_000
 
 // Backoff between reconnect attempts, reused for both the automatic reconnect and our own
 // restart loop. The last entry repeats for as long as the server stays unreachable.
@@ -44,15 +56,17 @@ function loadClient(): Promise<SignalRClient> {
  * Owns the SignalR connection to the `/hubs/telemetry` hub: connecting, joining the given
  * vehicle's group, reconnection, and dispatching the four server-pushed events (telemetry,
  * notifications, trip-completed, command results) to caller-supplied callbacks. This is the app's only real-time
- * channel - there is no REST-polling fallback, so it keeps retrying indefinitely rather than
- * giving up: SignalR's default policy stops after a handful of attempts, which left the
- * dashboard stale until a manual reload after something as ordinary as an API restart.
+ * channel, so it keeps retrying indefinitely rather than giving up: SignalR's default policy
+ * stops after a handful of attempts, which left the dashboard stale until a manual reload after
+ * something as ordinary as an API restart. While it is down, `onCatchUp` runs once a minute so a
+ * flaky mobile connection still sees fresh data.
  */
 export function useSignalR(callbacks: SignalRCallbacks) {
   const connected = ref(false)
   let connection: HubConnection | null = null
   let restartTimer: ReturnType<typeof setTimeout> | null = null
   let restartAttempt = 0
+  let catchUpTimer: ReturnType<typeof setInterval> | null = null
   // Set by stop() so a pending retry does not resurrect a connection the caller ended.
   let stopped = false
   // Bumped by every start() and stop(), so an attempt still waiting for the client library can
@@ -68,6 +82,23 @@ export function useSignalR(callbacks: SignalRCallbacks) {
     if (restartTimer !== null) {
       clearTimeout(restartTimer)
       restartTimer = null
+    }
+  }
+
+  // Runs from start() to stop(); a tick does nothing while the connection is up.
+  function startCatchUp() {
+    if (catchUpTimer !== null || !callbacks.onCatchUp) return
+    catchUpTimer = setInterval(() => {
+      if (stopped || connected.value) return
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+      callbacks.onCatchUp?.()
+    }, CATCH_UP_INTERVAL_MS)
+  }
+
+  function stopCatchUp() {
+    if (catchUpTimer !== null) {
+      clearInterval(catchUpTimer)
+      catchUpTimer = null
     }
   }
 
@@ -162,6 +193,7 @@ export function useSignalR(callbacks: SignalRCallbacks) {
     stopped = false
     restartAttempt = 0
     hasConnected = false
+    startCatchUp()
     await openConnection(vehicleId)
   }
 
@@ -169,6 +201,7 @@ export function useSignalR(callbacks: SignalRCallbacks) {
     stopped = true
     session += 1
     clearRestartTimer()
+    stopCatchUp()
     if (connection) {
       const closing = connection
       connection = null
