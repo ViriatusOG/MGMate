@@ -7,8 +7,10 @@ import type { HourCycle, Region } from '@/utils/region'
  * The Intl locale behind an interface language when no region is known: the interface language
  * names only a language, and Intl needs a region to pick a date order.
  */
+const LANGUAGE_LOCALES: Record<Locale, string> = { en: 'en-US' }
+
 function languageLocale(locale: Locale): string {
-  return locale === 'nl' ? 'nl-NL' : 'en-US'
+  return LANGUAGE_LOCALES[locale] ?? 'en-US'
 }
 
 // Read through the i18n instance's reactive locale, so a computed or template that formats a

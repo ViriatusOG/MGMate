@@ -32,13 +32,6 @@ describe('format', () => {
     expect(formatNumber(24852.4, 0)).toBe('24852')
   })
 
-  it('writes numbers the Dutch way in Dutch', () => {
-    i18n.global.locale.value = 'nl'
-
-    expect(formatNumber(12.345)).toBe('12,3')
-    expect(formatNumber(24852.4, 0, true)).toBe('24.852')
-  })
-
   it('keeps numbers in the interface language wherever the browser is', () => {
     setRegionalFormat({ region: 'NL', hourCycle: 'h23' })
 
@@ -49,10 +42,6 @@ describe('format', () => {
   it('writes dates in the interface language and times on a 24-hour clock by default', () => {
     expect(formatDate(moment, { month: 'long' })).toBe('September')
     expect(formatTime(moment)).toBe('14:05')
-
-    i18n.global.locale.value = 'nl'
-    expect(formatDate(moment, { month: 'long' })).toBe('september')
-    expect(formatTime(moment)).toBe('14:05')
   })
 
   it('writes the date in the order of the region', () => {
@@ -62,19 +51,11 @@ describe('format', () => {
 
     setRegionalFormat({ region: 'US', hourCycle: 'h12' })
     expect(formatDate(moment)).toBe('9/26/2026')
-
-    i18n.global.locale.value = 'nl'
-    setRegionalFormat({ region: 'NL', hourCycle: 'h23' })
-    expect(formatDate(moment)).toBe('26-9-2026')
   })
 
-  it('falls back to international English, or the language itself, for a pair Intl lacks', () => {
+  it('falls back to international English for a region Intl lacks', () => {
     setRegionalFormat({ region: 'AQ', hourCycle: 'h23' })
     expect(formatDate(moment)).toBe('26/09/2026')
-
-    i18n.global.locale.value = 'nl'
-    setRegionalFormat({ region: 'US', hourCycle: 'h23' })
-    expect(formatDate(moment)).toBe('26-9-2026')
   })
 
   it('shows every time on a 12-hour clock without a leading zero when that is chosen', () => {
@@ -113,8 +94,5 @@ describe('format', () => {
 
   it('names the halves of the day in the interface language', () => {
     expect(dayPeriodNames()).toEqual({ am: 'AM', pm: 'PM' })
-
-    i18n.global.locale.value = 'nl'
-    expect(dayPeriodNames()).toEqual({ am: 'a.m.', pm: 'p.m.' })
   })
 })

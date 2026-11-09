@@ -74,18 +74,7 @@ describe('tripLogCsv', () => {
     expect(row!.split(',').slice(7, 10)).toEqual(['14919.1', '14945.5', '26.4'])
   })
 
-  it('follows Dutch spreadsheet conventions in Dutch', () => {
-    i18n.global.locale.value = 'nl'
-    setRegionalFormat({ region: 'NL', hourCycle: 'h23' })
-    const [, row] = lines(tripLogCsv([entry], { t, units, placesShown: true }))
-
-    expect(row).toBe(
-      '24-9-2026;14:32;15:06;Grote Markt 1, 8011 PK Zwolle;Brink 2, 7411 BT Deventer;24010;24052,5;42,5;tripLog.purpose.business;Client visit',
-    )
-  })
-
   it('writes coordinates when place names are switched off, and a blank for no purpose', () => {
-    i18n.global.locale.value = 'nl'
     const [, row] = lines(
       tripLogCsv([{ ...entry, purpose: null, notes: null }], {
         t,
@@ -95,7 +84,7 @@ describe('tripLogCsv', () => {
     )
 
     expect(row).toBe(
-      '24-9-2026;14:32;15:06;52.51230, 6.09210;52.25540, 6.16390;24010;24052,5;42,5;;',
+      '9/24/2026,14:32,15:06,"52.51230, 6.09210","52.25540, 6.16390",24010,24052.5,42.5,,',
     )
   })
 

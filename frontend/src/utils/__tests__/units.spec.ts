@@ -1,8 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import en from '@/locales/en.json'
-import nl from '@/locales/nl.json'
-import { i18n as appI18n } from '@/i18n'
 import {
   AUTO_UNITS,
   DISTANCE_UNITS,
@@ -19,7 +17,7 @@ import {
   type UnitPreferences,
 } from '../units'
 
-const i18n = createI18n({ legacy: false, locale: 'en', messages: { en, nl } })
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en } })
 const t = (key: string) => i18n.global.t(key)
 
 function formatter(preferences: Partial<UnitPreferences> = {}) {
@@ -128,19 +126,8 @@ describe('UnitFormatter', () => {
     expect(units.format('distance', 123_456.7, ODOMETER_FORMAT)).toBe('123,457 km')
   })
 
-  it('writes numbers the way the interface language does', () => {
-    const units = formatter()
-    appI18n.global.locale.value = 'nl'
-    try {
-      expect(units.format('speed', 57.26, { decimals: 1 })).toBe('57,3 km/h')
-      expect(units.format('distance', 123_456.7, ODOMETER_FORMAT)).toBe('123.457 km')
-    } finally {
-      appI18n.global.locale.value = 'en'
-    }
-  })
-
   it('has a translated symbol for every unit a browser can choose, in every language', () => {
-    for (const locale of ['en', 'nl'] as const) {
+    for (const locale of i18n.global.availableLocales) {
       i18n.global.locale.value = locale
       for (const distance of DISTANCE_UNITS)
         for (const temperature of TEMPERATURE_UNITS)
@@ -166,7 +153,7 @@ describe('UnitFormatter', () => {
       ...FUEL_CONSUMPTION_UNITS,
       ...ENERGY_EFFICIENCY_UNITS,
     ]
-    for (const messages of [en, nl])
+    for (const messages of [en])
       expect(Object.keys(messages.settings.units.options).sort()).toEqual([...units].sort())
   })
 })

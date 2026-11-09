@@ -51,16 +51,16 @@ To work against the full stack (real or self-provided credentials):
 
 ## Adding a language
 
-MGMate ships in English and Dutch. A new language touches these places (use its two-letter code, here `de`):
+MGMate ships in English only (the Dutch translation was removed). The translation structure is kept, so a fork can add its own language. A new language touches these places (use its two-letter code, here `de`):
 
 - **Interface:** copy `frontend/src/locales/en.json` to `de.json` and translate the values; keys and `{placeholders}` stay as they are. English is the fallback for any key a language lacks.
-- **Language list:** add `'de'` to the `Locale` type in `frontend/src/stores/settingsShared.ts` (and to its browser-language guess just below it), a loader to `loadMessages` in `frontend/src/i18n.ts` (each language is a chunk fetched when first chosen), and its number and date locale in `frontend/src/utils/format.ts`.
-- **Language setting:** Settings > Language is a two-way switch with flags (`frontend/src/components/settings/SettingsModal.vue`). A third language turns it into a choice of several.
+- **Language list:** add `'de'` to the `Locale` type in `frontend/src/stores/settingsShared.ts` (and to its browser-language guess `browserLocale` just below it), to `LOCALES` in `frontend/src/stores/settingsUi.ts`, a loader to `loadMessages` in `frontend/src/i18n.ts` (each language is a chunk fetched when first chosen), and its number and date locale to `LANGUAGE_LOCALES` in `frontend/src/utils/format.ts`.
+- **Language setting:** there is no language control while only English ships. Add one to the Appearance card in `frontend/src/views/SettingsView.vue` that sets `settings.locale`; the rest (loading the messages, the page's `lang`, number and date formats, map labels, place names, saving to the account) already follows that setting.
 - **Notifications:** copy `src/MGMate.Worker/Resources/NotificationStrings.resx` to `NotificationStrings.de.resx`. `NOTIFICATION_LANGUAGE=de` then picks it; document the value in `documentation/CONFIGURATION.md`.
 - **Homepage widget and API:** copy `src/MGMate.Api/Resources/WidgetStrings.resx` to `WidgetStrings.de.resx`, and add the culture to `SupportedCultures` and `SupportedUICultures` in `src/MGMate.Api/Program.cs`.
 - **Place names:** add the code to `GeocodeDefaults.SupportedLanguages` in `src/MGMate.Core/Configuration` so addresses come back in that language.
 
-`en.json` and `nl.json` hold the same keys; keep that true for the new file, since a missing key falls back to English silently.
+Keep the new file's keys the same as `en.json`'s, since a missing key falls back to English silently.
 
 ## Commit Style
 

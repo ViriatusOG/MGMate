@@ -77,7 +77,7 @@ The full guide, with provider examples, is [`AUTHENTICATION.md`](AUTHENTICATION.
 | --- | --- | --- |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | none | Web Push keys, generated once with `npx web-push generate-vapid-keys`. Without both, push stays off and notifications only reach the bell in the app. |
 | `VAPID_SUBJECT` | `CORS_ORIGIN` when it is https, otherwise `mailto:admin@mgmate.local` | The contact sent to the push services (Google, Mozilla, Apple) with every notification: `mailto:you@example.com` or an https URL. |
-| `NOTIFICATION_LANGUAGE` | `en` | Language of the notification texts: `en` or `nl`. The Worker writes them and has no browser to ask. |
+| `NOTIFICATION_LANGUAGE` | `en` | Language of the notification texts. MGMate ships `en` only; a fork that adds `NotificationStrings.<code>.resx` can set its code here. The Worker writes them and has no browser to ask. |
 
 ## Map and place names
 

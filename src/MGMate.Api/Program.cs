@@ -153,8 +153,9 @@ try
     app.UseRequestLocalization(new RequestLocalizationOptions
     {
         DefaultRequestCulture = new RequestCulture("en"),
-        SupportedCultures = [new CultureInfo("en"), new CultureInfo("nl")],
-        SupportedUICultures = [new CultureInfo("en"), new CultureInfo("nl")],
+        // English only; a fork that adds a WidgetStrings.<code>.resx lists its culture here too.
+        SupportedCultures = [new CultureInfo("en")],
+        SupportedUICultures = [new CultureInfo("en")],
     });
     app.UseAuthentication();
     app.UseMiddleware<ApiTokenAuthentication.ReadOnlyMiddleware>();

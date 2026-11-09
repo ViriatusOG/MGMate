@@ -3,8 +3,6 @@ import '@/assets/settingsPage.css'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import gbFlag from 'flag-icons/flags/4x3/gb.svg'
-import nlFlag from 'flag-icons/flags/4x3/nl.svg'
 import { useUiSettingsStore } from '@/stores/settingsUi'
 import { useRdwStore } from '@/stores/rdw'
 import { useVehicleStore } from '@/stores/vehicle'
@@ -40,13 +38,6 @@ const isLightTheme = computed({
   get: () => settings.theme === 'light',
   set: (val: boolean) => {
     settings.theme = val ? 'light' : 'dark'
-  },
-})
-
-const isNL = computed({
-  get: () => settings.locale === 'nl',
-  set: (val: boolean) => {
-    settings.locale = val ? 'nl' : 'en'
   },
 })
 
@@ -97,19 +88,6 @@ function jumpTo(id: string) {
             >
               <template #off><font-awesome-icon icon="moon" /></template>
               <template #on><font-awesome-icon icon="sun" /></template>
-            </SideIconSwitch>
-            <SideIconSwitch
-              v-model="isNL"
-              :label="isNL ? 'Nederlands' : 'English'"
-              :desc="t('settings.language.title')"
-              input-id="settings-toggle-lang"
-            >
-              <template #off>
-                <img :src="gbFlag" alt="English" class="settings-toggle__flag" />
-              </template>
-              <template #on>
-                <img :src="nlFlag" alt="Nederlands" class="settings-toggle__flag" />
-              </template>
             </SideIconSwitch>
           </div>
         </section>

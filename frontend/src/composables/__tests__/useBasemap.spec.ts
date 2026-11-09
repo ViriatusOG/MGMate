@@ -3,6 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { defineComponent, h, shallowRef, nextTick } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import type { LeafletMap } from '@/utils/leaflet'
+import type { Locale } from '@/stores/settingsShared'
 
 // Leaflet and MapLibre are both stubbed: this suite is about which basemap ends up on the map
 // and what happens to it when the theme, the map or the component changes - not about rendering.
@@ -305,13 +306,14 @@ describe('useBasemap', () => {
     await mountBasemap(fakeMap())
 
     const ui = await uiStore()
-    ui.locale = 'nl'
+    // A language a fork adds; English is the only one shipped.
+    ui.locale = 'de' as Locale
     await flushPromises()
 
     const style = setStyle.mock.calls[0]![0] as { layers: { layout: Record<string, unknown> }[] }
     expect(style.layers[0]!.layout['text-field']).toEqual([
       'coalesce',
-      ['get', 'name:nl'],
+      ['get', 'name:de'],
       DARK_LABEL,
     ])
   })

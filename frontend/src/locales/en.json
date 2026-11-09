@@ -562,9 +562,6 @@
       "dark": "Dark mode",
       "lightDesc": "Switch between dark and light theme"
     },
-    "language": {
-      "title": "Language"
-    },
     "cards": {
       "fuelLevel": "Fuel Level",
       "fuelRange": "Fuel Range",

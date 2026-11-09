@@ -4,7 +4,6 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import en from '@/locales/en.json'
-import nl from '@/locales/nl.json'
 import type { TripLogEntry } from '@/services/tripLogApi'
 import type { DailyStat } from '@/services/vehicleApi'
 import type { VehicleType } from '@/stores/vehicle'
@@ -35,8 +34,8 @@ function bucket(key: string, days: DailyStat[]): StatsBucket {
   return { key, start: new Date(`${key}T00:00:00`), days }
 }
 
-function chartsFor(type: VehicleType, buckets: StatsBucket[] = [], locale: 'en' | 'nl' = 'en') {
-  const i18n = createI18n({ legacy: false, locale, messages: { en, nl } })
+function chartsFor(type: VehicleType, buckets: StatsBucket[] = []) {
+  const i18n = createI18n({ legacy: false, locale: 'en', messages: { en } })
   const result: { charts: ReturnType<typeof useStatisticsCharts> | null } = { charts: null }
   mount(
     defineComponent({
@@ -50,13 +49,8 @@ function chartsFor(type: VehicleType, buckets: StatsBucket[] = [], locale: 'en' 
   return result.charts!.value
 }
 
-function chart(
-  type: VehicleType,
-  id: string,
-  buckets: StatsBucket[] = [],
-  locale: 'en' | 'nl' = 'en',
-) {
-  return chartsFor(type, buckets, locale).find((c) => c.id === id)!
+function chart(type: VehicleType, id: string, buckets: StatsBucket[] = []) {
+  return chartsFor(type, buckets).find((c) => c.id === id)!
 }
 
 const TWO_DAYS = [
@@ -197,7 +191,7 @@ describe('useStatisticsCharts', () => {
       temperature: 'celsius',
       energyEfficiency: 'whPerDistance',
     }
-    const i18n = createI18n({ legacy: false, locale: 'en', messages: { en, nl } })
+    const i18n = createI18n({ legacy: false, locale: 'en', messages: { en } })
     let charts: ReturnType<typeof useStatisticsCharts> | null = null
     mount(
       defineComponent({
@@ -273,11 +267,9 @@ describe('useStatisticsCharts', () => {
   })
 
   it('names the tyres in the interface language', () => {
-    const labels = (locale: 'en' | 'nl') =>
-      chart('bev', 'tyreChart', TWO_DAYS, locale).data.datasets.map((d) => d.label)
+    const labels = chart('bev', 'tyreChart', TWO_DAYS).data.datasets.map((d) => d.label)
 
-    expect(labels('en')).toEqual(['FL (bar)', 'FR (bar)', 'RL (bar)', 'RR (bar)', 'Warning'])
-    expect(labels('nl')).toEqual(['LV (bar)', 'RV (bar)', 'LA (bar)', 'RA (bar)', 'Waarschuwing'])
+    expect(labels).toEqual(['FL (bar)', 'FR (bar)', 'RL (bar)', 'RR (bar)', 'Warning'])
   })
 
   it('shows tyre pressure in the chosen unit', () => {

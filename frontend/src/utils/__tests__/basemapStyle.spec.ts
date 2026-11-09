@@ -45,11 +45,11 @@ describe('localizeStyleLabels', () => {
       { id: 'place_label', type: 'symbol', layout: { 'text-field': openMapTilesTextField } },
     ])
 
-    const localized = localizeStyleLabels(style, 'nl')
+    const localized = localizeStyleLabels(style, 'en')
 
     expect(localized.layers![0]!.layout!['text-field']).toEqual([
       'coalesce',
-      ['get', 'name:nl'],
+      ['get', 'name:en'],
       openMapTilesTextField,
     ])
   })
@@ -73,7 +73,7 @@ describe('localizeStyleLabels', () => {
   it('leaves the legacy string form alone, which cannot hold a nested expression', () => {
     const layer = { id: 'place_label', type: 'symbol', layout: { 'text-field': '{name}' } }
 
-    const localized = localizeStyleLabels(styleWith([layer]), 'nl')
+    const localized = localizeStyleLabels(styleWith([layer]), 'en')
 
     expect(localized.layers![0]).toBe(layer)
   })
@@ -86,15 +86,9 @@ describe('localizeStyleLabels', () => {
     }
     const style = styleWith([layer])
 
-    const dutch = localizeStyleLabels(style, 'nl')
     const english = localizeStyleLabels(style, 'en')
 
     expect(layer.layout['text-field']).toBe(openMapTilesTextField)
-    expect(dutch.layers![0]!.layout!['text-field']).toEqual([
-      'coalesce',
-      ['get', 'name:nl'],
-      openMapTilesTextField,
-    ])
     expect(english.layers![0]!.layout!['text-field']).toEqual([
       'coalesce',
       ['get', 'name:en'],
@@ -104,7 +98,7 @@ describe('localizeStyleLabels', () => {
 
   it('survives a style document without layers', () => {
     const style: MapStyle = { version: 8 }
-    expect(localizeStyleLabels(style, 'nl')).toBe(style)
+    expect(localizeStyleLabels(style, 'en')).toBe(style)
   })
 })
 
