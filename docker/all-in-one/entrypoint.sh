@@ -79,6 +79,12 @@ chown -R appuser:appuser /data/api /data/worker /data/dataprotection
 # Only appuser may read them: the Data Protection key ring signs the session cookies, and nginx,
 # mosquitto and postgres run as other users in this same container.
 chmod 700 /data/api /data/worker /data/dataprotection
+# supervisord (root) writes every service's console output to /data/logs. Older images gave the
+# folder to postgres, which could then read the gateway's and API's output too; take it back and
+# keep it root's. The init-time pg_ctl starts below log to the container's own output instead.
+chown -R root:root /data/logs
+chmod 700 /data/logs
+chmod -R go-rwx /data/logs
 
 # Generate Mosquitto password and ACL files: the internal broker login above, plus the optional
 # Home Assistant login (HA_MQTT_USERNAME / HA_MQTT_PASSWORD, see documentation/HOME_ASSISTANT.md).
@@ -88,6 +94,7 @@ chmod 700 /data/api /data/worker /data/dataprotection
 MQTT_BROKER_USERNAME="${MQTT_BROKER_USERNAME}" MQTT_BROKER_PASSWORD="${MQTT_BROKER_PASSWORD}" \
     sh /mosquitto-auth.sh /etc/mosquitto/conf.d
 chown mosquitto:mosquitto /data/db/mosquitto
+chmod 700 /data/db/mosquitto
 
 # ── PostgreSQL initialisation ──────────────────────────────────────────────────
 # Guard on a dedicated marker file rather than PG_VERSION so we can recover
@@ -100,18 +107,17 @@ DB_INIT_MARKER="/data/.db_initialized"
 if [ ! -f "$DB_INIT_MARKER" ]; then
     if [ ! -f "$PGDATA/PG_VERSION" ]; then
         echo "[mgmate] Initialising PostgreSQL data directory..."
-        chown -R postgres:postgres /data/db/postgres /data/logs
+        chown -R postgres:postgres /data/db/postgres
         # Only this script (as the postgres OS user) uses the socket, and the .NET services connect
         # over TCP with their password, so nothing else in the container gets into the database.
         as_postgres /usr/lib/postgresql/18/bin/initdb \
             -D "$PGDATA" --auth-host=scram-sha-256 --auth-local=peer -E UTF8 --locale=C
     else
         echo "[mgmate] Resuming PostgreSQL setup (partial initialisation detected)..."
-        chown -R postgres:postgres /data/db/postgres /data/logs
+        chown -R postgres:postgres /data/db/postgres
     fi
 
-    as_postgres /usr/lib/postgresql/18/bin/pg_ctl -D "$PGDATA" \
-        -l /data/logs/postgres-init.log start -w
+    as_postgres /usr/lib/postgresql/18/bin/pg_ctl -D "$PGDATA" start -w
 
     # PostgreSQL has no IF NOT EXISTS for roles or databases, so each CREATE is generated only
     # when the catalog lacks the object and run through \gexec. That keeps a rerun after a
@@ -134,7 +140,7 @@ EOSQL
     echo "[mgmate] PostgreSQL initialised."
 fi
 
-chown -R postgres:postgres /data/db/postgres /data/logs
+chown -R postgres:postgres /data/db/postgres
 
 # Volumes initialised before v0.11.0 trusted every local socket connection, so any process in the
 # container (the third-party gateway included) could open a superuser session, and used md5 over
@@ -144,8 +150,7 @@ chown -R postgres:postgres /data/db/postgres /data/logs
 # initdb's own default lines switched over. Runs once: afterwards nothing matches.
 if grep -Eq '^(local[[:space:]].*[[:space:]]trust|host[[:space:]].*[[:space:]]md5)[[:space:]]*$' "$PGDATA/pg_hba.conf"; then
     echo "[mgmate] Moving PostgreSQL authentication to peer (socket) and scram-sha-256 (TCP)..."
-    as_postgres /usr/lib/postgresql/18/bin/pg_ctl -D "$PGDATA" \
-        -l /data/logs/postgres-init.log start -w
+    as_postgres /usr/lib/postgresql/18/bin/pg_ctl -D "$PGDATA" start -w
     as_postgres psql -v ON_ERROR_STOP=1 \
         -v pguser="${POSTGRES_USER}" \
         -v pgpassword="${POSTGRES_PASSWORD}" <<-'EOSQL'
