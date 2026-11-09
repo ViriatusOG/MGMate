@@ -22,6 +22,8 @@ internal static class ApiHostingExtensions
     private const string LoginPolicy = "login";
     private const string WidgetPolicy = "widget";
     private const string ExportPolicy = "export";
+    private const string OidcLoginPolicy = "oidc-login";
+    private const string ClientErrorsPolicy = "client-errors";
 
     // The address nginx saw the request come from, kept before the forwarded headers are unwrapped.
     internal const string PeerItemKey = "MGMate.Peer";
@@ -31,12 +33,30 @@ internal static class ApiHostingExtensions
     // X-Forwarded-For stops here instead of never.
     private const int PeerAllowanceFactor = 3;
 
-    // The policies worth guessing at or expensive to run, with their per-IP window and limit. The
-    // per-peer backstop below counts the same ones, at PeerAllowanceFactor times the limit.
-    private static readonly Dictionary<string, (TimeSpan Window, int PermitLimit)> PeerCountedPolicies = new()
+    // Every endpoint policy with its per-IP window and limit. The per-peer backstop below counts
+    // the same ones, at PeerAllowanceFactor times the limit.
+    private static readonly Dictionary<string, (TimeSpan Window, int PermitLimit)> Policies = new()
     {
+        // Tighter, endpoint-specific limit on login to slow down credential-stuffing attempts.
+        // Composes with (i.e. is enforced in addition to) the global limiter.
         [LoginPolicy] = (TimeSpan.FromMinutes(5), 10),
+
+        // Starting an OIDC sign-in submits no credentials, so it needs no brute-force limit --
+        // but it does redirect to the identity provider, and a redirect loop caused by a
+        // misconfiguration should not hammer it. Loose enough that auto-login plus a few page
+        // reloads never trips it.
+        [OidcLoginPolicy] = (TimeSpan.FromMinutes(5), 30),
+
+        // Tighter limit on the widget endpoint to slow down guessing WIDGET_API_KEY, which the
+        // global limiter alone (120/min by default) would allow at a much higher rate. Still generous
+        // enough for a handful of dashboard widgets behind the same NAT polling every 30s.
         [WidgetPolicy] = (TimeSpan.FromMinutes(5), 60),
+
+        // Browser error reports: a page stuck in an error loop must not fill the log files.
+        // The page itself caps what it sends; this caps what a misbehaving one could.
+        [ClientErrorsPolicy] = (TimeSpan.FromMinutes(5), 30),
+
+        // A full export reads every row the car ever sent: a few a quarter of an hour is plenty.
         [ExportPolicy] = (TimeSpan.FromMinutes(15), 5),
     };
 
@@ -64,29 +84,10 @@ internal static class ApiHostingExtensions
             var global = PartitionedRateLimiter.Create(FixedWindowPerIp(TimeSpan.FromMinutes(1), globalPermitsPerMinute));
             opts.GlobalLimiter = proxiesConfigured
                 ? global
-                : PartitionedRateLimiter.CreateChained(global, PerPeerLimiter());
+                : PartitionedRateLimiter.CreateChained(global, PerPeerLimiter(globalPermitsPerMinute));
 
-            // Tighter, endpoint-specific limit on login to slow down credential-stuffing attempts.
-            // Composes with (i.e. is enforced in addition to) the global limiter above.
-            opts.AddPolicy(LoginPolicy, FixedWindowPerIp(PeerCountedPolicies[LoginPolicy]));
-
-            // Starting an OIDC sign-in submits no credentials, so it needs no brute-force limit --
-            // but it does redirect to the identity provider, and a redirect loop caused by a
-            // misconfiguration should not hammer it. Loose enough that auto-login plus a few page
-            // reloads never trips it.
-            opts.AddPolicy("oidc-login", FixedWindowPerIp(TimeSpan.FromMinutes(5), permitLimit: 30));
-
-            // Tighter limit on the widget endpoint to slow down guessing WIDGET_API_KEY, which the
-            // global limiter alone (120/min by default) would allow at a much higher rate. Still generous
-            // enough for a handful of dashboard widgets behind the same NAT polling every 30s.
-            opts.AddPolicy(WidgetPolicy, FixedWindowPerIp(PeerCountedPolicies[WidgetPolicy]));
-
-            // Browser error reports: a page stuck in an error loop must not fill the log files.
-            // The page itself caps what it sends; this caps what a misbehaving one could.
-            opts.AddPolicy("client-errors", FixedWindowPerIp(TimeSpan.FromMinutes(5), permitLimit: 30));
-
-            // A full export reads every row the car ever sent: a few a quarter of an hour is plenty.
-            opts.AddPolicy(ExportPolicy, FixedWindowPerIp(PeerCountedPolicies[ExportPolicy]));
+            foreach (var (name, limit) in Policies)
+                opts.AddPolicy(name, FixedWindowPerIp(limit));
         });
     }
 
@@ -112,19 +113,26 @@ internal static class ApiHostingExtensions
     /// With no proxies configured every private address is believed as a proxy, so a device on the
     /// LAN can put any address it likes in X-Forwarded-For and look like a new visitor on each
     /// request. The address nginx saw (<see cref="PeerItemKey"/>) cannot be forged that way, so
-    /// sign-ins, widget-key guesses and exports are also counted per that address, each in its own
-    /// partition. Every other request passes untouched.
+    /// every request is also counted per that address: against the global budget, and against its
+    /// endpoint policy in a partition of its own, each at <see cref="PeerAllowanceFactor"/> times
+    /// the per-IP limit. Forging addresses then buys a device a few times the normal budget, never
+    /// an unlimited one.
     /// </summary>
-    internal static PartitionedRateLimiter<HttpContext> PerPeerLimiter() =>
-        PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
-        {
-            var policy = httpContext.GetEndpoint()?.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName;
-            if (policy is null || !PeerCountedPolicies.TryGetValue(policy, out var limit))
-                return RateLimitPartition.GetNoLimiter("");
+    internal static PartitionedRateLimiter<HttpContext> PerPeerLimiter(int globalPermitsPerMinute) =>
+        PartitionedRateLimiter.CreateChained(
+            PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+                FixedWindow($"global:{Peer(httpContext)}", TimeSpan.FromMinutes(1), globalPermitsPerMinute * PeerAllowanceFactor)),
+            PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+            {
+                var policy = httpContext.GetEndpoint()?.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName;
+                if (policy is null || !Policies.TryGetValue(policy, out var limit))
+                    return RateLimitPartition.GetNoLimiter("");
 
-            var peer = httpContext.Items[PeerItemKey] as string ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            return FixedWindow($"{policy}:{peer}", limit.Window, limit.PermitLimit * PeerAllowanceFactor);
-        });
+                return FixedWindow($"{policy}:{Peer(httpContext)}", limit.Window, limit.PermitLimit * PeerAllowanceFactor);
+            }));
+
+    private static string Peer(HttpContext httpContext) =>
+        httpContext.Items[PeerItemKey] as string ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
     /// <summary>
     /// CORS for the configured browser origins; any origin in Development, where the Vite dev
@@ -207,7 +215,7 @@ internal static class ApiHostingExtensions
         {
             if (!app.Environment.IsDevelopment())
                 Log.Warning("ForwardedHeaders:TrustedProxies is not configured -- trusting all RFC 1918 ranges, " +
-                            "so sign-ins, widget calls and exports are also limited per device in front of nginx. Set it to your proxy IP(s) " +
+                            "so every request is also limited per device in front of nginx. Set it to your proxy IP(s) " +
                             "to stop anything on the LAN from claiming another address.");
 
             // Kept before the unwrapping below replaces it, for the per-peer limits.
