@@ -1061,7 +1061,7 @@ public class AuthenticationFlowTests
         var folder = $"vehicles/{DemoVin}";
         Assert.Contains("export.json", names);
         Assert.Contains("notifications.json", names);
-        foreach (var file in new[] { "vehicle.json", "trips.json", "maintenance.json", "climate-schedules.json", "commute-places.json", "telemetry.csv" })
+        foreach (var file in new[] { "vehicle.json", "trips.json", "maintenance.json", "warranty.json", "climate-schedules.json", "commute-places.json", "telemetry.csv" })
             Assert.Contains($"{folder}/{file}", names);
 
         using var csv = new StreamReader(zip.GetEntry($"{folder}/telemetry.csv")!.Open());

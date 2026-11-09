@@ -192,6 +192,7 @@ try
     app.MapPushEndpoints();
     app.MapNotificationEndpoints();
     app.MapMaintenanceEndpoints();
+    app.MapWarrantyEndpoints();
     app.MapClimateScheduleEndpoints();
     app.MapCommutePlaceEndpoints();
     app.MapRdwEndpoints();

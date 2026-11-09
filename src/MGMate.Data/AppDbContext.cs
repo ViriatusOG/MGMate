@@ -18,6 +18,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<MapMatchCacheEntry> MapMatchCacheEntries => Set<MapMatchCacheEntry>();
     public DbSet<MaintenanceItem> MaintenanceItems => Set<MaintenanceItem>();
     public DbSet<MaintenanceLogEntry> MaintenanceLogEntries => Set<MaintenanceLogEntry>();
+    public DbSet<WarrantyCover> WarrantyCovers => Set<WarrantyCover>();
     public DbSet<RevokedToken> RevokedTokens => Set<RevokedToken>();
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
     public DbSet<ClimateSchedule> ClimateSchedules => Set<ClimateSchedule>();
@@ -229,6 +230,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
              .WithMany(m => m.LogEntries)
              .HasForeignKey(l => l.MaintenanceItemId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<WarrantyCover>(e =>
+        {
+            e.HasKey(c => c.Id);
+            e.HasIndex(c => c.VehicleId);
+            e.Property(c => c.Name).HasMaxLength(WarrantyLimits.NameMaxLength).IsRequired();
+            e.Property(c => c.Notes).HasMaxLength(WarrantyLimits.NotesMaxLength);
+            e.HasOne<Vehicle>().WithMany().HasForeignKey(c => c.VehicleId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<RevokedToken>(e =>

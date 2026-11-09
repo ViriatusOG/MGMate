@@ -35,6 +35,12 @@ public static class DemoSeeder
         if (!await db.ChargeSessions.AnyAsync(ct))
             await SeedChargesAsync(db, ct);
 
+        if (!await db.WarrantyCovers.AnyAsync(ct))
+        {
+            db.WarrantyCovers.AddRange(WarrantyDefaults.For(DemoVehicleRepository.DemoVehicle.Id));
+            await db.SaveChangesAsync(ct);
+        }
+
         if (await db.MaintenanceItems.AnyAsync(ct))
             return;
 

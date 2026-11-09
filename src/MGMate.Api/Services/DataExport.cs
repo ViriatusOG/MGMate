@@ -11,7 +11,7 @@ using MGMate.Core.Models;
 namespace MGMate.Api.Services;
 
 /// <summary>
-/// Everything MGMate keeps, in one zip: per car its trips, maintenance with its history,
+/// Everything MGMate keeps, in one zip: per car its trips, maintenance with its history, warranty covers,
 /// climate schedules, commute places and every telemetry row, and besides those the notifications
 /// and the account's settings. Telemetry is a CSV a spreadsheet opens; the rest is JSON.
 /// </summary>
@@ -20,6 +20,7 @@ internal sealed class DataExport(
     ITelemetryRepository telemetry,
     ITripRepository trips,
     IMaintenanceRepository maintenance,
+    IWarrantyRepository warranty,
     IClimateScheduleRepository schedules,
     ICommutePlaceRepository places,
     INotificationRepository notifications,
@@ -57,6 +58,7 @@ internal sealed class DataExport(
                 ["vehicles/{vin}/vehicle.json"] = "The car as MGMate knows it",
                 ["vehicles/{vin}/trips.json"] = "Every saved trip, with its places, odometer readings, purpose and notes",
                 ["vehicles/{vin}/maintenance.json"] = "Maintenance items, each with its service history",
+                ["vehicles/{vin}/warranty.json"] = "Warranty covers, which run from the registration date in vehicle.json",
                 ["vehicles/{vin}/climate-schedules.json"] = "Climate schedules",
                 ["vehicles/{vin}/commute-places.json"] = "Home and work places",
                 ["vehicles/{vin}/telemetry.csv"] = "Every telemetry row, oldest first, as recorded",
@@ -75,6 +77,9 @@ internal sealed class DataExport(
                 car.Vin,
                 car.Model,
                 car.LicensePlate,
+                car.RegistrationDate,
+                car.DeliveryDate,
+                car.DeliveryOdometerKm,
                 vehicleType = VehicleTypeHelper.GetVehicleType(car),
                 car.CreatedAt,
                 car.LastParkedAt,
@@ -102,6 +107,17 @@ internal sealed class DataExport(
                 });
             }
             await WriteJsonAsync(zip, $"{folder}/maintenance.json", withHistory, ct);
+
+            var covers = await warranty.ListAsync(car.Id, ct);
+            await WriteJsonAsync(zip, $"{folder}/warranty.json", covers.Select(c => new
+            {
+                c.Name,
+                c.Notes,
+                c.Months,
+                c.DistanceKm,
+                c.Featured,
+                c.SortOrder,
+            }), ct);
 
             var carSchedules = await schedules.ListAsync(car.Id, ct);
             await WriteJsonAsync(zip, $"{folder}/climate-schedules.json", carSchedules.Select(s => new
