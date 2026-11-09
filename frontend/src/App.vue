@@ -170,6 +170,11 @@ const {
   onReconnected: () => {
     if (vehicleStore.activeVin) void vehicleStore.fetchStatus(vehicleStore.activeVin)
   },
+  // While live updates are paused, read the stored status once a minute so the page stays
+  // current on a flaky connection. It reads the database only, so it never wakes the car.
+  onCatchUp: () => {
+    if (vehicleStore.activeVin) void vehicleStore.fetchStatus(vehicleStore.activeVin)
+  },
 })
 
 // Only show "paused" once we've actually attempted a connection, not during the

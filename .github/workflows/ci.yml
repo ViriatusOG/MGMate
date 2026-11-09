@@ -166,6 +166,75 @@ jobs:
         if: always()
         run: docker compose --env-file .env.demo -f docker-compose.demo.yml down -v
 
+  # Starts the production stacks the way people run them and waits for the API's readiness check
+  # (database, broker and Worker all up). The e2e job above only runs the demo stack, which has no
+  # database, broker or Worker, so a broken entrypoint, a wrong file owner or a missing variable in
+  # the real stacks would otherwise reach main unnoticed. Neither stack ever talks to MG: Compose
+  # leaves the gateway out, and the all-in-one points it at an address nothing listens on.
+  stack-smoke:
+    name: Stack smoke test (${{ matrix.stack }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: [compose, all-in-one]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Start the Compose stack
+        if: matrix.stack == 'compose'
+        run: |
+          sed -e 's/^SAIC_USER=.*/SAIC_USER=ci@example.invalid/' \
+            -e 's/^SAIC_PASSWORD=.*/SAIC_PASSWORD=not-used/' \
+            -e 's/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci-smoke-postgres/' \
+            -e 's/^MQTT_BROKER_PASSWORD=.*/MQTT_BROKER_PASSWORD=ci-smoke-mqtt/' \
+            .env.example > .env
+          docker compose up -d --build --wait --wait-timeout 300 postgres mosquitto worker api frontend
+
+      - name: Start the all-in-one container
+        if: matrix.stack == 'all-in-one'
+        run: |
+          docker build -f docker/all-in-one/Dockerfile --build-arg APP_VERSION=0.0.0-ci -t mgmate-smoke .
+          docker run -d --name mgmate-smoke -p 8080:80 \
+            -e SAIC_USER=ci@example.invalid -e SAIC_PASSWORD=not-used \
+            -e SAIC_REST_URI=http://127.0.0.1:9/ \
+            mgmate-smoke
+
+      - name: Wait until the API reports ready
+        run: |
+          for _ in $(seq 1 90); do
+            if body=$(curl -fsS http://localhost:8080/api/health 2>/dev/null); then
+              echo "$body"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::the ${{ matrix.stack }} stack never reported ready"
+          curl -sS http://localhost:8080/api/health || true
+          exit 1
+
+      - name: Show the logs
+        if: failure()
+        run: |
+          if [ "${{ matrix.stack }}" = compose ]; then
+            docker compose logs --tail 80
+          else
+            docker logs --tail 80 mgmate-smoke
+            docker exec mgmate-smoke sh -c 'tail -n 40 /data/logs/*.log' || true
+          fi
+
+      - name: Stop the stack
+        if: always()
+        run: |
+          if [ "${{ matrix.stack }}" = compose ]; then
+            docker compose down -v
+          else
+            docker rm -f mgmate-smoke || true
+          fi
+
   backend-test:
     name: Backend tests
     runs-on: ubuntu-latest

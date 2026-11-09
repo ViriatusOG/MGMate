@@ -55,7 +55,7 @@ x-logging: &logging
 
 services:
   mosquitto:
-    image: eclipse-mosquitto:2
+    image: eclipse-mosquitto:2@sha256:75d6662dee52c947dc9dd9c29f1d8d7ffef78ddaf38001caa09755681e8bbc98
     container_name: mosquitto
     restart: unless-stopped
     mem_limit: 128m
@@ -127,7 +127,7 @@ services:
   postgres:
     profiles:
       - bundled-postgres
-    image: postgres:18-alpine
+    image: postgres:18-alpine@sha256:123b17998ccaf47e53b502e8c6a1e79afd8f579c6f3eec83c563da026f957395
     container_name: mgmate-postgres
     restart: unless-stopped
     mem_limit: 512m

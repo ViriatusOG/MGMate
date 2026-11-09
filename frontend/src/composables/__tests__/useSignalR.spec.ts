@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { useSignalR, type SignalRCallbacks } from '@/composables/useSignalR'
+import { CATCH_UP_INTERVAL_MS, useSignalR, type SignalRCallbacks } from '@/composables/useSignalR'
 
 // Every connection the fake builder hands out, in order.
 const hub = vi.hoisted(() => ({
@@ -44,6 +44,7 @@ const callbacks: SignalRCallbacks = {
   onTripCompleted: vi.fn<SignalRCallbacks['onTripCompleted']>(),
   onCommandResult: vi.fn<SignalRCallbacks['onCommandResult']>(),
   onReconnected: vi.fn<NonNullable<SignalRCallbacks['onReconnected']>>(),
+  onCatchUp: vi.fn<NonNullable<SignalRCallbacks['onCatchUp']>>(),
 }
 
 function mountSignalR() {
@@ -60,6 +61,7 @@ function mountSignalR() {
 }
 
 afterEach(() => {
+  vi.useRealTimers()
   hub.connections.length = 0
   vi.clearAllMocks()
 })
@@ -160,5 +162,53 @@ describe('useSignalR', () => {
     expect(connection.start).toHaveBeenCalledTimes(2)
     expect(callbacks.onReconnected).toHaveBeenCalledOnce()
     expect(api.connected.value).toBe(true)
+  })
+
+  describe('catch-up while disconnected', () => {
+    it('reads the live state once a minute only while the connection is down', async () => {
+      vi.useFakeTimers()
+      const { api } = mountSignalR()
+      await api.start(7)
+      const connection = hub.connections[0]!
+
+      vi.advanceTimersByTime(CATCH_UP_INTERVAL_MS * 3)
+      expect(callbacks.onCatchUp).not.toHaveBeenCalled()
+
+      handlerOf(connection, 'onreconnecting')()
+      vi.advanceTimersByTime(CATCH_UP_INTERVAL_MS * 2)
+      expect(callbacks.onCatchUp).toHaveBeenCalledTimes(2)
+
+      await handlerOf(connection, 'onreconnected')()
+      vi.advanceTimersByTime(CATCH_UP_INTERVAL_MS * 2)
+      expect(callbacks.onCatchUp).toHaveBeenCalledTimes(2)
+    })
+
+    it('skips the catch-up while the page is hidden', async () => {
+      vi.useFakeTimers()
+      const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+      const { api } = mountSignalR()
+      await api.start(7)
+      handlerOf(hub.connections[0]!, 'onreconnecting')()
+
+      vi.advanceTimersByTime(CATCH_UP_INTERVAL_MS * 2)
+      expect(callbacks.onCatchUp).not.toHaveBeenCalled()
+
+      visibility.mockReturnValue('visible')
+      vi.advanceTimersByTime(CATCH_UP_INTERVAL_MS)
+      expect(callbacks.onCatchUp).toHaveBeenCalledOnce()
+      visibility.mockRestore()
+    })
+
+    it('stops catching up once stopped', async () => {
+      vi.useFakeTimers()
+      const { api } = mountSignalR()
+      await api.start(7)
+      handlerOf(hub.connections[0]!, 'onreconnecting')()
+
+      await api.stop()
+      vi.advanceTimersByTime(CATCH_UP_INTERVAL_MS * 3)
+
+      expect(callbacks.onCatchUp).not.toHaveBeenCalled()
+    })
   })
 })
