@@ -26,7 +26,10 @@ public class MaintenanceRepositoryPostgresTests
         var repo = new MaintenanceRepository(db);
         var item = await repo.AddAsync(new MaintenanceItem
         {
-            VehicleId = vehicleId, Name = "Annual service", IntervalKm = 24_140, IntervalMonths = 12,
+            VehicleId = vehicleId,
+            Name = "Annual service",
+            IntervalKm = 24_140,
+            IntervalMonths = 12,
             LastServiceDate = MaintenanceEndpoints.AsUtc((DateTime?)req.PerformedAt),
         }, ct);
 
