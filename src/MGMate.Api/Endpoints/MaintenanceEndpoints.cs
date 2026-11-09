@@ -42,7 +42,7 @@ public static class MaintenanceEndpoints
                 Notes = req.Notes,
                 IntervalKm = req.IntervalKm,
                 IntervalMonths = req.IntervalMonths,
-                LastServiceDate = req.LastServiceDate,
+                LastServiceDate = AsUtc(req.LastServiceDate),
                 LastServiceOdometerKm = req.LastServiceOdometerKm,
             }, ct);
 
@@ -100,7 +100,7 @@ public static class MaintenanceEndpoints
 
             var logged = await maintenance.LogServiceAsync(vehicle.Id, id, new MaintenanceLogEntry
             {
-                PerformedAt = req.PerformedAt,
+                PerformedAt = AsUtc(req.PerformedAt),
                 OdometerKm = req.OdometerKm,
                 Notes = req.Notes,
             }, ct);
@@ -158,6 +158,21 @@ public static class MaintenanceEndpoints
             return new("maintenance.odometerNegative", "Odometer reading cannot be negative");
         return null;
     }
+
+    /// <summary>
+    /// The form sends a service date as a plain day ("2026-11-07"), which binds as a DateTime of
+    /// unspecified kind, and Npgsql refuses to write one to a timestamp with time zone column: the
+    /// request failed with a 500. A plain day is taken as midnight UTC; a time with an offset is
+    /// converted to UTC.
+    /// </summary>
+    internal static DateTime AsUtc(DateTime value) => value.Kind switch
+    {
+        DateTimeKind.Utc => value,
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc),
+    };
+
+    internal static DateTime? AsUtc(DateTime? value) => value is { } v ? AsUtc(v) : null;
 
     // Longer notes than the column holds would fail the insert with a 500.
     private static ValidationError? NotesError(string? notes) =>
