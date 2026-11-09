@@ -35,6 +35,9 @@ const PAGES = [
   { file: 'battery-health', path: '/battery-health' },
   { file: 'maintenance', path: '/maintenance' },
   { file: 'climate-schedules', path: '/climate-schedules' },
+  { file: 'settings', path: '/settings' },
+  { file: 'debug', path: '/debug' },
+  { file: 'dashboard-charging', path: '/', prepare: parkAndCharge, after: driveOn, tall: true },
 ]
 
 // The install screenshots in the manifest (vite.config.ts), copied from the gallery's.
@@ -82,11 +85,20 @@ async function shoot(device, theme, pages) {
   const page = await context.newPage()
   await signIn(page)
   // Saved to the demo account, which every page then takes: the theme, English, the gallery's
-  // 30 days, and a selected trip coloured against the speed limits.
-  await saveSettings(page, 'ui', { theme, locale: 'en', filterDays: 30, batteryPackKwh: 64 })
+  // 30 days, the Debug page switched on, and a selected trip coloured against the speed limits.
+  await saveSettings(page, 'ui', {
+    theme,
+    locale: 'en',
+    filterDays: 30,
+    batteryPackKwh: 64,
+    showDebugPage: true,
+  })
   await saveSettings(page, 'map', { speedLimitOverlayEnabled: true })
 
   for (const shot of pages) {
+    // A taller window shows the Overview's second row (car status) under the charging card.
+    if (shot.tall)
+      await page.setViewportSize({ ...options.viewport, height: name === 'mobile' ? 1500 : 1100 })
     await page.goto(base + shot.path)
     await settled(page)
     if (shot.prepare) await shot.prepare(page)
@@ -95,6 +107,8 @@ async function shoot(device, theme, pages) {
     const file = `${name}-${shot.file}.webp`
     await writeFile(new URL(file, docs), await webp(page, await page.screenshot()))
     console.log(`screenshots: ${file}`)
+    if (shot.tall) await page.setViewportSize(options.viewport)
+    if (shot.after) await shot.after(page)
   }
   await context.close()
 }
@@ -145,6 +159,47 @@ async function selectTrip(page) {
   const toUtrecht = trips.filter({ hasText: 'Utrecht' }).first()
   await ((await toUtrecht.count()) > 0 ? toUtrecht : trips.first()).click()
   await settled(page)
+}
+
+// The demo car parked on the drive and charging, with the boot and a window open, so the Overview
+// shows the live charging card and the car status drawing with something to point out.
+async function parkAndCharge(page) {
+  await setDemoStatus(page, {
+    engineRunning: false,
+    speed: 0,
+    chargerConnected: true,
+    isCharging: true,
+    trunkOpen: true,
+    driverWindowOpen: true,
+  })
+  await page.reload()
+  await settled(page)
+}
+
+// Back on the road as the demo starts, for the pages shot after it.
+async function driveOn(page) {
+  await setDemoStatus(page, {
+    engineRunning: true,
+    speed: 40,
+    chargerConnected: false,
+    isCharging: false,
+    trunkOpen: false,
+    driverWindowOpen: false,
+  })
+}
+
+async function setDemoStatus(page, override) {
+  const status = await page.evaluate(async (override) => {
+    const [vehicle] = await (await fetch('/api/vehicles', { credentials: 'include' })).json()
+    const response = await fetch(`/api/demo/status/${vehicle.vin}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(override),
+    })
+    return response.status
+  }, override)
+  if (status >= 300) throw new Error(`Changing the demo car answered ${status}`)
 }
 
 // The browser encodes WebP itself, so the script needs no image library.

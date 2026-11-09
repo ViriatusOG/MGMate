@@ -49,6 +49,16 @@ To work against the full stack (real or self-provided credentials):
 - Changed an EF Core entity? Add a migration from the repository root (no Api configuration needed). `dotnet tool restore` installs the pinned `dotnet-ef` first:
   `dotnet ef migrations add <Name> --project src/MGMate.Data --startup-project src/MGMate.Data`
 
+## Keep the README up to date
+
+**Every pull request that adds a feature or changes how something works also updates the [README](../README.md).** The README is how people find out what MGMate does, so a feature that isn't in it might as well not exist. In the same pull request:
+
+- Describe the new feature, or correct the text that no longer matches, in the README's feature list and in the section about that page. Remove what was taken out.
+- When a page looks different, take the screenshots again from the demo (see [Taking new ones](../documentation/screenshots/README.md#taking-new-ones)) and commit them. A new page gets added to `PAGES` in `frontend/scripts/screenshots.mjs` and to the [screenshot gallery](../documentation/screenshots/README.md).
+- Update the other documents the change touches too: settings in [CONFIGURATION.md](../documentation/CONFIGURATION.md), how it works in [ARCHITECTURE.md](../documentation/ARCHITECTURE.md).
+
+A bug fix that does not change what the user sees or does needs no README change.
+
 ## Adding a language
 
 MGMate ships in English only (the Dutch translation was removed). The translation structure is kept, so a fork can add its own language. A new language touches these places (use its two-letter code, here `de`):

@@ -6,17 +6,18 @@
 [![Docker image build](https://github.com/ViriatusOG/MGMate/actions/workflows/docker-publish.yml/badge.svg?branch=main)](https://github.com/ViriatusOG/MGMate/actions/workflows/docker-publish.yml)
 [![MIT licence](https://img.shields.io/github/license/ViriatusOG/MGMate)](LICENSE)
 
-![The MGMate overview: battery and range, the car on the road with its tyre pressures and speed, the last charge with the energy added, where the car is, and the latest trips](documentation/screenshots/desktop-dashboard.webp)
+![The MGMate overview: the battery with its range and a 24-hour charge level chart, the car on the road with its tyre pressures and speed, the last charge with its power curve, where the car is, the car status and the latest trips](documentation/screenshots/desktop-dashboard.webp)
 
 MGMate is a free, open-source web app for **modern MG cars**, the ones built by SAIC Motor such as the MG4, MG5, ZS EV and HS PHEV. It signs in to the SAIC iSmart API, the same backend the official MG iSmart app uses, records everything the car reports, and turns it into a logbook you can actually use, on a desktop or a phone:
 
-- **See the car at a glance.** Battery, range, tyre pressures, doors, windows and climate on one overview, with the last charge and your latest trips beside them, and your own photo of the car while it is parked.
+- **See the car at a glance.** Battery, range and the last 24 hours of charge level, tyre pressures, the last charge with its power curve, and a drawing of the car from above that shows which doors, windows, boot or bonnet are open, whether it is locked and whether the cable is in. While the car charges, the battery card turns into a live charging card with the power, voltage, current and target.
 - **Every trip, logged.** Trips are saved automatically with the energy they used, mi/kWh, driving and stopped time, the outside temperature and the battery they started and ended on, drawn on the map along the roads you took.
 - **Every charge, logged.** Each plug-in becomes a charge session: energy added, AC or DC, peak power, how long it took, where it was, and what it cost at your electricity prices, with what came from the wall next to what reached the battery.
 - **Reports, month by month.** Distance, trips, driving time, consumption, energy charged and charging cost for each month, against the month before, with a 12-month chart and a yearly table.
-- **Know your battery.** Battery health works out the usable capacity from your charges, compares it with the pack when new, and shows the trend over time. The 12V battery, temperatures, distance and range get charts of their own on Statistics.
+- **Know your battery.** Battery health works out the usable capacity from your charges, compares it with the pack when new, and shows the trend over time. It waits for a charge to 100 % first, because that is when the car knows its charge level exactly. The 12V battery, temperatures, distance and range get charts of their own on Statistics.
 - **Keep a trip log for the taxman.** Mark trips as business, commute or private, add notes, search them, and export a month or a year as a spreadsheet.
 - **Control it from anywhere.** Pre-condition the cabin, lock the car or flash its lights to find it, and see whether the car actually carried the command out, without waking the car more than it needs.
+- **See everything the car reports.** Switch on Advanced in Settings and a Debug page lists every sensor and control the MG gateway announces, with its latest value and whether MGMate keeps its history.
 - **Hear about it when something is off.** Push notifications for low tyre pressure, a car left unlocked, a window left open, charging complete, maintenance coming due and more.
 - **Keep it yours.** Everything runs in Docker on your own hardware, as one all-in-one container or a Compose stack. No subscription, and no account needed beyond your MG login.
 
@@ -25,6 +26,12 @@ MGMate is a free, open-source web app for **modern MG cars**, the ones built by 
 ## Screenshots
 
 The screenshots use the demo's sample car and trips.
+
+### While charging
+
+The battery card becomes a live charging card, and the car status drawing shows the cable in, an open boot and an open window:
+
+![The overview while the car charges at home: 16.2 kW at 386 V and 42 A towards an 80 % target, the car from above with the charging cable, and the car status card listing the open window and boot](documentation/screenshots/desktop-dashboard-charging.webp)
 
 ### Trips
 
@@ -44,15 +51,29 @@ Every charge, with the energy added, how long it took, AC or DC, and where:
 
 ### Battery health
 
-![The Battery health page: a gauge at 100 % health, the usable capacity of 64.1 kWh against a 64 kWh pack, the charges it is based on, the trend, and a chart of the capacity readings over time](documentation/screenshots/desktop-battery-health.webp)
+![The Battery health page: a gauge at 100 % health, the usable capacity of 64.1 kWh against a 64 kWh pack with a note that it reads above new, the charges it is based on, the trend, and a chart of the capacity readings over time](documentation/screenshots/desktop-battery-health.webp)
+
+### Settings
+
+Settings is a page of its own, with a section list on the left. Home location sets where you charge at home, with a radius you drag:
+
+![The Settings page: appearance, region and units, and the home location on a map with a 250 m radius slider](documentation/screenshots/desktop-settings.webp)
+
+### Debug
+
+With **Settings > Advanced** switched on, the Debug page lists everything the MG gateway announces for the car, like a device page in a smart-home app: what it is, its latest value, whether MGMate saves it, and the controls, each of which asks before it sends:
+
+![The Debug page: the car's model and gateway version, how many values are saved on every poll, what MG cannot do (open or close windows), and the controls and sensors with their latest values](documentation/screenshots/desktop-debug.webp)
 
 ### On a phone
 
 <!-- markdownlint-disable MD033 -->
 
-| Overview | Trips | Charges | Reports |
-| -------- | ----- | ------- | ------- |
-| <img src="documentation/screenshots/mobile-dashboard.webp" alt="The overview on a phone" width="200"> | <img src="documentation/screenshots/mobile-trips.webp" alt="Trips on a phone, with a week strip and the day's trips" width="200"> | <img src="documentation/screenshots/mobile-charges.webp" alt="Charges on a phone" width="200"> | <img src="documentation/screenshots/mobile-reports.webp" alt="Reports on a phone" width="200"> |
+| Overview | Charging | Trips | Charges |
+| -------- | -------- | ----- | ------- |
+| <img src="documentation/screenshots/mobile-dashboard.webp" alt="The overview on a phone" width="200"> | <img src="documentation/screenshots/mobile-dashboard-charging.webp" alt="The live charging card and the car from above on a phone" width="200"> | <img src="documentation/screenshots/mobile-trips.webp" alt="Trips on a phone, with a week strip and the day's trips" width="200"> | <img src="documentation/screenshots/mobile-charges.webp" alt="Charges on a phone" width="200"> |
+| **Reports** | **Battery health** | **Settings** | **Debug** |
+| <img src="documentation/screenshots/mobile-reports.webp" alt="Reports on a phone" width="200"> | <img src="documentation/screenshots/mobile-battery-health.webp" alt="Battery health on a phone" width="200"> | <img src="documentation/screenshots/mobile-settings.webp" alt="Settings on a phone" width="200"> | <img src="documentation/screenshots/mobile-debug.webp" alt="The Debug page on a phone" width="200"> |
 
 <!-- markdownlint-enable MD033 -->
 
@@ -70,9 +91,18 @@ MGMate is based on [GarageStack](https://github.com/joszz/GarageStack) by Jos Ni
 - **Statistics** for the 12V battery, distance, range and temperatures, and consumption against outside temperature
 - **Trip detail** with energy, driving and stopped time, median speed, the battery range used and a GPX download
 - **A car photo** on the overview, and **battery-friendly polling** that only wakes the car when you ask it to
-- **A redesigned interface** with a grouped sidebar, a phone tab bar and a new icon
+- **A redesigned overview** with a live charging card, a car status drawing traced from an MG4 seen from above, and small charge level and charging power charts
+- **Settings as a page**, with your **home location** and its radius, and an **Advanced** switch for a **Debug** page of everything the gateway reports
+- **A clear warning when the MG sign-in fails**, in the sidebar and as a banner, instead of data that silently stops
+- **A redesigned interface** with a grouped sidebar, a phone tab bar, the version and Refresh in the sidebar, and a new icon
+- **English only**, and **no Home Assistant integration** (see [What was removed](#what-was-removed))
 
 Thanks to Jos for the foundation.
+
+### What was removed
+
+- **Home Assistant.** MGMate no longer publishes sensors to Home Assistant, and the `HA_MQTT_*` settings and the external MQTT port (1883) are gone. If you used them, remove those settings and the port mapping; nothing else needs changing. The MG gateway still sends its own discovery messages (the Home Assistant MQTT discovery format) inside the stack, and MGMate still reads them to tell which kind of car it is and to fill the Debug page, so don't switch them off in the gateway.
+- **Dutch.** The interface, notifications and exports are English only. A fork can add a language again; see [Adding a language](.github/CONTRIBUTING.md#adding-a-language).
 
 **Want to try it?** Read [MG iSmart account and session limits](#mg-ismart-account-and-session-limits) first, because MGMate and the MG app cannot be signed in to the same account at once, then pick an [installation option](#installation). A single `docker run` is enough to get going.
 
@@ -92,17 +122,21 @@ Thanks to Jos for the foundation.
 
 ## Features
 
-- **Charges** -- Every plug-in is saved as a charge session with the energy added, AC or DC, peak power, duration, place, the battery before and after, and the cost at the electricity prices you set (Charges > Prices). On AC the energy drawn from the wall is shown next to what reached the battery.
+- **Charges** -- Every plug-in is saved as a charge session with the energy added, AC or DC, peak power, duration, place, the battery before and after, and the cost at the electricity prices you set (Charges > Prices). On AC the energy drawn from the wall is shown next to what reached the battery. The peak power of an AC charge leaves out the short spike when the car pre-heats or cools the cabin just after charging stops. A charge that ends at your [home location](#features) is labelled home.
 - **Reports** -- A page per month with distance, trips, driving time, days driven, consumption, energy used, charges, energy charged and charging cost, each against the month before, plus a 12-month chart and a table of the year.
-- **Battery health** -- The usable capacity worked out from charges that covered at least 20 % of the battery, compared with the pack when new (51, 64 or 77 kWh, or your own), with the trend and every reading on a chart.
+- **Battery health** -- The usable capacity worked out from charges that covered at least 20 % of the battery, compared with the pack when new (51, 64 or 77 kWh, or your own), with the trend and every reading on a chart. The car only knows its exact charge level after a full charge (LFP packs drift the most), so health shows *Calibrating* until a charge reaches 100 %; from then on only readings with a full charge in the 30 days before them count, and the earlier ones are drawn hollow. Health never shows above 100 %: a pack that reads above new says so in a note, and fewer than five readings are marked as an early estimate.
 - **Activity** -- A 24-hour strip and a timeline of when the car drove, charged, slept or went quiet, read from the car's own reports.
-- **Live dashboard** -- Real-time vehicle telemetry displayed as configurable cards. Cards are automatically shown or hidden based on your vehicle type (HEV, PHEV, BEV) and can be reordered or toggled individually in the dashboard's edit mode. The car drawn on the dashboard takes your car's colour (Settings > Car colour), and the vehicle type can be set by hand under Settings > Vehicle type when detection gets it wrong.
+- **Overview** -- The battery with its range and a 24-hour charge level chart; the car on the road with its speed and tyre pressures (or your own photo of it while parked); the last charge with the energy added, where, what came from the wall, the miles since, and its charging power curve with the peak marked; where the car is; a **car status** drawing from above, traced from a real MG4, with open doors, windows, boot and bonnet, the lock and the charging cable; and the latest trips. While the car charges, the battery card becomes a **live charging card** with the power, voltage, current, the charge target and the range so far. The charts have labelled axes, units and a legend. Values arrive live over a WebSocket; while that connection is down, the page asks for the latest status every minute so it never sits on stale numbers.
+- **Live dashboard cards** -- Behind **Edit layout**, the classic wall of status cards (see [Dashboard cards](#dashboard-cards)) can be switched on, reordered and toggled. Cards are shown or hidden based on your vehicle type (HEV, PHEV, BEV). The car drawing takes your car's colour (Settings > Your car), and the vehicle type can be set by hand there when detection gets it wrong.
+- **MG sign-in status** -- When the gateway cannot sign in to your MG account, the sidebar's car status turns red and a banner says "MG sign-in failed", so you know why the data stopped. The sidebar also shows when data was last fetched (tap it to refresh, which asks first because it wakes the car) and the version, under Log out.
+- **Settings page** -- Settings is a page (`/settings`) with a section list: appearance, region and units, dashboard, map, your car (colour, vehicle type, licence plate), **home location**, notifications, API tokens, your data, and Advanced. Home location is a point on a map with a radius from 50 m to 1 km: a charge that ends inside it counts as a home charge and is priced with your home tariff; anywhere else is public. The home place set under Trip log > Home and work labels home charges too.
+- **Debug page** -- Switch on **Settings > Advanced** and a Debug page appears in the sidebar. It lists every sensor and control the MG gateway announces for the car, grouped like a smart-home device page, with the latest value, when it changed, and whether MGMate saves it on every poll, keeps only the newest value, or shows it live only. Controls ask before they send, and only commands the gateway offers can be sent. It also says what MG's API cannot do: it reports whether each window is open but cannot open or close them.
 - **Tyre history** -- Tap a tyre's pressure on the dashboard's car to see a month of daily pressures for all four tyres, and how each one moved against the other three over the last two weeks: a tyre falling behind the others while they hold is a slow puncture, which also sends a notification.
 - **Trip history** -- Browse past journeys on an interactive map, each drawn on the roads it took and coloured by speed or by the speed limit, with a heatmap of the roads you drive most. Each trip is saved to the database a few minutes after the car parks. After upgrading from a version that did not save trips, the existing history is saved in the background on the Worker's first start.
 - **Trip log** -- Mark each trip as business, commute or private (commutes between your home and work are marked automatically), add notes, hide a GPS glitch, join two trips a fuel stop split, and export a month or a year as a spreadsheet with the addresses and odometer readings a tax trip log (such as the Dutch *rittenregistratie*) asks for. See [Trip log](#trip-log).
 - **Maintenance** -- Keep the car's service items (oil, tyres, the yearly inspection, ...) with a distance interval, a time interval or both. MGMate works out from the odometer and your service log when each one is due, shows the most urgent on the dashboard, and sends a notification when an item reaches 90 % of its interval. Log each service with its date, odometer reading and notes.
 - **Dutch registration (RDW)** -- For a car with a Dutch licence plate, a dashboard card with the date the APK runs out and the days left, open recalls with what can go wrong and what the dealer does about it, and whether the car is insured, from the [RDW's open data](https://opendata.rdw.nl). Notifications come for a new recall, the APK a month and a week ahead, and a car with no insurance on record. Off until `RDW_ENABLED=true`; the plate, entered under Settings, is the only thing sent. See [Dutch registration (RDW)](#dutch-registration-rdw).
-- **Energy statistics** -- Track daily energy consumption, efficiency (Wh/km on a plug-in car, L/100 km on a hybrid), fuel use, electric share, average driving speed, and more, for any period from a week to several years.
+- **Energy statistics** -- Track daily energy consumption, efficiency (Wh/km on a plug-in car, L/100 km on a hybrid), fuel use, electric share, average driving speed, and more, for any period from the last 24 hours to several years.
 - **Remote commands** -- Trigger climate pre-conditioning (normal climate, fan only or front defrost), lock or unlock the car, open the boot, and activate the horn and lights remotely from the dashboard. On a plug-in car also start or stop charging, lock or unlock the charging cable, switch battery heating on or off, set the charging and battery heating schedules, and set the charge current limit and, where the car takes one, the charge target. Opening the boot and unlocking the cable ask for a second tap. Each command reports whether the car carried it out, and if it refused, the reason the MG servers gave.
 - **Climate schedules** -- Switch climate on at a set time on chosen weekdays, or once. A schedule sets the temperature or mode, seat heating and the rear defroster, and can skip mild days by the car's outside temperature. Schedules run on the server, so no browser needs to be open, and each run sends a push notification saying whether the car started climate.
 - **Push notifications** -- Browser and in-app alerts for key events: engine started, low or high tyre pressure, a slow puncture, low EV battery, low fuel, a weak 12V battery, car left unlocked, doors or windows left open, the car moving while parked, arriving at or leaving home or work, a charge that finished or stopped early, maintenance coming due, the APK running out or a recall on a Dutch plate, a climate schedule that ran, the messages the official MG app receives, and data that stopped arriving because the MG sign-in failed or the car went quiet. Each device chooses which ones it gets.
@@ -122,12 +156,12 @@ Thanks to Jos for the foundation.
 - **Single sign-on** -- Sign in through your own identity provider (Authentik, Authelia, Keycloak, Pocket ID, Google, and anything else speaking OpenID Connect), with optional auto-login and group or email based access restrictions. A built-in username/password login remains available for installs without a provider. See [`AUTHENTICATION.md`](documentation/AUTHENTICATION.md).
 - **English interface** -- MGMate ships in English only. The translation structure is kept, so a fork can add its own language; see [Adding a language](.github/CONTRIBUTING.md#adding-a-language).
 - **Region and units** -- Kilometres or miles, Celsius or Fahrenheit, bar, psi or kPa for tyres, L/100 km or miles per UK or US gallon for fuel, and a 24-hour or 12-hour clock. Each one follows the region the browser is in (taken from its time zone, so an English browser in the Netherlands still gets kilometres and 14:05), and can be set by hand under Settings > Region and units, as can the region itself, which also sets the date order. Everything is stored in metric and converted only for display, so switching back and forth loses nothing; the trip log's CSV export follows the chosen distance unit and clock. The homepage widget and the `TYRE_PRESSURE_*_BAR` thresholds stay metric, and notifications use a 24-hour clock.
-- **Settings follow you** -- Theme, language, units, the dashboard layout and the map's layers and filters are saved to your account, so every phone, tablet and computer you sign in on looks the same. Each browser keeps a copy too, so pages open instantly and the login page keeps your theme and language. After upgrading, the first device to sign in brings its settings along.
+- **Settings follow you** -- Theme, units, the dashboard layout and the map's layers and filters are saved to your account, so every phone, tablet and computer you sign in on looks the same. Each browser keeps a copy too, so pages open instantly and the login page keeps your theme. After upgrading, the first device to sign in brings its settings along.
 - **Self-hosted** -- Runs entirely on your own infrastructure via Docker (all-in-one container or Docker Compose). No cloud account or subscription required beyond the SAIC iSmart API.
 
 ### Dashboard cards
 
-Cards are shown or hidden automatically based on vehicle type (HEV / PHEV / BEV). You can also reorder and toggle individual cards in the dashboard's edit mode.
+The overview above is what you see by default. The classic status cards below are switched on under **Edit layout > Show status cards**. They are shown or hidden automatically based on vehicle type (HEV / PHEV / BEV), and you can reorder and toggle each one in the edit mode.
 
 | Card | Description | Vehicle types |
 | ---- | ----------- | ------------- |
@@ -161,7 +195,7 @@ Cards are shown or hidden automatically based on vehicle type (HEV / PHEV / BEV)
 
 ### Statistics insights
 
-The Statistics view shows insight cards and charts for a period of its own: the last 7, 30 or 90 days, this or last month, this or last year, or custom dates. Charts show a point per day up to about three months, per week up to a year, and per month beyond that. A period longer than a month also gets a table of trips, distance and energy per month. Cards are draggable and individually toggleable.
+The Statistics view shows insight cards and charts for a period of its own: the last 24 hours, the last 7, 30 or 90 days, this or last month, this or last year, or custom dates. Charts show a point per day up to about three months, per week up to a year, and per month beyond that. A period longer than a month also gets a table of trips, distance and energy per month. Cards are draggable and individually toggleable.
 
 | Insight | Description |
 | ------- | ----------- |
@@ -315,7 +349,7 @@ docker stop mgmate && docker rm mgmate
 # Re-run your original docker run command
 ```
 
-When a newer release is out, the footer says so and links to its release notes. MGMate asks GitHub once a day; set `UPDATE_CHECK_ENABLED=false` to stop it. A Compose build only knows its own version when you pass one, so build with `APP_VERSION=$(git describe --tags) docker compose up -d --build` to get the notice.
+When a newer release is out, the sidebar says so under the version and links to its release notes. MGMate asks GitHub once a day; set `UPDATE_CHECK_ENABLED=false` to stop it. A Compose build only knows its own version when you pass one, so build with `APP_VERSION=$(git describe --tags) docker compose up -d --build` to get the notice.
 
 ### Monitoring
 
@@ -461,7 +495,7 @@ Note: "keys left in the car" is not currently supported because the SAIC MQTT ga
 - **Totals.** The distance per purpose for the period is shown at the top.
 - **Distance.** A trip counts for the distance on its odometer when the car reported a reading at both ends. Otherwise it counts for the distance along its GPS fixes, which is a little short because the fixes cut corners.
 - **Addresses** are looked up once through the same OpenStreetMap geocoder as the map, and then kept with the trip for good, so a log exported next year still shows them. With place names switched off (Settings > Map, or `GEOCODING__ENABLED=false`), ends show as coordinates and no lookups are made.
-- **Export CSV** saves the period, hidden trips left out, as a spreadsheet: date, departure and arrival time, from and to address, odometer start and end, distance, purpose and notes. The file follows the interface language: comma-separated in English, and semicolon-separated with decimal commas in Dutch, so it opens in columns in Excel either way.
+- **Export CSV** saves the period, hidden trips left out, as a spreadsheet: date, departure and arrival time, from and to address, odometer start and end, distance, purpose and notes. The file is comma-separated, so it opens in columns in Excel.
 
 Only trips the Worker has saved can be logged, so the trip being driven, and one finished in the last few minutes, appear once the car has been parked for a while.
 
@@ -544,7 +578,7 @@ The map view supports four POI overlay layers: charging stations, fuel stations,
 The map underneath every overlay is drawn from OpenStreetMap vector tiles by [MapLibre GL](https://maplibre.org), served by [OpenFreeMap](https://openfreemap.org) -- no API key required.
 
 - The basemap follows the interface theme: a dark style in the dark theme, a light one in the light theme, switching without a page reload. Turn on **Colourful maps** in Settings to show every map in full colour instead, whatever the theme. The setting covers every map in the app, the dashboard's location card included.
-- Labels follow the interface language, so the same map reads "Duitsland" in Dutch and "Germany" in English. Names come from OpenStreetMap's own `name:<language>` tags and fall back to the local name where no translation exists.
+- Labels are in English (OpenStreetMap's `name:en` tags) and fall back to the local name where no translation exists.
 - The renderer (about 1.5 MB) is downloaded only when a page with a map opens, and is deliberately kept out of the service worker's precache so an install does not pay for it up front.
 - A browser without WebGL, or a tile server that cannot be reached, falls back to the classic OpenStreetMap raster tiles automatically.
 - To serve the basemap yourself (your own OpenFreeMap or any MapLibre style), build the frontend image with `--build-arg MAP_STYLE_DARK=...`, `--build-arg MAP_STYLE_LIGHT=...` and `--build-arg MAP_STYLE_COLORFUL=...`, and add that host to `connect-src` and `img-src` in `frontend/nginx-security-headers.conf` -- the Content-Security-Policy only allows the hosts listed there.
@@ -598,7 +632,7 @@ Sourced from OpenStreetMap via [Nominatim](https://nominatim.openstreetmap.org) 
 - The dashboard's location card and the car's map popup show the street and city the car is standing in.
 - Answers are cached in PostgreSQL for 90 days, keyed by a coordinate grid and by language, so the same parking spot is looked up once. "Nothing mapped here" is cached for a day, since OSM coverage grows.
 - The public Nominatim instance allows about one request per second, so a request resolves at most three new coordinates and the browser asks again for the rest; a cold trip list fills in over a few seconds and is instant from then on.
-- Names follow the interface language, so switching between English and Dutch looks the places up again in that language.
+- Names are asked for in English, and fall back to the local name.
 - **Settings > Map > Show place names** turns the whole thing off (it is on by default). Off, trips are listed by date, the location card shows no address, and no coordinates leave the browser.
 - Set `GEOCODING__ENABLED=false` to switch it off for the whole deployment instead, or point `GEOCODING__BASEURL` at your own Nominatim instance.
 
@@ -636,6 +670,9 @@ A reading counts as over the limit only past 5 km/h above it: speedometers read 
 - With an identity provider, restrict who may sign in -- at the provider itself or with `OIDC_ALLOWED_GROUPS` / `OIDC_ALLOWED_EMAILS`. Without a restriction, every account the provider accepts can sign in and control the car.
 - Login endpoints are rate-limited per IP address on top of the global limit.
 - MQTT requires credentials, and the broker is never published outside the stack: only MGMate's own services and the gateway can reach it.
+- Requests are rate-limited per address, and also per device in front of the frontend container unless you list your proxies (see [Reverse proxy examples](#reverse-proxy-examples)), so a device on your LAN cannot get round the limits by claiming new addresses.
+- Every container image MGMate builds on (the gateway, PostgreSQL, Mosquitto, nginx, .NET) is pinned by digest, so an upstream tag that changes cannot change what you run without a new MGMate release. The server logs under `/data/logs` are readable by root only.
+- Each change is tested by starting the whole Compose stack and the all-in-one container in CI, with a gateway that never contacts MG.
 - The frontend sends a strict Content-Security-Policy with every response, which allows scripts only from MGMate itself. See [Behind a reverse proxy or CDN](#behind-a-reverse-proxy-or-cdn) for keeping it intact.
 
 ### What leaves your network
