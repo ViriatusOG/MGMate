@@ -94,6 +94,17 @@ public class VehicleRepository(AppDbContext db, ILogger<VehicleRepository>? logg
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task SetOwnershipDatesAsync(
+        int vehicleId, DateTime? registrationDate, DateTime? deliveryDate, double? deliveryOdometerKm, CancellationToken ct = default)
+    {
+        var vehicle = await db.Vehicles.FindAsync([vehicleId], ct);
+        if (vehicle is null) return;
+        vehicle.RegistrationDate = registrationDate;
+        vehicle.DeliveryDate = deliveryDate;
+        vehicle.DeliveryOdometerKm = deliveryOdometerKm;
+        await db.SaveChangesAsync(ct);
+    }
+
     public async Task SetConfigValueAsync(int vehicleId, string key, string value, CancellationToken ct = default)
     {
         var vehicle = await db.Vehicles.FindAsync([vehicleId], ct);

@@ -28,6 +28,7 @@ async function mountView() {
         FontAwesomeIcon: true,
         MaintenanceItemFormModal: true,
         MaintenanceItemDetailModal: true,
+        WarrantySection: true,
         MaintenanceDueCard: {
           props: ['item'],
           template: '<div class="item">{{ item.name }}</div>',

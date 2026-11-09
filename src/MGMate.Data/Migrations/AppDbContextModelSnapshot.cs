@@ -1157,6 +1157,12 @@ namespace MGMate.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("DeliveryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double?>("DeliveryOdometerKm")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("LastMessageId")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
@@ -1176,6 +1182,9 @@ namespace MGMate.Data.Migrations
 
                     b.Property<double?>("ParkedLongitude")
                         .HasColumnType("double precision");
+
+                    b.Property<DateTime?>("RegistrationDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SaicUser")
                         .HasColumnType("text");
@@ -1231,6 +1240,48 @@ namespace MGMate.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("VehiclePhotos");
+                });
+
+            modelBuilder.Entity("MGMate.Core.Models.WarrantyCover", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double?>("DistanceKm")
+                        .HasColumnType("double precision");
+
+                    b.Property<bool>("Featured")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Months")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VehicleId");
+
+                    b.ToTable("WarrantyCovers");
                 });
 
             modelBuilder.Entity("MGMate.Core.Models.ChargeSession", b =>
@@ -1322,6 +1373,15 @@ namespace MGMate.Data.Migrations
                 });
 
             modelBuilder.Entity("MGMate.Core.Models.VehiclePhoto", b =>
+                {
+                    b.HasOne("MGMate.Core.Models.Vehicle", null)
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MGMate.Core.Models.WarrantyCover", b =>
                 {
                     b.HasOne("MGMate.Core.Models.Vehicle", null)
                         .WithMany()

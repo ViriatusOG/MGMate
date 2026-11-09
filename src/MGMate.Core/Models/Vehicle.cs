@@ -55,6 +55,18 @@ public class Vehicle
     /// </summary>
     public string? LicensePlate { get; set; }
 
+    /// <summary>
+    /// The day the car was first registered (V5C), as midnight UTC. The manufacturer's warranty
+    /// runs from it. Neither the gateway nor SAIC reports it, so the user enters it.
+    /// </summary>
+    public DateTime? RegistrationDate { get; set; }
+
+    /// <summary>The day the owner took delivery, as midnight UTC. Often weeks after registration.</summary>
+    public DateTime? DeliveryDate { get; set; }
+
+    /// <summary>The odometer reading at delivery, in km.</summary>
+    public double? DeliveryOdometerKm { get; set; }
+
     public ICollection<TelemetrySnapshot> TelemetrySnapshots { get; set; } = [];
 }
 

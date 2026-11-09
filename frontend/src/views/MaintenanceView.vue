@@ -10,6 +10,7 @@ import MaintenanceItemDetailModal from '@/components/MaintenanceItemDetailModal.
 import type { MaintenanceItem, MaintenanceDueStatus } from '@/services/maintenanceApi'
 import { useErrorMessage } from '@/composables/useErrorMessage'
 import ViewHeader from '@/components/ViewHeader.vue'
+import WarrantySection from '@/components/WarrantySection.vue'
 
 const { t } = useI18n()
 const vehicleStore = useVehicleStore()
@@ -90,6 +91,8 @@ watch(vin, (v) => {
         @open="openDetail(item)"
       />
     </div>
+
+    <WarrantySection v-if="vin" :vin="vin" />
 
     <MaintenanceItemFormModal
       v-if="vin"

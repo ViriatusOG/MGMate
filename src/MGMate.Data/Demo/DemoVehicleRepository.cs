@@ -17,6 +17,9 @@ public sealed class DemoVehicleRepository : IVehicleRepository
         ConfigJson = """{"hw_version":"MG_BEV_1.0","BType":"1"}""",
         // A made-up plate in the current Dutch format; the demo's RDW client answers for any plate.
         LicensePlate = "ZZ123Z",
+        RegistrationDate = DateTime.UtcNow.Date.AddMonths(-6),
+        DeliveryDate = DateTime.UtcNow.Date.AddMonths(-6).AddDays(10),
+        DeliveryOdometerKm = 24,
     };
 
     public Task<IReadOnlyList<Vehicle>> GetAllAsync(CancellationToken ct = default) =>
@@ -40,6 +43,16 @@ public sealed class DemoVehicleRepository : IVehicleRepository
 
     public Task SetLastMessageIdAsync(int vehicleId, string messageId, CancellationToken ct = default) =>
         Task.CompletedTask;
+
+    public Task SetOwnershipDatesAsync(
+        int vehicleId, DateTime? registrationDate, DateTime? deliveryDate, double? deliveryOdometerKm, CancellationToken ct = default)
+    {
+        if (vehicleId != DemoVehicle.Id) return Task.CompletedTask;
+        DemoVehicle.RegistrationDate = registrationDate;
+        DemoVehicle.DeliveryDate = deliveryDate;
+        DemoVehicle.DeliveryOdometerKm = deliveryOdometerKm;
+        return Task.CompletedTask;
+    }
 
     // The one setting the demo keeps: entering a plate is how the RDW card is tried out.
     public Task SetLicensePlateAsync(int vehicleId, string? licensePlate, CancellationToken ct = default)

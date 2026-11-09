@@ -993,7 +993,7 @@
   },
   "maintenance": {
     "title": "Maintenance",
-    "subtitle": "Track recurring service items for your car and get notified when they come due.",
+    "subtitle": "Service intervals and warranty for your car, with a notice when something comes due.",
     "addItem": "Add item",
     "editItem": "Edit item",
     "delete": "Delete",
@@ -1206,6 +1206,18 @@
       "rdw": {
         "disabled": "RDW lookups are switched off on this server.",
         "invalidPlate": "A plate is letters and digits, at most 8 without the dashes."
+      },
+      "warranty": {
+        "nameRequired": "Give the cover a name.",
+        "nameTooLong": "The name can be at most 200 characters.",
+        "notesTooLong": "The note can be at most 500 characters.",
+        "monthsOutOfRange": "Months must be between 0 and 360.",
+        "distanceOutOfRange": "The mileage limit is outside the range MGMate accepts.",
+        "tooManyCovers": "A car can have at most 100 covers.",
+        "registrationDateOutOfRange": "The registration date must be in the past.",
+        "deliveryDateOutOfRange": "The delivery date must be in the past.",
+        "odometerOutOfRange": "The odometer reading is outside the range MGMate accepts.",
+        "deliveryBeforeRegistration": "The delivery date cannot be before the registration date."
       }
     }
   },
@@ -1713,6 +1725,78 @@
       "topic": "Topic",
       "value": "Value",
       "kept": "Saved"
+    }
+  },
+  "warranty": {
+    "title": "Warranty",
+    "starts": "Starts",
+    "firstRegistration": "first registration",
+    "now": "now",
+    "edit": "Edit warranty",
+    "editStart": "Change the start date",
+    "status": {
+      "unknown": "No start date",
+      "active": "Active",
+      "endingSoon": "Ending soon",
+      "expired": "Expired",
+      "notCovered": "Not covered"
+    },
+    "columns": {
+      "cover": "Cover",
+      "limit": "Limit",
+      "ends": "Ends",
+      "left": "Left",
+      "status": "Status"
+    },
+    "limitMonths": "{n} month | {n} month | {n} months",
+    "limitYears": "{n} year | {n} year | {n} years",
+    "anyMileage": "any mileage",
+    "notCovered": "Not covered",
+    "endsOn": "Ends {when}",
+    "endsOnOrAt": "Ends {when} or at {distance}",
+    "endsShort": "{when} or {distance}",
+    "ended": "Ended {when}",
+    "endedAt": "Ended at {distance}",
+    "endedByDistance": "mileage reached first",
+    "daysLeft": "ends today | {n} day | {n} days",
+    "yearsMonthsLeft": "{years} yr {months} mo",
+    "yearsLeft": "{n} year | {n} year | {n} years",
+    "monthsLeft": "{n} month | {n} month | {n} months",
+    "left": "{amount} left",
+    "showAll": "Show all {n} covers",
+    "showFewer": "Show fewer",
+    "footnote": "Sorted by what ends first; expired covers drop to the bottom. Ending soon means the last 30 days, or the last 10% of its miles. Mileage limits are the odometer reading. Cover only applies to manufacturing defects.",
+    "setup": {
+      "title": "Set up your warranty",
+      "badge": "Needs a date",
+      "text": "MG warranty runs from the car's first registration date. You can find it on your V5C logbook.",
+      "registrationDate": "First registration date",
+      "start": "Start tracking",
+      "hint": "Uses MG UK defaults, which you can change later",
+      "required": "Enter the first registration date"
+    },
+    "form": {
+      "registrationDate": "Warranty start (first registration)",
+      "deliveryDate": "Delivery date",
+      "deliveryOdometer": "Odometer at delivery ({unit})",
+      "datesHint": "MG counts from the first registration date. The delivery date and mileage are kept for your records and for Maintenance.",
+      "saveDates": "Save dates",
+      "covers": "Covers",
+      "name": "Name",
+      "months": "Months (0 = not covered)",
+      "distance": "Ends at odometer ({unit})",
+      "distanceHint": "Leave empty when mileage doesn't matter.",
+      "notes": "Note",
+      "featured": "Show as a big card",
+      "saveCover": "Save cover",
+      "addCover": "Add cover",
+      "deleteCover": "Delete cover",
+      "reset": "Reset to MG defaults",
+      "resetConfirm": "Replace every cover with MG's defaults?",
+      "coversHint": "Use Add cover for an extended warranty.",
+      "nameRequired": "Give the cover a name",
+      "monthsRequired": "Enter how many months it lasts, or 0 when it's not covered",
+      "newCover": "New cover"
     }
   }
 }

@@ -40,4 +40,10 @@ public interface IVehicleRepository
 
     /// <summary>Stores the registration (normalized, or null to clear it). See <see cref="Vehicle.LicensePlate"/>.</summary>
     Task SetLicensePlateAsync(int vehicleId, string? licensePlate, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stores the registration and delivery dates and the delivery odometer reading, replacing all
+    /// three. See <see cref="Vehicle.RegistrationDate"/>.
+    /// </summary>
+    Task SetOwnershipDatesAsync(int vehicleId, DateTime? registrationDate, DateTime? deliveryDate, double? deliveryOdometerKm, CancellationToken ct = default);
 }
