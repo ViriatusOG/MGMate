@@ -1779,10 +1779,6 @@
     "ended": "Ended {when}",
     "endedAt": "Ended at {distance}",
     "endedByDistance": "mileage reached first",
-    "daysLeft": "ends today | {n} day | {n} days",
-    "yearsMonthsLeft": "{years} yr {months} mo",
-    "yearsLeft": "{n} year | {n} year | {n} years",
-    "monthsLeft": "{n} month | {n} month | {n} months",
     "left": "{amount} left",
     "showAll": "Show all {n} covers",
     "showFewer": "Show fewer",
@@ -1818,6 +1814,14 @@
       "nameRequired": "Give the cover a name",
       "monthsRequired": "Enter how many months it lasts, or 0 when it's not covered",
       "newCover": "New cover"
-    }
+    },
+    "endsToday": "ends today"
+  },
+  "timeSpan": {
+    "days": "{n} days | {n} day | {n} days",
+    "months": "{n} mo",
+    "monthsDays": "{months} mo {days} d",
+    "years": "{n} year | {n} year | {n} years",
+    "yearsMonths": "{years} yr {months} mo"
   }
 }

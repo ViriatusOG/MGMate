@@ -5,6 +5,8 @@ import type { MaintenanceItem } from '@/services/maintenanceApi'
 import { dueProgress, dueStatusVariant, formatIntervalSummary } from '@/utils/maintenance'
 import { ODOMETER_FORMAT } from '@/utils/units'
 import { formatDate } from '@/utils/format'
+import { formatTimeSpan, utcDay } from '@/utils/timeSpan'
+import { todayUtc } from '@/utils/warranty'
 import { useUnits } from '@/composables/useUnits'
 
 const props = defineProps<{ item: MaintenanceItem }>()
@@ -18,6 +20,17 @@ const progress = computed(() => dueProgress(props.item))
 
 function distance(km: number): string {
   return units.value.format('distance', km, ODOMETER_FORMAT) ?? '-'
+}
+
+// "4 mo 29 d left" from the due date; "due today" and an item without a date keep the day count.
+function timeText(remaining: number): string {
+  const days = Math.round(remaining)
+  const due = props.item.nextDueDate
+  if (days === 0 || !due)
+    return days < 0 ? t('maintenance.overDays', -days) : t('maintenance.leftDays', days)
+  return days < 0
+    ? t('maintenance.over', { amount: formatTimeSpan(t, utcDay(due), todayUtc()) })
+    : t('maintenance.left', { amount: formatTimeSpan(t, todayUtc(), utcDay(due)) })
 }
 
 const bars = computed(() => {
@@ -38,10 +51,7 @@ const bars = computed(() => {
       key: 'time',
       used: time.used,
       over: time.remaining < 0,
-      text:
-        time.remaining < 0
-          ? t('maintenance.overDays', Math.round(-time.remaining))
-          : t('maintenance.leftDays', Math.round(time.remaining)),
+      text: timeText(time.remaining),
     })
   return out
 })
