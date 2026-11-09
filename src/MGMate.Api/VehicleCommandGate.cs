@@ -55,7 +55,7 @@ internal sealed class VehicleCommandGate(TimeSpan? holdDuration = null)
     /// <summary>
     /// Releases <paramref name="vin"/>'s gate early: the gateway has answered the command on
     /// <paramref name="commandTopic"/>, so it is free for the next one. An answer for any other
-    /// command, such as one Home Assistant sent through the same broker, leaves the gate held.
+    /// command, such as one another MQTT client sent through the same broker, leaves the gate held.
     /// </summary>
     internal void Complete(string vin, string commandTopic)
     {

@@ -122,7 +122,7 @@ public static class VehicleCommands
 
     /// <summary>
     /// The command sent on <paramref name="topic"/>, or null when it is not one MGMate sends,
-    /// such as a command Home Assistant sent through the same broker.
+    /// such as one another MQTT client sent through the same broker.
     /// </summary>
     public static string? CommandFor(string topic) => CommandsByTopic.GetValueOrDefault(topic);
 

@@ -102,7 +102,7 @@ public class VehicleCommandGateTests
         Assert.True(await NextCommandRunsAsync(gate, "VIN1", ct));
     }
 
-    // Home Assistant shares the broker, so an answer can belong to a command MGMate never
+    // Another client can share the broker, so an answer can belong to a command MGMate never
     // sent. The gateway is still busy with ours until its own answer arrives.
     [Fact]
     public async Task Complete_AnswerForAnotherCommand_KeepsTheGateHeld()

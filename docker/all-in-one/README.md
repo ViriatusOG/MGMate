@@ -20,7 +20,7 @@ All processes are managed by **supervisord**. Each service starts in priority or
 | Container port | Purpose | Expose? |
 |---------------|---------|---------|
 | **80** | Web UI (nginx) | Yes -- map to your chosen host port (default 8080) |
-| **1883** | MQTT broker | Optional -- only needed for external MQTT clients such as [Home Assistant](../../documentation/HOME_ASSISTANT.md); keep closed unless needed |
+| 1883 | MQTT broker | No -- internal to the container |
 
 ## Persistent data
 
@@ -54,12 +54,12 @@ By default the web login uses the same `SAIC_USER` and `SAIC_PASSWORD` credentia
 
 ### Optional
 
-Every other variable works here as well, under the same name as in Docker Compose. They are all listed, with their defaults, in [`CONFIGURATION.md`](../../documentation/CONFIGURATION.md): push notifications, single sign-on, the map's data sources, the Dutch registration (RDW) lookups, tyre pressure bands, the traction battery's real size, the rate limit and the Home Assistant broker login. A few behave differently in this image:
+Every other variable works here as well, under the same name as in Docker Compose. They are all listed, with their defaults, in [`CONFIGURATION.md`](../../documentation/CONFIGURATION.md): push notifications, single sign-on, the map's data sources, the Dutch registration (RDW) lookups, tyre pressure bands, the traction battery's real size, and the rate limit. A few behave differently in this image:
 
 | Variable | In this image |
 |----------|---------------|
 | `POSTGRES_PASSWORD` | Generated on first start and saved to `/data/.postgres_password` when not set. Set it only if you need a known value, for example to connect an external tool to the database. |
-| `MQTT_BROKER_PASSWORD` | Generated on every start when not set. Set it if you publish port 1883 and connect other clients. |
+| `MQTT_BROKER_PASSWORD` | Generated on every start when not set. |
 | `MQTT_HOST` / `MQTT_PORT` | Ignored: the services always use the broker inside the container. |
 | `AUTH_COOKIE_SECURE` | Defaults to `auto`: the session cookie is marked Secure whenever MGMate is opened over HTTPS (also behind a TLS-terminating proxy), and a plain-HTTP LAN address still works. `true` always marks it Secure, `false` never does. |
 

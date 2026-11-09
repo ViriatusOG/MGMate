@@ -50,9 +50,6 @@ all-in-one container and the Unraid template take them as container variables.
 | `MQTT_BROKER_USERNAME` | `garagestack` | Username of the broker login the services use. |
 | `MQTT_HOST` | Compose: `mosquitto` | Broker the API and Worker connect to. The gateway container publishes to `mosquitto` (the broker address in its section of `docker-compose.yml`), so change both together. The all-in-one container always uses its own. |
 | `MQTT_PORT` | `1883` | Port of that broker. |
-| `MQTT_EXTERNAL_PORT` | `1883` | Host port the bundled broker is published on (Docker Compose). |
-| `MQTT_BIND_ADDRESS` | `127.0.0.1` | Interface that port is bound to (Docker Compose). Set `0.0.0.0` only to reach the broker from other devices. |
-| `HA_MQTT_USERNAME` / `HA_MQTT_PASSWORD` | none | A second broker login for Home Assistant, limited to the car's topics and Home Assistant discovery. Empty skips it. See [`HOME_ASSISTANT.md`](HOME_ASSISTANT.md). |
 
 ## Signing in
 

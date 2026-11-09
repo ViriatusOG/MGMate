@@ -677,7 +677,7 @@
       "title": "API-tokens",
       "desc": "Laat een script, een dashboard of een horloge de gegevens van MGMate lezen zonder in te loggen. Een token leest als jouw account en kan alleen lezen: geen opdrachten sturen en niets wijzigen. Stuur hem mee als de header \"Authorization: Bearer\" gevolgd door het token.",
       "nameLabel": "Naam van het token",
-      "namePlaceholder": "Naam, bijv. Home Assistant",
+      "namePlaceholder": "Naam, bijv. Homepage",
       "create": "Token maken",
       "copyNow": "Kopieer dit token nu: het wordt niet opnieuw getoond.",
       "newToken": "Nieuw API-token",

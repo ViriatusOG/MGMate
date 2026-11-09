@@ -10,7 +10,7 @@ namespace MGMate.Worker.Mqtt;
 
 /// <summary>
 /// Holds the Worker's MQTT connection and hands every message to the first handler that claims
-/// it: the gateway's sign-in state, Home Assistant discovery, capability config, the gateway's
+/// it: the gateway's sign-in state, the gateway's discovery announcements, capability config, the gateway's
 /// latest-only values, MG app messages,
 /// command results, and last
 /// the telemetry itself. Reconnects for as long as the Worker runs.
@@ -40,7 +40,7 @@ public class MqttConsumerService : BackgroundService
         _handlers =
         [
             new AccountStatusHandler(logger, scopeFactory, pushSender, strings, TimeProvider.System, signIn),
-            new HaDiscoveryHandler(logger, vehicles),
+            new GatewayDiscoveryHandler(logger, vehicles),
             new VehicleConfigHandler(logger, vehicles),
             new GatewayLatestValueHandler(logger, vehicles),
             new VehicleMessageHandler(logger, scopeFactory, pushSender, strings, TimeProvider.System),

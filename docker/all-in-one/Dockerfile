@@ -201,9 +201,8 @@ RUN rm -f /etc/nginx/sites-enabled/default \
     && ln -sfn /data/worker /app/worker/logs \
     && mkdir -p /data/db/postgres /data/db/mosquitto /data/logs /data/dataprotection /data/api /data/worker
 
-# Port 80  -- nginx (web UI + API proxy)
-# Port 1883 -- Mosquitto MQTT broker
-EXPOSE 80 1883
+# Port 80 -- nginx (web UI + API proxy). The MQTT broker stays inside the container.
+EXPOSE 80
 
 # The readiness check: the database, the broker and the Worker's heartbeat. The separate images
 # keep the API's healthcheck on /health, since there the Worker waits for the API to be healthy;

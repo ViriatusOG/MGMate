@@ -113,7 +113,7 @@ public class CommandResultMessageTests
         Assert.Equal(new CommandResultMessage("lock", false, "vehicle is not online"), CommandResultMessage.From(payload));
     }
 
-    // Home Assistant sends commands through the same broker; no browser is waiting on those.
+    // Another MQTT client can send commands through the same broker; no browser is waiting on those.
     [Fact]
     public void From_AnswerToACommandTheApiNeverSends_IsNull()
     {

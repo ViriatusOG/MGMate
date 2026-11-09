@@ -111,7 +111,6 @@ public class EnvironmentAliasesTests
         "COMPOSE_PROJECT_NAME",
         "SAIC_REGION", "SAIC_REST_URI", "CACHED_STATUS_INTERVAL",
         "POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD",
-        "MQTT_EXTERNAL_PORT", "MQTT_BIND_ADDRESS", "HA_MQTT_USERNAME", "HA_MQTT_PASSWORD",
         // Build arguments and Vite variables, baked into the frontend bundle at build time.
         "MAP_STYLE_DARK", "MAP_STYLE_LIGHT", "MAP_STYLE_COLORFUL", "VITE_API_URL", "VITE_DEMO_MODE",
     ];

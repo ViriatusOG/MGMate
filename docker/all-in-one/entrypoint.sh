@@ -80,8 +80,7 @@ chown -R appuser:appuser /data/api /data/worker /data/dataprotection
 # mosquitto and postgres run as other users in this same container.
 chmod 700 /data/api /data/worker /data/dataprotection
 
-# Generate Mosquitto password and ACL files: the internal broker login above, plus the optional
-# Home Assistant login (HA_MQTT_USERNAME / HA_MQTT_PASSWORD, see documentation/HOME_ASSISTANT.md).
+# Generate Mosquitto password and ACL files for the internal broker login above.
 # Mosquitto 2.x refuses to load password/ACL files unless they are owned by
 # the user it runs as (it checks the literal "mosquitto" account via getpwnam,
 # not the process's actual uid) -- supervisord runs the broker as that user.

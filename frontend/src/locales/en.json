@@ -677,7 +677,7 @@
       "title": "API tokens",
       "desc": "Let a script, a dashboard or a watch read MGMate's data without signing in. A token reads as your account and can only read: it cannot send commands or change anything. Send it as the header \"Authorization: Bearer\" followed by the token.",
       "nameLabel": "Token name",
-      "namePlaceholder": "Name, e.g. Home Assistant",
+      "namePlaceholder": "Name, e.g. Homepage",
       "create": "Create token",
       "copyNow": "Copy this token now: it is not shown again.",
       "newToken": "New API token",

@@ -59,7 +59,6 @@ body:
         - Remote commands
         - Push Notifications
         - Authentication / API tokens
-        - Home Assistant
         - Logs page / data export
         - Docker / Deployment
         - Other
