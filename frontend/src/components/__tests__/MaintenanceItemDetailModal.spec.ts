@@ -13,6 +13,7 @@ import {
 import { ApiError } from '@/services/apiCore'
 import { maintenanceItem } from '@/services/__tests__/maintenanceFixtures'
 import { DetailModalStub } from './stubs'
+import { warrantyApi, type Warranty } from '@/services/warrantyApi'
 
 vi.mock('@/services/maintenanceApi', () => ({
   maintenanceApi: {
@@ -26,6 +27,21 @@ vi.mock('@/services/maintenanceApi', () => ({
   },
 }))
 
+vi.mock('@/services/warrantyApi', () => ({
+  warrantyApi: {
+    get: vi.fn<() => Promise<Warranty>>(),
+    setDates: vi.fn<() => Promise<Warranty>>(),
+  },
+}))
+
+const warranty = (registrationDate: string | null): Warranty => ({
+  registrationDate,
+  deliveryDate: '2026-11-07T00:00:00Z',
+  deliveryOdometerKm: 24,
+  odometerKm: 24,
+  covers: [],
+})
+
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en } })
 
 const entry: MaintenanceLogEntry = {
@@ -37,9 +53,9 @@ const entry: MaintenanceLogEntry = {
   createdAt: '2026-09-01',
 }
 
-async function openModal() {
+async function openModal(item: MaintenanceItem = maintenanceItem()) {
   const wrapper = mount(MaintenanceItemDetailModal, {
-    props: { open: false, vin: 'FAKEVN00000000001', item: maintenanceItem() },
+    props: { open: false, vin: 'FAKEVN00000000001', item },
     global: { plugins: [i18n], stubs: { DetailModal: DetailModalStub, FontAwesomeIcon: true } },
   })
   await wrapper.setProps({ open: true })
@@ -111,5 +127,56 @@ describe('MaintenanceItemDetailModal', () => {
 
     expect(wrapper.find('.text-danger').text()).toBe(en.errors.offline)
     expect(wrapper.findAll('.maintenance-history__row')).toHaveLength(1)
+  })
+
+  describe('with nothing to count from', () => {
+    it('offers the registration date first, and logs a past service on request', async () => {
+      const wrapper = await openModal()
+
+      expect(wrapper.find('#count-from-registration').exists()).toBe(true)
+      expect(wrapper.find('#log-performed-at').exists()).toBe(false)
+
+      await button(wrapper, en.maintenance.countFrom.pastService).trigger('click')
+
+      expect(wrapper.find('#count-from-registration').exists()).toBe(false)
+      expect(wrapper.find('#log-performed-at').exists()).toBe(true)
+    })
+
+    it('saves the registration date for the car, keeping its delivery', async () => {
+      vi.mocked(warrantyApi.get).mockResolvedValue(warranty(null))
+      vi.mocked(warrantyApi.setDates).mockResolvedValue(warranty('2026-07-31T00:00:00Z'))
+      const wrapper = await openModal()
+
+      await wrapper.find('#count-from-registration').setValue('2026-07-31')
+      await wrapper.find<HTMLInputElement>('#count-from-registration').element.form!.requestSubmit()
+      await flushPromises()
+
+      expect(warrantyApi.setDates).toHaveBeenCalledWith('FAKEVN00000000001', {
+        registrationDate: '2026-07-31',
+        deliveryDate: '2026-11-07',
+        deliveryOdometerKm: 24,
+      })
+    })
+
+    it('says why when the date is refused', async () => {
+      vi.mocked(warrantyApi.get).mockResolvedValue(warranty(null))
+      vi.mocked(warrantyApi.setDates).mockRejectedValueOnce(new TypeError('offline'))
+      const wrapper = await openModal()
+
+      await wrapper.find('#count-from-registration').setValue('2026-07-31')
+      await wrapper.find<HTMLInputElement>('#count-from-registration').element.form!.requestSubmit()
+      await flushPromises()
+
+      expect(wrapper.find('[role="alert"]').text()).toBe(en.errors.offline)
+    })
+  })
+
+  it('only offers to log a service once the item counts from something', async () => {
+    const wrapper = await openModal(
+      maintenanceItem({ countingFrom: 'registration', countingFromDate: '2026-07-31T00:00:00Z' }),
+    )
+
+    expect(wrapper.find('#count-from-registration').exists()).toBe(false)
+    expect(wrapper.find('#log-performed-at').exists()).toBe(true)
   })
 })

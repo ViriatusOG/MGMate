@@ -42,7 +42,7 @@ The main pages of MGMate, on a desktop and on a phone. They were taken in [demo 
 
 ### Maintenance
 
-![The maintenance list: service items marked overdue, due soon, OK or not tracked yet, and the warranty covers with the time and miles left on each](desktop-maintenance.webp)
+![The maintenance list: service items marked overdue, due soon or OK, one counting from the car's registration, and the warranty covers with the time and miles left on each](desktop-maintenance.webp)
 
 ### Climate schedules
 

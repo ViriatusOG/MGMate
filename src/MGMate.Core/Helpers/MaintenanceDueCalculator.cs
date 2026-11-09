@@ -1,3 +1,5 @@
+using MGMate.Core.Models;
+
 namespace MGMate.Core.Helpers;
 
 public enum MaintenanceDueStatus
@@ -20,6 +22,25 @@ public static class MaintenanceDueStatusNames
     };
 }
 
+/// <summary>Where an item's interval is counted from.</summary>
+public enum MaintenanceBaselineSource
+{
+    None,
+    Service,
+    Registration,
+}
+
+public readonly record struct MaintenanceBaseline(MaintenanceBaselineSource Source, DateTime? Date, double? OdometerKm)
+{
+    /// <summary>As the API names it: service, registration, or null when there is nothing to count from.</summary>
+    public string? ApiName => Source switch
+    {
+        MaintenanceBaselineSource.Service => "service",
+        MaintenanceBaselineSource.Registration => "registration",
+        _ => null,
+    };
+}
+
 public readonly record struct MaintenanceDueResult(
     MaintenanceDueStatus Status,
     DateTime? NextDueDate,
@@ -38,6 +59,27 @@ public static class MaintenanceDueCalculator
 {
     public const double DueSoonFractionElapsed = 0.9;
     private const double DaysPerMonth = 30.44;
+
+    /// <summary>
+    /// What an item counts from: its latest service when one is known, otherwise the car's first
+    /// registration at 0 km, the way MG counts the first service of a new car.
+    /// </summary>
+    public static MaintenanceBaseline BaselineFor(MaintenanceItem item, Vehicle? vehicle)
+    {
+        if (item.LastServiceDate is not null || item.LastServiceOdometerKm is not null)
+            return new(MaintenanceBaselineSource.Service, item.LastServiceDate, item.LastServiceOdometerKm);
+        if (vehicle?.RegistrationDate is { } registered)
+            return new(MaintenanceBaselineSource.Registration, registered, 0);
+        return new(MaintenanceBaselineSource.None, null, null);
+    }
+
+    /// <summary>An item's due status, counted from <see cref="BaselineFor"/>.</summary>
+    public static MaintenanceDueResult Calculate(
+        MaintenanceItem item, Vehicle? vehicle, double? currentOdometerKm, DateTime nowUtc)
+    {
+        var baseline = BaselineFor(item, vehicle);
+        return Calculate(item.IntervalKm, item.IntervalMonths, baseline.Date, baseline.OdometerKm, currentOdometerKm, nowUtc);
+    }
 
     public static MaintenanceDueResult Calculate(
         double? intervalKm,

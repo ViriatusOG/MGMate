@@ -20,6 +20,8 @@ export function maintenanceItem(overrides: Partial<MaintenanceItem> = {}): Maint
     daysRemaining: null,
     kmRemaining: null,
     createdAt: '2026-01-01',
+    countingFrom: null,
+    countingFromDate: null,
     ...overrides,
   }
 }

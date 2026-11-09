@@ -4,6 +4,7 @@ import { onMounted, computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useMaintenanceStore } from '@/stores/maintenance'
+import { useWarrantyStore } from '@/stores/warranty'
 import MaintenanceDueCard from '@/components/MaintenanceDueCard.vue'
 import MaintenanceItemFormModal from '@/components/MaintenanceItemFormModal.vue'
 import MaintenanceItemDetailModal from '@/components/MaintenanceItemDetailModal.vue'
@@ -64,6 +65,15 @@ function openEditFromDetail(item: MaintenanceItem) {
 watch(vin, (v) => {
   if (v) store.fetchItems(v)
 })
+
+// Items with no service count from the registration date, which the warranty section can change.
+const warrantyStore = useWarrantyStore()
+watch(
+  () => warrantyStore.warranty?.registrationDate,
+  (now, before) => {
+    if (vin.value && before !== undefined && now !== before) store.fetchItems(vin.value)
+  },
+)
 </script>
 
 <template>

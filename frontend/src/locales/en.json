@@ -1019,7 +1019,7 @@
       "intervalHint": "Set at least one interval. When both are set, the item is due whichever comes first.",
       "lastServiceDate": "Last service date",
       "lastServiceOdometer": "Last service odometer ({unit})",
-      "lastServiceHint": "Optional. Leave empty if this hasn't been serviced yet.",
+      "lastServiceHint": "Optional. Leave empty for a new car: the item then counts from the car's first registration date.",
       "save": "Save",
       "validationNameRequired": "Name is required",
       "validationIntervalRequired": "Set at least one interval (distance or time)",
@@ -1032,7 +1032,7 @@
       "submit": "Log service"
     },
     "status": {
-      "unknown": "Not tracked yet",
+      "unknown": "No start point",
       "ok": "OK",
       "dueSoon": "Due soon",
       "overdue": "Overdue"
@@ -1049,6 +1049,16 @@
     "atOdometer": "at {distance}",
     "lastDone": "Last done {when}",
     "neverDone": "Not done yet",
+    "noStartPoint": "Set when to count from",
+    "countingFromRegistration": "Counting from registration, {when}",
+    "countFrom": {
+      "title": "Count from",
+      "registration": "Registration",
+      "pastService": "A past service",
+      "registrationDate": "First registration date",
+      "hint": "MG counts the first service from the car's first registration. This date is saved for the car, so every item without a service counts from it, and the warranty uses it too.",
+      "submit": "Start tracking"
+    },
     "suggestions": {
       "service": "Annual service",
       "mot": "MOT",
