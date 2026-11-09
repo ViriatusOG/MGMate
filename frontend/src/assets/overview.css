@@ -520,6 +520,7 @@
   position: relative;
 }
 
+/* The car's body follows the theme; the roof is black, as on the two-tone MG4. */
 .ov-topview {
   display: block;
   width: 100%;
@@ -527,63 +528,125 @@
   overflow: visible;
 }
 
+.ov-topview__shade-edge {
+  stop-color: color-mix(in srgb, var(--color-text) 24%, var(--color-surface-2));
+}
+
+.ov-topview__shade-mid {
+  stop-color: color-mix(in srgb, var(--color-text) 9%, var(--color-surface-2));
+}
+
 .ov-topview__body {
-  fill: var(--color-surface-2);
-  stroke: color-mix(in srgb, var(--color-text-muted) 45%, var(--color-border));
-  stroke-width: 2;
-}
-
-.ov-topview__wheel {
-  fill: color-mix(in srgb, var(--color-text) 12%, var(--color-bg));
-}
-
-.ov-topview__glass {
-  fill: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface-2));
-  stroke: color-mix(in srgb, var(--color-text-muted) 45%, var(--color-border));
+  stroke: color-mix(in srgb, var(--color-text-muted) 55%, var(--color-border));
   stroke-width: 1.2;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 25%));
+}
+
+.ov-topview__mirror {
+  fill: #16181d;
+  stroke: color-mix(in srgb, var(--color-text-muted) 40%, transparent);
+  stroke-width: 0.8;
+}
+
+.ov-topview__crease {
+  fill: none;
+  stroke: color-mix(in srgb, var(--color-text-muted) 50%, transparent);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+.ov-topview__badge {
+  fill: color-mix(in srgb, var(--color-text-muted) 70%, transparent);
+}
+
+.ov-topview__roof {
+  stroke: #0b0c0f;
+  stroke-width: 0.8;
+}
+
+.ov-topview__roof-edge {
+  fill: none;
+  stroke: rgb(255 255 255 / 14%);
+  stroke-width: 0.8;
+}
+
+.ov-topview__rear {
+  fill: #17191e;
+}
+
+.ov-topview__spoiler {
+  stroke: color-mix(in srgb, var(--color-text-muted) 45%, transparent);
+  stroke-width: 0.6;
+}
+
+.ov-topview__window {
+  fill: #3a4454;
 }
 
 .ov-topview__panel {
-  fill: color-mix(in srgb, var(--color-text) 6%, var(--color-surface-2));
   stroke: color-mix(in srgb, var(--color-text-muted) 45%, var(--color-border));
-  stroke-width: 1.5;
+  stroke-width: 1;
   transition:
     transform 0.35s ease,
     fill 0.2s;
 }
 
-.ov-topview__panel.is-open,
-.ov-topview__window.is-open {
-  fill: color-mix(in srgb, var(--color-warning) 50%, var(--color-surface-2));
-  stroke: var(--color-warning);
-}
-
-/* An open door swings out on its front hinge. */
 .ov-topview__door {
+  fill: color-mix(in srgb, var(--color-text) 20%, var(--color-surface-2));
+  stroke-width: 0.8;
+
+  /* An open door swings out on its front hinge. */
   transform-box: fill-box;
   transform-origin: 50% 0;
 }
 
+/* The bonnet and boot are drawn by the body; their outline only shows when open. */
+.ov-topview__lid {
+  fill: transparent;
+  stroke: none;
+}
+
+.ov-topview__panel.is-open,
+.ov-topview__window.is-open {
+  fill: color-mix(in srgb, var(--color-warning) 55%, var(--color-surface-2));
+  stroke: var(--color-warning);
+}
+
+.ov-topview__lid.is-open {
+  fill: color-mix(in srgb, var(--color-warning) 60%, transparent);
+  stroke-width: 1.2;
+}
+
 .ov-topview__door--left.is-open {
-  transform: translateX(-4px) rotate(38deg);
+  transform: translateX(-3px) rotate(30deg);
 }
 
 .ov-topview__door--right.is-open {
-  transform: translateX(4px) rotate(-38deg);
+  transform: translateX(3px) rotate(-30deg);
 }
 
 .ov-topview__lamp {
-  fill: color-mix(in srgb, var(--color-text) 15%, var(--color-surface-2));
+  fill: color-mix(in srgb, var(--color-text) 40%, var(--color-surface-2));
 }
 
 .ov-topview__lamp.is-on {
   fill: #fde68a;
-  filter: drop-shadow(0 -2px 4px #fde68a);
+  filter: drop-shadow(0 -1px 3px #fde68a);
+}
+
+.ov-topview__taillight {
+  fill: #a3202f;
+}
+
+.ov-topview__taillight.is-on {
+  fill: #ef4444;
+  filter: drop-shadow(0 1px 3px #ef4444);
 }
 
 .ov-topview__port {
   fill: var(--color-surface);
-  stroke: color-mix(in srgb, var(--color-text-muted) 45%, var(--color-border));
+  stroke: color-mix(in srgb, var(--color-text-muted) 55%, var(--color-border));
+  stroke-width: 0.8;
 }
 
 .ov-topview__port.is-plugged {
