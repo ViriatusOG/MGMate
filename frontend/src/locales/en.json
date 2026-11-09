@@ -1414,7 +1414,16 @@
     "margin": "Margin",
     "newLine": "New ({kwh} kWh)",
     "health": "Health",
-    "pack": "Pack when new:"
+    "pack": "Pack when new:",
+    "uncalibratedReading": "Before calibration",
+    "calibrating": "Calibrating",
+    "firstReadings": "first reading: about {kwh} kWh from {count} charge | first readings: about {kwh} kWh from {count} charges",
+    "calibrateTitle": "Charge to 100% to calibrate",
+    "calibrateText": "The car only knows its exact charge level after a full charge, and LFP batteries drift most. Until then the battery % it reports can be a few percent out, which is enough to make the battery look bigger than it is. Health shows after a 100% charge, and stays accurate for {days} days after one.",
+    "earlyTitle": "Early estimate, from {count} charge | Early estimate, from {count} charges",
+    "earlyText": "It settles after about {count} charges of {percent}% or more.",
+    "aboveNewTitle": "Reads above new",
+    "aboveNewText": "A healthy new pack often measures a little over its rated size, and each reading has a margin. Health is shown as 100% until the readings fall below {kwh} kWh."
   },
   "activity": {
     "title": "Activity",

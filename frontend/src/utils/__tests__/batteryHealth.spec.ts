@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { capacityReadings, estimateCapacity } from '@/utils/batteryHealth'
+import { capacityReadings, estimateCapacity, healthPercent } from '@/utils/batteryHealth'
 import type { ChargeSession } from '@/services/chargesApi'
 
 function charge(day: number, start: number, end: number, kwh: number | null): ChargeSession {
@@ -35,7 +35,9 @@ describe('battery health', () => {
       ],
       64,
     )
-    expect(readings).toEqual([{ at: charge(0, 0, 0, 0).startedAt, kwh: 64, socSpan: 50 }])
+    expect(readings).toEqual([
+      { at: charge(0, 0, 0, 0).startedAt, kwh: 64, socSpan: 50, calibrated: false },
+    ])
   })
 
   it('weights the estimate by span and finds a falling trend', () => {
@@ -43,6 +45,7 @@ describe('battery health', () => {
       at: charge(day, 0, 0, 0).startedAt,
       kwh: 64 - i * 0.5,
       socSpan: 50,
+      calibrated: true,
     }))
     const estimate = estimateCapacity(readings)!
     expect(estimate.kwh).toBeCloseTo(63, 6)
@@ -53,8 +56,45 @@ describe('battery health', () => {
 
   it('has no estimate without readings and no trend from one', () => {
     expect(estimateCapacity([])).toBeNull()
-    const one = estimateCapacity([{ at: charge(0, 0, 0, 0).startedAt, kwh: 64, socSpan: 40 }])!
+    const one = estimateCapacity([
+      { at: charge(0, 0, 0, 0).startedAt, kwh: 64, socSpan: 40, calibrated: true },
+    ])!
     expect(one.trendPerYear).toBeNull()
     expect(one.spread).toBe(0)
+  })
+
+  it('trusts a reading only within a month after a full charge', () => {
+    const readings = capacityReadings(
+      [
+        charge(0, 40, 80, 26.8), // before any full charge: 67 kWh, drifted
+        charge(1, 30, 100, 44), // the full charge itself started uncalibrated
+        charge(5, 40, 80, 25.2), // 4 days after the full charge: 63 kWh
+        charge(60, 40, 80, 26.8), // two months on: drifted again
+      ],
+      64,
+    )
+    expect(readings.map((r) => r.calibrated)).toEqual([false, false, true, false])
+    const estimate = estimateCapacity(readings)!
+    expect(estimate.calibrated).toBe(true)
+    expect(estimate.count).toBe(1)
+    expect(estimate.kwh).toBeCloseTo(63, 6)
+  })
+
+  it('shows no health until calibrated, and never over 100%', () => {
+    const raw = capacityReadings([charge(0, 40, 80, 26.8), charge(2, 30, 70, 26.8)], 64)
+    const first = estimateCapacity(raw)!
+    expect(first.calibrated).toBe(false)
+    expect(first.kwh).toBeCloseTo(67, 6)
+    expect(healthPercent(first, 64)).toBeNull()
+
+    const above = estimateCapacity([
+      { at: charge(0, 0, 0, 0).startedAt, kwh: 67, socSpan: 40, calibrated: true },
+    ])
+    expect(healthPercent(above, 64)).toBe(100)
+    const below = estimateCapacity([
+      { at: charge(0, 0, 0, 0).startedAt, kwh: 60.8, socSpan: 40, calibrated: true },
+    ])
+    expect(healthPercent(below, 64)).toBeCloseTo(95, 6)
+    expect(healthPercent(below, null)).toBeNull()
   })
 })
