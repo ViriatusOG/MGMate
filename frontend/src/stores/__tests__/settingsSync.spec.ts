@@ -53,14 +53,14 @@ afterEach(() => {
 
 describe('settings kept on the account', () => {
   it('takes in the account copy once keeping starts', async () => {
-    localStorage.setItem(UI_KEY, JSON.stringify({ theme: 'dark', locale: 'en' }))
-    load.mockResolvedValue({ ui: { theme: 'light', locale: 'nl' } })
+    localStorage.setItem(UI_KEY, JSON.stringify({ theme: 'dark', colorfulMaps: false }))
+    load.mockResolvedValue({ ui: { theme: 'light', colorfulMaps: true } })
     const ui = useUiSettingsStore()
 
     await useSettingsSyncStore().start()
 
     expect(ui.theme).toBe('light')
-    expect(ui.locale).toBe('nl')
+    expect(ui.colorfulMaps).toBe(true)
     await settle()
     expect(save).not.toHaveBeenCalled()
   })
@@ -70,13 +70,15 @@ describe('settings kept on the account', () => {
     const ui = useUiSettingsStore()
     const ready = useSettingsSyncStore().start()
 
-    ui.locale = 'nl'
-    answer({ ui: { theme: 'light', locale: 'en' } })
+    ui.colorfulMaps = true
+    answer({ ui: { theme: 'light', colorfulMaps: false } })
     await ready
 
     expect(ui.theme).toBe('light')
-    expect(ui.locale).toBe('nl')
-    await vi.waitFor(() => expect(save).toHaveBeenCalledExactlyOnceWith('ui', { locale: 'nl' }))
+    expect(ui.colorfulMaps).toBe(true)
+    await vi.waitFor(() =>
+      expect(save).toHaveBeenCalledExactlyOnceWith('ui', { colorfulMaps: true }),
+    )
   })
 
   it("does not fill another account from the previous account's copy", async () => {
@@ -152,10 +154,10 @@ describe('settings kept on the account', () => {
     expect(ui.notificationTypeExclusions).toEqual(['low-tyre'])
 
     ui.notificationTypeExclusions = []
-    ui.locale = 'nl'
+    ui.colorfulMaps = true
     await settle()
 
-    expect(save).toHaveBeenCalledExactlyOnceWith('ui', { locale: 'nl' })
+    expect(save).toHaveBeenCalledExactlyOnceWith('ui', { colorfulMaps: true })
   })
 
   it('sends nothing before keeping starts or after it stops', async () => {
@@ -173,7 +175,7 @@ describe('settings kept on the account', () => {
     expect(save.mock.calls[0]![1].theme).toBe('light')
 
     sync.stop()
-    ui.locale = 'nl'
+    ui.colorfulMaps = true
     await settle()
     expect(save).toHaveBeenCalledOnce()
   })
@@ -185,11 +187,11 @@ describe('settings kept on the account', () => {
 
     ui.theme = 'light'
     await settle()
-    ui.locale = 'nl'
+    ui.colorfulMaps = true
     await settle()
 
     expect(save).toHaveBeenCalledTimes(2)
-    expect(save).toHaveBeenLastCalledWith('ui', { theme: 'light', locale: 'nl' })
+    expect(save).toHaveBeenLastCalledWith('ui', { theme: 'light', colorfulMaps: true })
   })
 
   it('gives a store first used after the account copy came in that copy at once', async () => {

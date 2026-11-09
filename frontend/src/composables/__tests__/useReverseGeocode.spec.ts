@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { nextTick } from 'vue'
 import type { GeocodePrecision, GeoPoint, Place, ReverseGeocodeResponse } from '@/services/mapApi'
+import type { Locale } from '@/stores/settingsShared'
 
 const mockReverseGeocode =
   vi.fn<
@@ -230,12 +231,13 @@ describe('useReverseGeocode', () => {
     await vi.waitFor(() => expect(mockReverseGeocode).toHaveBeenCalledOnce())
     await nextTick()
 
-    uiSettings.locale = 'nl'
+    // A language a fork adds; English is the only one shipped.
+    uiSettings.locale = 'de' as Locale
     await nextTick()
     await vi.waitFor(() => expect(mockReverseGeocode).toHaveBeenCalledTimes(2))
     await nextTick()
 
-    expect(mockReverseGeocode.mock.calls[1]![2]).toBe('nl')
+    expect(mockReverseGeocode.mock.calls[1]![2]).toBe('de')
     expect(placeFor(zwolle.lat, zwolle.lng, 'city')?.city).toBe('Den Haag')
   })
 })

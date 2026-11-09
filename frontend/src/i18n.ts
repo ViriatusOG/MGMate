@@ -22,9 +22,9 @@ export const i18n = createI18n({
   messages,
 })
 
-const loadMessages: Record<Exclude<Locale, 'en'>, () => Promise<{ default: typeof en }>> = {
-  nl: () => import('./locales/nl.json'),
-}
+// One loader per language besides English, e.g. `de: () => import('./locales/de.json')`. Empty
+// while the app ships in English only.
+const loadMessages: Partial<Record<Locale, () => Promise<{ default: typeof en }>>> = {}
 
 // The language asked for last. A download that finishes after the user has moved on to another
 // language must not switch the interface back.
@@ -37,9 +37,10 @@ let requested: Locale = 'en'
  */
 export async function setLocale(locale: Locale): Promise<void> {
   requested = locale
-  if (locale !== 'en' && !i18n.global.availableLocales.includes(locale)) {
+  const load = loadMessages[locale]
+  if (load && !i18n.global.availableLocales.includes(locale)) {
     try {
-      const messages = await loadMessages[locale]()
+      const messages = await load()
       i18n.global.setLocaleMessage(locale, messages.default)
     } catch (error) {
       console.warn(`[i18n] could not load the ${locale} messages`, error)
@@ -50,7 +51,7 @@ export async function setLocale(locale: Locale): Promise<void> {
   i18n.global.locale.value = locale
 }
 
-// The page names its language, so a screen reader reads Dutch in a Dutch voice and the browser
+// The page names its language, so a screen reader reads it in the right voice and the browser
 // hyphenates a long word (a dashboard tile's label) by that language's rules.
 watch(
   i18n.global.locale,

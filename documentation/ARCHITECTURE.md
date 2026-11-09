@@ -164,7 +164,7 @@ The upstream clients and the push sender take typed options (`GeocodingOptions`,
 
 ## Errors
 
-Every error the API answers with is a ProblemDetails body. Refusals the browser can explain carry a `code` beside the English `detail` (`maintenance.nameRequired`, `command.invalidValue`, `csrf.originNotAllowed`), built through `ApiProblems` in the Api. The frontend's `ApiError` keeps that code, and `useErrorMessage` shows the translation under `errors.codes.<code>` when there is one, else a message for the status, so a validation message reaches the user in their own language. A new refusal needs its code in both `en.json` and `nl.json`.
+Every error the API answers with is a ProblemDetails body. Refusals the browser can explain carry a `code` beside the English `detail` (`maintenance.nameRequired`, `command.invalidValue`, `csrf.originNotAllowed`), built through `ApiProblems` in the Api. The frontend's `ApiError` keeps that code, and `useErrorMessage` shows the translation under `errors.codes.<code>` when there is one, else a message for the status, so a validation message reaches the user in their own language. A new refusal needs its code in `en.json` (and in any language file a fork adds).
 
 Errors the other way round, the ones the web app runs into in someone's browser (a component that throws, a promise nobody awaited), are posted to `/api/client-errors` by `utils/errorReporting.ts` while someone is signed in, and the API logs them as `Browser error on <page>`. Each distinct message is sent once per page load and at most ten per load; the API caps the size, keeps every field on one line and rate-limits the endpoint.
 

@@ -8,7 +8,8 @@ namespace MGMate.Tests;
 /// <summary>
 /// Resolves the resx-backed localizers the same way the hosts do. A marker type in the wrong
 /// namespace makes the localizer silently return the resource keys, which for English keys
-/// that equal their values is invisible, so these tests always assert on the Dutch texts.
+/// that equal their values is invisible, so these tests pick keys whose text differs from the
+/// key and also check that the resource was found.
 /// </summary>
 public class LocalizedStringsTests
 {
@@ -39,36 +40,23 @@ public class LocalizedStringsTests
     }
 
     [Fact]
-    public void NotificationStrings_ResolveDutch_WhenUiCultureIsDutch()
+    public void NotificationStrings_FallBackToEnglish_ForALanguageThatIsNotShipped()
     {
         var strings = WorkerLocalizer.Notifications();
 
-        var (title, body) = WithUiCulture("nl", () => (strings["EngineStartTitle"], strings["DoorsOpenBody", "bestuurder"]));
+        var title = WithUiCulture("nl", () => strings["EngineStartTitle"]);
 
-        Assert.Equal("Motor gestart", title.Value);
-        Assert.Equal("Portier(en) open terwijl geparkeerd: bestuurder", body.Value);
+        Assert.False(title.ResourceNotFound);
+        Assert.Equal("Engine started", title.Value);
     }
 
     [Fact]
-    public void ClimateScheduleNotifications_ResolveDutch_WhenUiCultureIsDutch()
-    {
-        var strings = WorkerLocalizer.Notifications();
-
-        var (title, reference) = WithUiCulture("nl", () =>
-            (strings["ClimateScheduleStartedTitle"], strings["ClimateScheduleRef", "07:30"]));
-
-        Assert.Equal("Klimaatregeling staat aan", title.Value);
-        Assert.Equal("je schema van 07:30", reference.Value);
-    }
-
-    [Fact]
-    public void WidgetStrings_ResolveDutch_WhenUiCultureIsDutch()
+    public void WidgetStrings_ResolveEnglish()
     {
         var strings = Resolve<WidgetStrings>();
 
-        var locked = WithUiCulture("nl", () => strings["Locked"]);
+        var locked = WithUiCulture("en", () => strings["Locked"]);
 
         Assert.False(locked.ResourceNotFound);
-        Assert.Equal("Vergrendeld", locked.Value);
     }
 }

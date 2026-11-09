@@ -56,13 +56,18 @@ describe('useUiSettingsStore', () => {
     expect(localStorage.getItem(UI_KEY)).toBeNull()
   })
 
-  it('persists locale change to its own localStorage key', async () => {
+  it('persists a change to its own localStorage key', async () => {
     const store = useUiSettingsStore()
-    store.locale = 'nl'
+    store.colorfulMaps = true
     await nextTick()
     vi.advanceTimersByTime(SAVE_DEBOUNCE_MS)
     const saved = JSON.parse(localStorage.getItem(UI_KEY)!)
-    expect(saved.locale).toBe('nl')
+    expect(saved.colorfulMaps).toBe(true)
+  })
+
+  it('falls back to English for a language an older build offered', () => {
+    localStorage.setItem(UI_KEY, JSON.stringify({ locale: 'nl' }))
+    expect(useUiSettingsStore().locale).toBe('en')
   })
 
   it('falls back to defaults when localStorage is empty', () => {
@@ -83,7 +88,7 @@ describe('useUiSettingsStore', () => {
     )
     const store = useUiSettingsStore()
     expect(store.theme).toBe('light')
-    expect(store.locale).toBe('nl')
+    expect(store.locale).toBe('en')
     expect(store.vehicleTypeOverride).toBe('bev')
     expect(store.filterDays).toBe(14)
   })
@@ -441,7 +446,7 @@ describe('legacy combined-blob migration', () => {
 
     const ui = useUiSettingsStore()
     expect(ui.theme).toBe('light')
-    expect(ui.locale).toBe('nl')
+    expect(ui.locale).toBe('en')
     expect(ui.vehicleTypeOverride).toBe('bev')
     expect(ui.filterDays).toBe(14)
 
@@ -458,13 +463,13 @@ describe('legacy combined-blob migration', () => {
   it('does not touch the legacy key once split (each store writes to its own key)', async () => {
     localStorage.setItem(LEGACY_KEY, JSON.stringify({ theme: 'light' }))
     const ui = useUiSettingsStore()
-    ui.locale = 'nl'
+    ui.colorfulMaps = true
     await nextTick()
     vi.advanceTimersByTime(SAVE_DEBOUNCE_MS)
     // The legacy blob is left in place (not deleted), and the new key now holds the live state.
     expect(localStorage.getItem(LEGACY_KEY)).not.toBeNull()
     const saved = JSON.parse(localStorage.getItem(UI_KEY)!)
-    expect(saved.locale).toBe('nl')
+    expect(saved.colorfulMaps).toBe(true)
     expect(saved.theme).toBe('light')
   })
 })

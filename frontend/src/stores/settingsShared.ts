@@ -13,7 +13,11 @@ export type { CardConfig, CardId }
 
 export type VehicleTypeOverride = 'auto' | VehicleType
 export type Theme = 'dark' | 'light'
-export type Locale = 'en' | 'nl'
+/**
+ * The interface languages. MGMate ships in English only; a fork that adds a language extends
+ * this union (see "Adding a language" in .github/CONTRIBUTING.md).
+ */
+export type Locale = 'en'
 
 export interface CarColorScheme {
   id: string
@@ -146,9 +150,9 @@ export function osPreferredTheme(): Theme {
   return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
 }
 
+/** The interface language a new install starts in: the browser's, when the app speaks it. */
 export function browserLocale(): Locale {
-  const lang = navigator.language.toLowerCase()
-  return lang.startsWith('nl') ? 'nl' : 'en'
+  return 'en'
 }
 
 // Pre-split combined settings blob (single "garagestack-settings" key holding everything).

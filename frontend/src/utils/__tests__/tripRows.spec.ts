@@ -121,12 +121,13 @@ describe('buildTripRow', () => {
     expect(row.metaTitle).toContain(row.timeLabel)
   })
 
-  it('formats the date in the interface language', () => {
-    const english = buildTripRow(trip(), context())
-    i18n.global.locale.value = 'nl'
-    const dutch = buildTripRow(trip(), context())
+  it('formats the date the way the region writes it', () => {
+    setRegionalFormat({ region: 'GB', hourCycle: 'h23' })
+    const british = buildTripRow(trip(), context())
+    setRegionalFormat({ region: 'US', hourCycle: 'h23' })
+    const american = buildTripRow(trip(), context())
 
-    expect(dutch.dateLabel).not.toBe(english.dateLabel)
+    expect(british.dateLabel).not.toBe(american.dateLabel)
   })
 
   it('gives the time on the chosen clock', () => {
