@@ -8,7 +8,8 @@ import { useStoreAction } from '@/composables/useStoreAction'
 import { useErrorMessage } from '@/composables/useErrorMessage'
 import { ODOMETER_FORMAT } from '@/utils/units'
 import { formatDate } from '@/utils/format'
-import { COVER_DATE, monthsAndDays, sortCovers, todayUtc } from '@/utils/warranty'
+import { COVER_DATE, sortCovers, todayUtc } from '@/utils/warranty'
+import { formatTimeSpan, utcDay } from '@/utils/timeSpan'
 import WarrantyEditModal from './WarrantyEditModal.vue'
 
 const props = defineProps<{ vin: string }>()
@@ -72,16 +73,11 @@ function ends(c: WarrantyCover): string {
     : date(c.endsOn)
 }
 
-/** Time left: days under a year, otherwise years and months. */
+/** Time left, as a calendar counts it: "22 days", "8 mo 22 d" or "2 yr 8 mo". */
 function timeLeft(c: WarrantyCover): string | null {
   if (c.daysRemaining == null || !c.endsOn || c.daysRemaining < 0) return null
-  if (c.daysRemaining < 365) return t('warranty.daysLeft', c.daysRemaining)
-  const { months } = monthsAndDays(todayUtc(), new Date(c.endsOn))
-  const years = Math.floor(months / 12)
-  const rest = months % 12
-  return rest === 0
-    ? t('warranty.yearsLeft', years)
-    : t('warranty.yearsMonthsLeft', { years, months: rest })
+  if (c.daysRemaining === 0) return t('warranty.endsToday')
+  return formatTimeSpan(t, todayUtc(), utcDay(c.endsOn))
 }
 
 function left(c: WarrantyCover, withDistance = true): string {
