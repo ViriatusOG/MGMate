@@ -4,9 +4,7 @@
 # every start so changed credentials always take effect.
 #
 #   MQTT_BROKER_USERNAME / MQTT_BROKER_PASSWORD  Internal login for the SAIC gateway, Api and
-#                                                Worker. Full access.
-#   HA_MQTT_USERNAME / HA_MQTT_PASSWORD          Optional Home Assistant login, skipped when
-#                                                HA_MQTT_USERNAME is empty. See documentation/HOME_ASSISTANT.md.
+#                                                Worker. Full access. The only login.
 set -eu
 
 dir="${1:?Usage: mosquitto-auth.sh <directory>}"
@@ -15,36 +13,10 @@ acl_file="$dir/acl"
 
 : "${MQTT_BROKER_USERNAME:?MQTT_BROKER_USERNAME is required}"
 : "${MQTT_BROKER_PASSWORD:?MQTT_BROKER_PASSWORD is required}"
-HA_MQTT_USERNAME="${HA_MQTT_USERNAME:-}"
-HA_MQTT_PASSWORD="${HA_MQTT_PASSWORD:-}"
 
 rm -f "$passwd_file" "$acl_file"
 mosquitto_passwd -b -c "$passwd_file" "$MQTT_BROKER_USERNAME" "$MQTT_BROKER_PASSWORD"
 printf 'user %s\ntopic readwrite #\n' "$MQTT_BROKER_USERNAME" > "$acl_file"
-
-if [ -n "$HA_MQTT_USERNAME" ]; then
-    if [ -z "$HA_MQTT_PASSWORD" ]; then
-        echo "HA_MQTT_PASSWORD is required when HA_MQTT_USERNAME is set" >&2
-        exit 1
-    fi
-    if [ "$HA_MQTT_USERNAME" = "$MQTT_BROKER_USERNAME" ]; then
-        echo "HA_MQTT_USERNAME must differ from MQTT_BROKER_USERNAME" >&2
-        exit 1
-    fi
-    mosquitto_passwd -b "$passwd_file" "$HA_MQTT_USERNAME" "$HA_MQTT_PASSWORD"
-    # saic/#: gateway telemetry, read only. Writes are limited to the /set command topics at the
-    # two depths the gateway subscribes to (e.g. doors/locked/set, refresh/period/active/set).
-    # A Mosquitto bridge configured with `topic saic/# both` sends every retained message it
-    # holds on each connect, so write access to all of saic/# would let a restarted Home
-    # Assistant broker overwrite fresh state here with its stale copies (the gateway's LWT
-    # among them, which leaves every entity Unavailable).
-    # homeassistant/#: the gateway's retained discovery configs, and MGMate's own (APK,
-    # recalls, maintenance, last trip). garagestack/#: the state those read their values from.
-    # homeassistant/status: Home Assistant's own online/offline message, which makes the gateway
-    # re-publish discovery.
-    printf '\nuser %s\ntopic read saic/#\ntopic write saic/+/vehicles/+/+/+/set\ntopic write saic/+/vehicles/+/+/+/+/set\ntopic read homeassistant/#\ntopic write homeassistant/status\ntopic read garagestack/#\n' \
-        "$HA_MQTT_USERNAME" >> "$acl_file"
-fi
 
 # Mosquitto 2.x refuses to load these files unless they are owned by the "mosquitto" account
 chown mosquitto:mosquitto "$passwd_file" "$acl_file"

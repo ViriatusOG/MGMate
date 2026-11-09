@@ -5,14 +5,13 @@ using MGMate.Core.Helpers;
 namespace MGMate.Worker.Mqtt;
 
 /// <summary>
-/// Reads the gateway's Home Assistant discovery messages for the one thing MGMate needs from
-/// them: the hardware version (and model) of each car, which is how its drivetrain is detected.
+/// Reads the SAIC gateway's own discovery announcements (it publishes them under
+/// <c>homeassistant/</c>, the MQTT discovery convention) for the one thing MGMate needs from them: the hardware version (and model) of each car, which is how its drivetrain is detected.
 /// </summary>
-public sealed class HaDiscoveryHandler(ILogger logger, VehicleResolver vehicles) : IMqttMessageHandler
+public sealed class GatewayDiscoveryHandler(ILogger logger, VehicleResolver vehicles) : IMqttMessageHandler
 {
     // Per VIN, the hardware version and model last stored. The gateway announces every one of a
-    // car's ~100 entities with the same device block, and does so again on each start and each
-    // time Home Assistant comes online, so only a change is logged and written.
+    // car's ~100 entities with the same device block, and does so again on each start, so only a change is logged and written.
     private readonly ConcurrentDictionary<string, (string HwVersion, string? Model)> _stored = new();
 
     public async Task<bool> TryHandleAsync(MqttMessage message, CancellationToken ct)
@@ -59,7 +58,7 @@ public sealed class HaDiscoveryHandler(ILogger logger, VehicleResolver vehicles)
             if (!VinFormat.IsValid(vin)) return;
             if (_stored.TryGetValue(vin, out var stored) && stored == (hwVersion, model)) return;
 
-            logger.LogInformation("HA discovery - VIN={Vin} hw_version={HwVersion} model={Model}", LogRedaction.Vin(vin), hwVersion, model);
+            logger.LogInformation("Gateway discovery - VIN={Vin} hw_version={HwVersion} model={Model}", LogRedaction.Vin(vin), hwVersion, model);
 
             using var resolved = await vehicles.ResolveAsync(vin, null, ct);
             await resolved.Vehicles.SetConfigValueAsync(resolved.VehicleId, "hw_version", hwVersion, ct);
@@ -70,7 +69,7 @@ public sealed class HaDiscoveryHandler(ILogger logger, VehicleResolver vehicles)
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to parse HA discovery payload");
+            logger.LogError(ex, "Failed to parse gateway discovery payload");
         }
     }
 }

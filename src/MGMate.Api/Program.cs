@@ -65,7 +65,6 @@ try
         builder.Services.AddHostedService(sp => sp.GetRequiredService<MqttPublisher>());
         builder.Services.AddSingleton<VehicleCommandRequestHandler>();
         builder.Services.AddHostedService<TelemetryNotificationService>();
-        builder.Services.AddHostedService<HomeAssistantPublisher>();
         builder.Services.AddSingleton<GatewayCatalog>();
         builder.Services.AddSingleton<IGatewayCatalog>(sp => sp.GetRequiredService<GatewayCatalog>());
         builder.Services.AddHostedService(sp => sp.GetRequiredService<GatewayCatalog>());

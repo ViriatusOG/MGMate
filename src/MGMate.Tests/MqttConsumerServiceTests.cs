@@ -244,10 +244,10 @@ public class MqttConsumerServiceReconnectTests
 // HA discovery payload parsing -- these all resolve before (or independently of)
 // the DI scope, so they're reachable with the null-service FakeServiceScopeFactory.
 // The assertion is that malformed/incomplete payloads never crash the message
-// pipeline, matching HaDiscoveryHandler's early-return / catch-and-log design.
+// pipeline, matching GatewayDiscoveryHandler's early-return / catch-and-log design.
 // ---------------------------------------------------------------------------
 
-public class MqttConsumerServiceHaDiscoveryTests
+public class MqttConsumerServiceGatewayDiscoveryTests
 {
     [Theory]
     [InlineData("""{"device":{"identifiers":["FAKEVN00000000001"]}}""")] // missing hw_version
@@ -257,7 +257,7 @@ public class MqttConsumerServiceHaDiscoveryTests
     [InlineData("""{"device":{"identifiers":["VIN"],"other":"hw_version"}}""")] // device has no hw_version property
     [InlineData("""{"device":{"hw_version":"MG_BEV_1.0","identifiers":[]}}""")] // empty identifiers array
     [InlineData("""{"device":{"hw_version":"MG_BEV_1.0","identifiers":[123,456]}}""")] // non-string identifiers
-    public async Task HandleHaDiscovery_IncompleteOrMalformedPayload_DoesNotThrow(string payload)
+    public async Task HandleGatewayDiscovery_IncompleteOrMalformedPayload_DoesNotThrow(string payload)
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var client = new FakeMqttClient();
@@ -273,7 +273,7 @@ public class MqttConsumerServiceHaDiscoveryTests
     }
 
     [Fact]
-    public async Task HandleHaDiscovery_ValidPayload_DoesNotThrowEvenWhenScopeResolutionFails()
+    public async Task HandleGatewayDiscovery_ValidPayload_DoesNotThrowEvenWhenScopeResolutionFails()
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var client = new FakeMqttClient();
@@ -283,7 +283,7 @@ public class MqttConsumerServiceHaDiscoveryTests
         const string payload = """{"device":{"hw_version":"MG_BEV_1.0","identifiers":["FAKEVN00000000001"],"model":"MG4"}}""";
 
         // FakeServiceScopeFactory resolves no real services, so the DB write inside
-        // HaDiscoveryHandler will fail - but it's caught and logged, not thrown.
+        // GatewayDiscoveryHandler will fail - but it's caught and logged, not thrown.
         await client.TriggerMessageAsync("homeassistant/sensor/garagestack/config", payload);
 
         await cts.CancelAsync();
@@ -295,7 +295,7 @@ public class MqttConsumerServiceHaDiscoveryTests
     [InlineData("zigbee2mqtt_0x00158d0001a2b3c4", false)]
     [InlineData("esphome-garage-door", false)]
     [InlineData("FAKEVN00000000001", true)]
-    public async Task HandleHaDiscovery_OnlyAVinCreatesAVehicle(string identifier, bool creates)
+    public async Task HandleGatewayDiscovery_OnlyAVinCreatesAVehicle(string identifier, bool creates)
     {
         var ct = TestContext.Current.CancellationToken;
         var databaseName = Guid.NewGuid().ToString();
@@ -303,7 +303,7 @@ public class MqttConsumerServiceHaDiscoveryTests
             .AddDbContext<AppDbContext>(o => o.UseInMemoryDatabase(databaseName))
             .AddScoped<IVehicleRepository, VehicleRepository>()
             .BuildServiceProvider();
-        var handler = new HaDiscoveryHandler(
+        var handler = new GatewayDiscoveryHandler(
             NullLogger.Instance, new VehicleResolver(services.GetRequiredService<IServiceScopeFactory>()));
         var payload = $$$"""{"device":{"hw_version":"1.2.3","identifiers":["{{{identifier}}}"],"model":"Door sensor"}}""";
 
@@ -314,7 +314,7 @@ public class MqttConsumerServiceHaDiscoveryTests
     }
     // The gateway announces each of a car's entities with the same device block.
     [Fact]
-    public async Task HandleHaDiscovery_RepeatedDeviceBlock_IsStoredOnceUntilItChanges()
+    public async Task HandleGatewayDiscovery_RepeatedDeviceBlock_IsStoredOnceUntilItChanges()
     {
         var ct = TestContext.Current.CancellationToken;
         var databaseName = Guid.NewGuid().ToString();
@@ -323,7 +323,7 @@ public class MqttConsumerServiceHaDiscoveryTests
             .AddScoped<IVehicleRepository, VehicleRepository>()
             .BuildServiceProvider();
         var scopes = new CountingScopeFactory(services.GetRequiredService<IServiceScopeFactory>());
-        var handler = new HaDiscoveryHandler(NullLogger.Instance, new VehicleResolver(scopes));
+        var handler = new GatewayDiscoveryHandler(NullLogger.Instance, new VehicleResolver(scopes));
         static MqttMessage Announce(string entity, string hwVersion) => new(
             $"homeassistant/sensor/{entity}/config",
             $$$"""{"device":{"hw_version":"{{{hwVersion}}}","identifiers":["FAKEVN00000000001"],"model":"MG4"}}""",

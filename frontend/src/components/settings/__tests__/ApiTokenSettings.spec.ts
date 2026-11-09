@@ -52,20 +52,20 @@ describe('ApiTokenSettings', () => {
 
   it('shows a new token once, to copy, and adds it to the list', async () => {
     api.create.mockResolvedValue({
-      details: { ...watch, id: 2, name: 'Home Assistant', prefix: 'gs_xyz789' },
+      details: { ...watch, id: 2, name: 'Homepage', prefix: 'gs_xyz789' },
       token: 'gs_xyz789-the-whole-secret',
     })
     const wrapper = await render()
 
-    await wrapper.find('input').setValue('  Home Assistant ')
+    await wrapper.find('input').setValue('  Homepage ')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
-    expect(api.create).toHaveBeenCalledWith('Home Assistant')
+    expect(api.create).toHaveBeenCalledWith('Homepage')
     const shown = wrapper.find<HTMLInputElement>('input[readonly]')
     expect(shown.element.value).toBe('gs_xyz789-the-whole-secret')
     expect(wrapper.text()).toContain(en.settings.apiTokens.copyNow)
-    expect(wrapper.text().indexOf('Home Assistant')).toBeLessThan(wrapper.text().indexOf('Watch'))
+    expect(wrapper.text().indexOf('Homepage')).toBeLessThan(wrapper.text().indexOf('Watch'))
   })
 
   it('revokes on the second tap only', async () => {

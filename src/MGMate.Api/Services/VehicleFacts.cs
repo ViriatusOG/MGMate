@@ -7,8 +7,8 @@ namespace MGMate.Api.Services;
 
 /// <summary>
 /// What MGMate knows about a car beyond its telemetry: the APK and recalls the RDW has, the
-/// maintenance item due first, and the newest trip. The Homepage widget and Home Assistant both
-/// read it from here, so the two say the same as the dashboard's cards.
+/// maintenance item due first, and the newest trip. The Homepage widget reads it from
+/// here, so it says the same as the dashboard's cards.
 /// </summary>
 /// <param name="ApkExpiresOn">The APK's last valid day, while the RDW knows the plate.</param>
 /// <param name="ApkDaysLeft">Days until then on the Dutch calendar, negative once it has run out.</param>

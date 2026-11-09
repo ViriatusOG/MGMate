@@ -110,7 +110,6 @@ Thanks to Jos for the foundation.
 - **Log viewer** -- The Logs page shows the entries of the API's and the Worker's log files, newest first and older ones loading as you scroll, filtered by service, level and text, with exceptions folded open on request and a live mode that adds what was written every ten seconds. The files themselves stay on the server, one per day (`LOG_RETAINED_FILES`).
 - **Full data export** -- Settings > Your data downloads everything MGMate keeps as one zip: per car its trips, maintenance, schedules, places and every telemetry reading (as CSV), and your notifications and settings.
 - **Read-only API tokens** -- Make a token under Settings > API tokens and let a script, a dashboard or a watch read what the app shows, without signing in. A token can only read: it cannot send commands or change anything, and the full data export and the logs stay with a signed-in session.
-- **Home Assistant** -- Your car appears in Home Assistant automatically through MQTT discovery, sharing MGMate's broker and MG session instead of needing a second integration. MGMate adds sensors of its own to the car: the APK and its days left, open recalls, the maintenance due next and the last trip. See [`HOME_ASSISTANT.md`](documentation/HOME_ASSISTANT.md).
 - **Progressive Web App (PWA)** -- Installable on mobile or desktop for a native app-like experience, complete with a home screen icon and push notification support. Where the browser allows it, MGMate offers to install itself, and the offer can be turned down for good. Installing and push need HTTPS, see [HTTPS](#https).
 - **Charging stations** -- Overlay nearby EV charging stations on the map, sourced from the [Open Charge Map](https://openchargemap.org) database. Station data is cached in the database for 7 days; on page load the map immediately shows all stations within 100 km of your car that are already cached. Markers show operational status; clicking a marker displays the station name, operator, address, and available connector types with power ratings. Requires a free OCM API key (`OPENCHARGEMAP_API_KEY`). Unlike fuel stations and service areas, charging station tiles are loaded on demand as you browse the map and are not pre-populated by the background Worker.
 - **Fuel stations** -- Overlay nearby petrol and diesel stations on the map (HEV and PHEV only; not shown for BEV). Sourced from OpenStreetMap via the Overpass API -- no API key required. POI data is cached in the database for 7 days and pre-populated by the Worker for a 100 km radius around the car's last known position so the overlay is instant on first view.
@@ -122,7 +121,7 @@ Thanks to Jos for the foundation.
 - **Themed vector basemap** -- Every map is drawn from OpenStreetMap vector tiles by MapLibre GL, in a dark or light style that follows the interface theme (or in full colour, if you prefer) and with labels in the interface language. Served by [OpenFreeMap](https://openfreemap.org) without an API key, point it at your own tile server if you prefer, and it falls back to raster tiles where WebGL is unavailable.
 - **Single sign-on** -- Sign in through your own identity provider (Authentik, Authelia, Keycloak, Pocket ID, Google, and anything else speaking OpenID Connect), with optional auto-login and group or email based access restrictions. A built-in username/password login remains available for installs without a provider. See [`AUTHENTICATION.md`](documentation/AUTHENTICATION.md).
 - **Multi-language support** -- Interface available in English and Dutch. It follows the browser's language until you pick one under Settings, and the choice then follows your account. Push notifications are sent in `NOTIFICATION_LANGUAGE`.
-- **Region and units** -- Kilometres or miles, Celsius or Fahrenheit, bar, psi or kPa for tyres, L/100 km or miles per UK or US gallon for fuel, and a 24-hour or 12-hour clock. Each one follows the region the browser is in (taken from its time zone, so an English browser in the Netherlands still gets kilometres and 14:05), and can be set by hand under Settings > Region and units, as can the region itself, which also sets the date order. Everything is stored in metric and converted only for display, so switching back and forth loses nothing; the trip log's CSV export follows the chosen distance unit and clock. The homepage widget, Home Assistant and the `TYRE_PRESSURE_*_BAR` thresholds stay metric, and notifications use a 24-hour clock.
+- **Region and units** -- Kilometres or miles, Celsius or Fahrenheit, bar, psi or kPa for tyres, L/100 km or miles per UK or US gallon for fuel, and a 24-hour or 12-hour clock. Each one follows the region the browser is in (taken from its time zone, so an English browser in the Netherlands still gets kilometres and 14:05), and can be set by hand under Settings > Region and units, as can the region itself, which also sets the date order. Everything is stored in metric and converted only for display, so switching back and forth loses nothing; the trip log's CSV export follows the chosen distance unit and clock. The homepage widget and the `TYRE_PRESSURE_*_BAR` thresholds stay metric, and notifications use a 24-hour clock.
 - **Settings follow you** -- Theme, language, units, the dashboard layout and the map's layers and filters are saved to your account, so every phone, tablet and computer you sign in on looks the same. Each browser keeps a copy too, so pages open instantly and the login page keeps your theme and language. After upgrading, the first device to sign in brings its settings along.
 - **Self-hosted** -- Runs entirely on your own infrastructure via Docker (all-in-one container or Docker Compose). No cloud account or subscription required beyond the SAIC iSmart API.
 
@@ -189,8 +188,6 @@ MGMate needs the vehicle **owner account**: shared or secondary accounts lack th
 4. Sign in to the official MG app with the secondary account, and use the owner account's credentials for `SAIC_USER` / `SAIC_PASSWORD` in MGMate.
 
 This way the official app runs independently on the secondary account and MGMate keeps its own session on the owner account.
-
-The same applies to Home Assistant: rather than adding an MG integration there, connect Home Assistant to MGMate's MQTT broker so both share one session. See [`HOME_ASSISTANT.md`](documentation/HOME_ASSISTANT.md).
 
 ---
 
@@ -270,7 +267,7 @@ Then open `.env` and fill in at minimum:
 
 `docker compose up` refuses to start until both `POSTGRES_PASSWORD` and `MQTT_BROKER_PASSWORD` are set.
 
-Everything else is optional: push notifications, a Home Assistant broker login, single sign-on, tyre pressure bands, the traction battery's real size, the rate limit and the map's data sources. Every variable, with its default, is in [`CONFIGURATION.md`](documentation/CONFIGURATION.md); sign-in has its own guide in [`AUTHENTICATION.md`](documentation/AUTHENTICATION.md).
+Everything else is optional: push notifications, single sign-on, tyre pressure bands, the traction battery's real size, the rate limit and the map's data sources. Every variable, with its default, is in [`CONFIGURATION.md`](documentation/CONFIGURATION.md); sign-in has its own guide in [`AUTHENTICATION.md`](documentation/AUTHENTICATION.md).
 
 #### 3. Start the stack
 
@@ -322,7 +319,7 @@ When a newer release is out, the footer says so and links to its release notes. 
 
 ### Monitoring
 
-Point an uptime monitor (Uptime Kuma, Home Assistant, ...) at `/api/health` on the web interface's address, for example `http://192.168.1.100:8080/api/health`. It needs no sign-in, and answers `200` while everything works and `503` when something does not, naming each part:
+Point an uptime monitor (Uptime Kuma, Gatus, ...) at `/api/health` on the web interface's address, for example `http://192.168.1.100:8080/api/health`. It needs no sign-in, and answers `200` while everything works and `503` when something does not, naming each part:
 
 ```json
 { "status": "healthy", "checks": { "database": "healthy", "mqtt": "healthy", "worker": "healthy" } }
@@ -491,7 +488,7 @@ Commands sent by hand at the same moment as a scheduled run share the car's one 
 - **Intervals.** Each item has a distance interval, a time interval, or both; with both, it is due at whichever comes first.
 - **When it is due.** From the last service you logged and the car's odometer, an item is *OK*, *due soon* once 90 % of its interval has passed, or *overdue*. One without a service logged yet is *not tracked yet*.
 - **Logging a service.** Record the date, the odometer reading (the current one is filled in) and notes. The item's interval starts again from there, and its history is kept.
-- **Where it shows.** The dashboard's maintenance card shows the most urgent item, and so do the [Homepage widget](#homepage-dashboard-widget) and [Home Assistant](documentation/HOME_ASSISTANT.md#mgmates-own-sensors). A notification comes when an item becomes due soon or overdue (checked every 6 hours, at most once a week per item).
+- **Where it shows.** The dashboard's maintenance card shows the most urgent item, and so does the [Homepage widget](#homepage-dashboard-widget). A notification comes when an item becomes due soon or overdue (checked every 6 hours, at most once a week per item).
 
 ---
 
@@ -535,7 +532,6 @@ A few things to know before building on a token:
 - Tokens do not expire. Revoke the ones you no longer use; an account can hold 20.
 - Requests with a token count against the same per-address rate limit as the app (120 a minute by default, `RATE_LIMIT_GLOBAL_PER_MINUTE`), so poll every few seconds at most.
 - Live updates (the `/hubs/telemetry` connection the dashboard uses) are not available with a token; poll the REST endpoints instead.
-- A Home Assistant [REST sensor](https://www.home-assistant.io/integrations/sensor.rest/) works well with a token, see [`HOME_ASSISTANT.md`](documentation/HOME_ASSISTANT.md#reading-mgmate-with-an-api-token).
 
 ---
 
@@ -639,8 +635,7 @@ A reading counts as over the limit only past 5 km/h above it: speedometers read 
 - Sessions are encrypted, HTTP-only, `SameSite=Strict` cookies. Logout revokes the session server-side, not just the client-side cookie.
 - With an identity provider, restrict who may sign in -- at the provider itself or with `OIDC_ALLOWED_GROUPS` / `OIDC_ALLOWED_EMAILS`. Without a restriction, every account the provider accepts can sign in and control the car.
 - Login endpoints are rate-limited per IP address on top of the global limit.
-- MQTT now requires credentials and ACLs, and broker exposure defaults to localhost-only in Docker Compose.
-- The optional Home Assistant broker login can only use the car's `saic/#` topics and read Home Assistant discovery and MGMate's own sensor values (`garagestack/#`), so it cannot publish fake discovery configs or reach anything else on the broker.
+- MQTT requires credentials, and the broker is never published outside the stack: only MGMate's own services and the gateway can reach it.
 - The frontend sends a strict Content-Security-Policy with every response, which allows scripts only from MGMate itself. See [Behind a reverse proxy or CDN](#behind-a-reverse-proxy-or-cdn) for keeping it intact.
 
 ### What leaves your network
@@ -659,7 +654,7 @@ MGMate runs on your own hardware, but a few features ask public services for wha
 | [OpenFreeMap](https://openfreemap.org) and [OpenStreetMap](https://www.openstreetmap.org) tiles (the basemap) | your browser | The map tiles your browser shows | Serve your own tiles, see [Basemap](#basemap) |
 | Your browser's push service (Google, Mozilla, Apple) | the Worker | Each notification, encrypted so only your browser can read it, and `VAPID_SUBJECT` | Leave the VAPID keys empty, or switch push off per device |
 
-Requests to the map, lookup and update services identify themselves as `MGMate/1.0 (+https://github.com/ViriatusOG/MGMate)`, as Nominatim's usage policy asks. Apart from what the table lists, the car's telemetry, its trips, your notifications and your settings stay on your server, unless you connect something to it yourself, such as Home Assistant.
+Requests to the map, lookup and update services identify themselves as `MGMate/1.0 (+https://github.com/ViriatusOG/MGMate)`, as Nominatim's usage policy asks. Apart from what the table lists, the car's telemetry, its trips, your notifications and your settings stay on your server, unless you connect something to it yourself, such as a script with an API token.
 
 ### HTTPS
 
@@ -712,7 +707,6 @@ For running MGMate:
 
 - [`CONFIGURATION.md`](documentation/CONFIGURATION.md): every setting, with its default
 - [`AUTHENTICATION.md`](documentation/AUTHENTICATION.md): single sign-on, the built-in login, and provider examples
-- [`HOME_ASSISTANT.md`](documentation/HOME_ASSISTANT.md): the car in Home Assistant, through MQTT or an API token
 - [`WIDGET.md`](documentation/WIDGET.md): the gethomepage.dev widget
 - [`docker/all-in-one/README.md`](docker/all-in-one/README.md): the all-in-one image and Unraid
 - [Screenshots](documentation/screenshots/README.md) of the main pages
