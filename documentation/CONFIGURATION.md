@@ -47,7 +47,7 @@ all-in-one container and the Unraid template take them as container variables.
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `MQTT_BROKER_USERNAME` | `mgmate` | Username of the broker login the services use. |
+| `MQTT_BROKER_USERNAME` | `garagestack` | Username of the broker login the services use. |
 | `MQTT_HOST` | Compose: `mosquitto` | Broker the API and Worker connect to. The gateway container publishes to `mosquitto` (the broker address in its section of `docker-compose.yml`), so change both together. The all-in-one container always uses its own. |
 | `MQTT_PORT` | `1883` | Port of that broker. |
 | `MQTT_EXTERNAL_PORT` | `1883` | Host port the bundled broker is published on (Docker Compose). |
@@ -158,7 +158,7 @@ The Docker images set these themselves.
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `ConnectionStrings__DefaultConnection` | none | PostgreSQL connection string for the API and the Worker, for example `Host=localhost;Database=mgmate;Username=mgmate;Password=...`. |
+| `ConnectionStrings__DefaultConnection` | none | PostgreSQL connection string for the API and the Worker, for example `Host=localhost;Database=garagestack;Username=garagestack;Password=...`. |
 | `ASPNETCORE_ENVIRONMENT` | `Production` | `Development` relaxes CORS and CSRF for local work and serves the API reference (Scalar) at `/scalar/v1`; `Demo` serves the reference too. |
 | `DEMO_MODE` | `false` | `true` runs the API on built-in fake data, without a database, broker or gateway. See [`DEMO.md`](DEMO.md). |
 
@@ -180,4 +180,4 @@ In the all-in-one container, including Unraid, add them as extra variables on th
 | `Serilog__MinimumLevel__Override__<category>` | see `appsettings.json` | The log level for one source, for example `Serilog__MinimumLevel__Override__MGMate.Worker.Mqtt=Debug` to see every MQTT message without `DEBUG_LOGS` opening every tap. |
 | `Mqtt__ClientId` | `mgmate-worker` | The Worker's MQTT client id. The broker keeps its session and queued messages under it; change it only when two Workers share one broker. |
 | `Cors__Origins__1`, `Cors__Origins__2`, ... | none | More addresses allowed next to `CORS_ORIGIN`. |
-| `ForwardedHeaders__TrustedProxies__0`, ... | the private address ranges | The proxy addresses whose `X-Forwarded-For` and `X-Forwarded-Proto` headers are believed, each an address (`192.168.1.10`) or a range (`172.18.0.0/16`). Set it to stop anything else in those ranges from claiming another address, and list every proxy in front of the API: the frontend nginx container and, if you run one, your own reverse proxy in front of it. Containers get a new address when they are recreated, so give a Docker network as a range (`docker network inspect <network>` shows its subnet). A proxy left out is taken for the visitor: every visitor then shares its login rate limit, and requests through it count as plain HTTP, so a sign-in through an identity provider sends an `http://` redirect URI that does not match the registered one. The API logs a warning once when that happens. Left unset, sign-ins are also capped at 30 per 5 minutes per device in front of nginx, because any LAN device could otherwise claim a new address on every attempt; setting it turns that cap off. |
+| `ForwardedHeaders__TrustedProxies__0`, ... | the private address ranges | The proxy addresses whose `X-Forwarded-For` and `X-Forwarded-Proto` headers are believed, each an address (`192.168.1.10`) or a range (`172.18.0.0/16`). Set it to stop anything else in those ranges from claiming another address, and list every proxy in front of the API: the frontend nginx container and, if you run one, your own reverse proxy in front of it. Containers get a new address when they are recreated, so give a Docker network as a range (`docker network inspect <network>` shows its subnet). A proxy left out is taken for the visitor: every visitor then shares its login rate limit, and requests through it count as plain HTTP, so a sign-in through an identity provider sends an `http://` redirect URI that does not match the registered one. The API logs a warning once when that happens. Left unset, sign-ins, widget calls and exports are also capped per device in front of nginx (30 sign-ins and 180 widget calls per 5 minutes, 15 exports per 15 minutes), because any LAN device could otherwise claim a new address on every attempt; setting it turns those caps off. |

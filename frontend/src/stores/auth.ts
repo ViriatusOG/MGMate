@@ -1,6 +1,7 @@
 import { computed, onScopeDispose, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { authApi, type AuthConfigResponse } from '@/services/authApi'
+import { ApiError } from '@/services/apiCore'
 
 const AUTH_USERNAME_KEY = 'garagestack-auth-username'
 const AUTH_EXPIRES_KEY = 'garagestack-auth-expires'
@@ -60,9 +61,15 @@ export const useAuthStore = defineStore('auth', () => {
       if (result.expiresAtUtc) {
         persistSession(result.username, result.expiresAtUtc)
       }
-    } catch {
+    } catch (e) {
       if (generation !== _generation) return
-      clearSession()
+      // Only the API saying no ends the session. A network blip or a restarting API says nothing
+      // about the cookie, so keep the session and let the next navigation ask again.
+      if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
+        clearSession()
+      } else {
+        _verifyPromise = null
+      }
     }
   }
 
@@ -99,6 +106,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
+    // A verifySession() still in flight must not put the session back after it is cleared.
+    _generation++
     _verifyPromise = null
     clearSession()
     await authApi.logout()

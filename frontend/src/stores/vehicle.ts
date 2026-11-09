@@ -18,6 +18,22 @@ import { useLoadingTracker } from '@/composables/useLoadingTracker'
 // vehicle's type through this store.
 export type { VehicleType }
 
+/**
+ * Numbers the calls of one fetch action so only the newest one writes the store. Switching the
+ * map's period twice quickly sends two requests; without this the first answer arriving last
+ * would show the wrong period. `supersede` drops the call in flight without starting a new one.
+ */
+function latestCall() {
+  let latest = 0
+  return {
+    begin: () => ++latest,
+    isCurrent: (call: number) => call === latest,
+    supersede: () => {
+      latest++
+    },
+  }
+}
+
 export const useVehicleStore = defineStore('vehicle', () => {
   const uiSettings = useUiSettingsStore()
 
@@ -63,11 +79,24 @@ export const useVehicleStore = defineStore('vehicle', () => {
     })
   }
 
+  const statusCalls = latestCall()
+  const dailyStatsCalls = latestCall()
+  const tripsCalls = latestCall()
+  const latestTripCalls = latestCall()
+  const tripSummariesCalls = latestCall()
+
   async function fetchStatus(vin: string) {
-    await withLoading(statusError, async () => {
-      currentStatus.value = await vehicleApi.status(vin)
-      lastUpdated.value = new Date()
-    })
+    const call = statusCalls.begin()
+    await withLoading(
+      statusError,
+      async () => {
+        const status = await vehicleApi.status(vin)
+        if (!statusCalls.isCurrent(call)) return
+        currentStatus.value = status
+        lastUpdated.value = new Date()
+      },
+      () => statusCalls.isCurrent(call),
+    )
   }
 
   async function fetchConfig(vin: string) {
@@ -79,9 +108,15 @@ export const useVehicleStore = defineStore('vehicle', () => {
   }
 
   async function fetchDailyStats(vin: string, from: string, to: string) {
-    await withLoading(dailyStatsError, async () => {
-      dailyStats.value = await vehicleApi.dailyStats(vin, from, to, browserTimeZone())
-    })
+    const call = dailyStatsCalls.begin()
+    await withLoading(
+      dailyStatsError,
+      async () => {
+        const stats = await vehicleApi.dailyStats(vin, from, to, browserTimeZone())
+        if (dailyStatsCalls.isCurrent(call)) dailyStats.value = stats
+      },
+      () => dailyStatsCalls.isCurrent(call),
+    )
   }
 
   function applyLiveStatus(snapshot: TelemetrySnapshot) {
@@ -99,6 +134,9 @@ export const useVehicleStore = defineStore('vehicle', () => {
       })
     }
 
+    // A pushed snapshot is newer than any status request still in flight, so that answer must
+    // not replace it when it lands.
+    statusCalls.supersede()
     currentStatus.value = snapshot
     lastUpdated.value = new Date()
   }
@@ -115,21 +153,39 @@ export const useVehicleStore = defineStore('vehicle', () => {
   }
 
   async function fetchTrips(vin: string, from?: string, to?: string) {
-    await withLoading(tripsError, async () => {
-      trips.value = await vehicleApi.trips(vin, from, to)
-    })
+    const call = tripsCalls.begin()
+    await withLoading(
+      tripsError,
+      async () => {
+        const result = await vehicleApi.trips(vin, from, to)
+        if (tripsCalls.isCurrent(call)) trips.value = result
+      },
+      () => tripsCalls.isCurrent(call),
+    )
   }
 
   async function fetchLatestTrip(vin: string) {
-    await withLoading(latestTripError, async () => {
-      latestTrip.value = (await vehicleApi.latestTrip(vin)) ?? null
-    })
+    const call = latestTripCalls.begin()
+    await withLoading(
+      latestTripError,
+      async () => {
+        const result = (await vehicleApi.latestTrip(vin)) ?? null
+        if (latestTripCalls.isCurrent(call)) latestTrip.value = result
+      },
+      () => latestTripCalls.isCurrent(call),
+    )
   }
 
   async function fetchTripSummaries(vin: string, from?: string, to?: string) {
-    await withLoading(tripSummariesError, async () => {
-      tripSummaries.value = await vehicleApi.tripSummaries(vin, from, to)
-    })
+    const call = tripSummariesCalls.begin()
+    await withLoading(
+      tripSummariesError,
+      async () => {
+        const result = await vehicleApi.tripSummaries(vin, from, to)
+        if (tripSummariesCalls.isCurrent(call)) tripSummaries.value = result
+      },
+      () => tripSummariesCalls.isCurrent(call),
+    )
   }
 
   // MGMate follows one car. Every view needs the same one, so "the first vehicle" is

@@ -43,7 +43,7 @@ vi.mock('@/utils/leaflet', () => {
 vi.mock('leaflet.markercluster', () => ({}))
 vi.mock('leaflet.markercluster/dist/MarkerCluster.css', () => ({}))
 
-const { createMarker, createTileLayer } = await import('../poiTileLayer')
+const { createMarker, createTileLayer, MAX_CHAINED_ROUNDS } = await import('../poiTileLayer')
 
 interface Poi {
   id: string
@@ -240,6 +240,30 @@ describe('createTileLayer', () => {
 
     expect(layer.items.size).toBe(1)
     expect(failing.loading).toEqual([1, -1])
+  })
+
+  it('stops chaining after a set number of rounds when the source keeps saying there is more', async () => {
+    vi.useFakeTimers()
+    try {
+      let n = 0
+      const fetchItems = vi.fn<() => Promise<{ items: Poi[]; hasMore: boolean }>>(async () => ({
+        items: [{ id: `p${n++}` }],
+        hasMore: true,
+      }))
+      const { layer, map } = setup([], { fetchItems })
+      // Two tiles tall, so the one beside the centre's is never covered and the chain goes on.
+      const base = fakeMap().getBounds()
+      map.value = {
+        getBounds: () => ({ ...base, getNorth: () => 52.9 }),
+      } as unknown as LeafletMap
+
+      await layer.load()
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(fetchItems).toHaveBeenCalledTimes(MAX_CHAINED_ROUNDS)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('stops fetching once the map is gone', async () => {

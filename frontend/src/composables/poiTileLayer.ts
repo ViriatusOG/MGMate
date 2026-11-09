@@ -149,6 +149,9 @@ export interface TileLayerOptions<T> {
  * and redraws from that cache. Charging stations, fuel stations and service areas differ only
  * in where their items come from and how they are drawn, which is what the options describe.
  */
+/** Most fetches one viewport gets in a row before the layer waits for the map to move again. */
+export const MAX_CHAINED_ROUNDS = 10
+
 export function createTileLayer<T>(options: TileLayerOptions<T>) {
   const { map, enabled, clusterClassName, idOf, fetchItems, toMarker, include } = options
   const items = new Map<string, T>()
@@ -220,7 +223,9 @@ export function createTileLayer<T>(options: TileLayerOptions<T>) {
     return Math.min(Math.ceil(distanceM / 1000), 200)
   }
 
-  async function load(overrideRadiusKm?: number): Promise<void> {
+  // `round` counts the follow-up fetches chained for one viewport. A source that keeps answering
+  // hasMore would otherwise chain forever while the map sits still.
+  async function load(overrideRadiusKm?: number, round = 0): Promise<void> {
     const instance = map.value
     if (!instance || !enabled.value) {
       clear()
@@ -258,8 +263,12 @@ export function createTileLayer<T>(options: TileLayerOptions<T>) {
       if (!options.moreToFetch(outcome)) {
         // Nothing left for this viewport: mark it done so panning back costs no requests.
         for (const key of visibleKeys) loadedTiles.add(key)
-      } else if (enabled.value && visibleKeys.some((key) => !loadedTiles.has(key))) {
-        debouncer.trigger(() => load(), options.chainDelayMs(outcome))
+      } else if (
+        round + 1 < MAX_CHAINED_ROUNDS &&
+        enabled.value &&
+        visibleKeys.some((key) => !loadedTiles.has(key))
+      ) {
+        debouncer.trigger(() => load(undefined, round + 1), options.chainDelayMs(outcome))
       }
     } catch {
       // Every POI source is best-effort: rate limits, outages and offline are all non-fatal.

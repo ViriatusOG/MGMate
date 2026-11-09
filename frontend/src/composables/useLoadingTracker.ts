@@ -12,13 +12,21 @@ export function useLoadingTracker() {
   const loadingCount = ref(0)
   const loading = computed(() => loadingCount.value > 0)
 
-  async function withLoading(errorRef: Ref<Error | null>, fn: () => Promise<void>) {
+  /**
+   * `isCurrent`, when given, says whether this call is still the newest of its kind: a superseded
+   * call that fails afterwards must not put its error over the newer call's result.
+   */
+  async function withLoading(
+    errorRef: Ref<Error | null>,
+    fn: () => Promise<void>,
+    isCurrent: () => boolean = () => true,
+  ) {
     loadingCount.value++
     errorRef.value = null
     try {
       await fn()
     } catch (e) {
-      errorRef.value = asError(e)
+      if (isCurrent()) errorRef.value = asError(e)
     } finally {
       loadingCount.value--
     }

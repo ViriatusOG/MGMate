@@ -110,8 +110,16 @@ export function useSignalR(callbacks: SignalRCallbacks) {
       connected.value = false
     })
     created.onreconnected(async () => {
+      try {
+        await created.invoke('JoinVehicle', vehicleId)
+      } catch {
+        // Back on the hub but not in the vehicle's group, so no pushes would arrive. Closing hands
+        // it to onclose, whose restart joins again and then does the catch-up re-fetch.
+        connected.value = false
+        await created.stop()
+        return
+      }
       connected.value = true
-      await created.invoke('JoinVehicle', vehicleId)
       callbacks.onReconnected?.()
     })
     created.onclose(() => {

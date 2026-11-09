@@ -213,3 +213,67 @@ describe('useVehicleStore - trips for the dashboard and statistics', () => {
     expect(store.trips).toEqual([])
   })
 })
+
+describe('useVehicleStore - only the newest request writes the store', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  function deferred<T>() {
+    let resolve!: (value: T) => void
+    let reject!: (reason: unknown) => void
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+    return { promise, resolve, reject }
+  }
+
+  it('keeps the second period of trips when the first answer lands last', async () => {
+    const store = useVehicleStore()
+    const first = deferred<Trip[]>()
+    const second = deferred<Trip[]>()
+    vi.mocked(vehicleApi.trips)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise)
+    const week = [{ index: 0, id: 1 }] as unknown as Trip[]
+    const month = [{ index: 0, id: 2 }] as unknown as Trip[]
+
+    const a = store.fetchTrips('FAKEVN00000000001', 'week')
+    const b = store.fetchTrips('FAKEVN00000000001', 'month')
+    second.resolve(month)
+    await b
+    first.resolve(week)
+    await a
+
+    expect(store.trips).toEqual(month)
+  })
+
+  it('does not show the error of a request that was superseded', async () => {
+    const store = useVehicleStore()
+    const first = deferred<DailyStat[]>()
+    vi.mocked(vehicleApi.dailyStats).mockReturnValueOnce(first.promise).mockResolvedValueOnce([])
+
+    const a = store.fetchDailyStats('FAKEVN00000000001', '2026-01-01', '2026-01-07')
+    await store.fetchDailyStats('FAKEVN00000000001', '2026-01-01', '2026-01-31')
+    first.reject(new Error('timeout'))
+    await a
+
+    expect(store.dailyStatsError).toBeNull()
+    expect(store.loading).toBe(false)
+  })
+
+  it('does not let a status answer replace a newer pushed snapshot', async () => {
+    const store = useVehicleStore()
+    const pending = deferred<TelemetrySnapshot>()
+    vi.mocked(vehicleApi.status).mockReturnValueOnce(pending.promise)
+    const pushed = { soc: 80 } as unknown as TelemetrySnapshot
+
+    const fetching = store.fetchStatus('FAKEVN00000000001')
+    store.applyLiveStatus(pushed)
+    pending.resolve({ soc: 70 } as unknown as TelemetrySnapshot)
+    await fetching
+
+    expect(store.currentStatus).toEqual(pushed)
+  })
+})

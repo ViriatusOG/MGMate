@@ -342,13 +342,13 @@
   <Config
     Name="Internal MQTT Username"
     Target="MQTT_BROKER_USERNAME"
-    Default="mgmate"
+    Default="garagestack"
     Mode=""
     Description="Login the SAIC gateway, API and Worker use on the bundled Mosquitto broker. Only relevant if you connect other MQTT clients to the exposed MQTT port."
     Type="Variable"
     Display="advanced"
     Required="false"
-    Mask="false">mgmate</Config>
+    Mask="false">garagestack</Config>
 
   <Config
     Name="Internal MQTT Password"
@@ -694,23 +694,23 @@
   <Config
     Name="Database Name"
     Target="POSTGRES_DB"
-    Default="mgmate"
+    Default="garagestack"
     Mode=""
     Description="PostgreSQL database name. Only change this if you know what you are doing."
     Type="Variable"
     Display="advanced"
     Required="false"
-    Mask="false">mgmate</Config>
+    Mask="false">garagestack</Config>
 
   <Config
     Name="Database User"
     Target="POSTGRES_USER"
-    Default="mgmate"
+    Default="garagestack"
     Mode=""
     Description="PostgreSQL database user. Only change this if you know what you are doing."
     Type="Variable"
     Display="advanced"
     Required="false"
-    Mask="false">mgmate</Config>
+    Mask="false">garagestack</Config>
 
 </Container>

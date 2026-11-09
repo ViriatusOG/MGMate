@@ -30,6 +30,9 @@ try
     builder.Services.AddTyrePressureThresholds(builder.Configuration);
     builder.Services.AddAlertThresholds(builder.Configuration);
     builder.Services.AddSingleton(VapidOptions.From(builder.Configuration));
+    // Deliveries go to endpoints browsers handed in, so they only ever connect to public addresses.
+    builder.Services.AddHttpClient(nameof(PushSenderService))
+        .ConfigurePrimaryHttpMessageHandler(() => PublicAddressConnection.CreateHandler());
     builder.Services.AddSingleton<IPushSender, PushSenderService>();
     builder.Services.AddSingleton<MqttConnectionState>();
     builder.Services.AddSingleton<GatewaySignInState>();

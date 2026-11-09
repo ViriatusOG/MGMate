@@ -46,6 +46,10 @@ interface Entry {
  */
 export const PULL_INTERVAL_MS = 30_000
 
+// The account this browser's settings were last kept on. A different account signing in later
+// must not be filled from them: they are the previous person's.
+export const SETTINGS_ACCOUNT_KEY = 'garagestack-settings-account'
+
 function snapshot(fields: object): Baseline {
   return new Map(Object.entries(fields).map(([key, value]) => [key, JSON.stringify(value)]))
 }
@@ -77,6 +81,15 @@ export const useSettingsSyncStore = defineStore('settingsSync', () => {
   let ready: Promise<void> = Promise.resolve()
   let pulling: Promise<void> | null = null
   let lastPullAt = 0
+  /** Who is signed in for this keeping, when the caller said. */
+  let account: string | null = null
+
+  // Whether this browser's copy is the signed-in account's own: true unless another account was
+  // the last one kept here. A browser from before this was recorded counts as its own.
+  function copyIsThisAccounts(): boolean {
+    const last = localStorage.getItem(SETTINGS_ACCOUNT_KEY)
+    return account === null || last === null || last === account
+  }
 
   async function save(entry: Entry) {
     // Until the account's copy has been read, a value here cannot be told apart from a default
@@ -127,7 +140,8 @@ export const useSettingsSyncStore = defineStore('settingsSync', () => {
     if (parsed === null) {
       // The account holds none yet, or one that cannot be read: this browser's own copy fills
       // it, when it has one. An empty baseline sends every key.
-      const replace = remote?.[binding.section] !== undefined || binding.hasOwnCopy()
+      const replace =
+        remote?.[binding.section] !== undefined || (binding.hasOwnCopy() && copyIsThisAccounts())
       entry.baseline = replace
         ? new Map()
         : (entry.baseline ?? snapshot(syncedFields(binding, state)))
@@ -152,6 +166,7 @@ export const useSettingsSyncStore = defineStore('settingsSync', () => {
       remote = settings ?? {}
       lastPullAt = Date.now()
       for (const entry of entries.values()) adopt(entry)
+      if (account !== null) localStorage.setItem(SETTINGS_ACCOUNT_KEY, account)
     } catch {
       // Offline, or the session is gone: the page carries on with this browser's own copy.
     }
@@ -174,11 +189,14 @@ export const useSettingsSyncStore = defineStore('settingsSync', () => {
   /**
    * Starts keeping settings on the signed-in account, beginning with its copy. Resolves once that
    * copy has been taken in, or could not be read. While already keeping, it changes nothing.
+   * `signedInAs` names the account, so this browser's copy only fills an account that has none
+   * yet when it was kept for that same account.
    */
-  function start(): Promise<void> {
+  function start(signedInAs?: string): Promise<void> {
     if (started) return ready
     started = true
     session++
+    account = signedInAs || null
     for (const entry of entries.values())
       entry.baseline = snapshot(syncedFields(entry.binding, entry.binding.state))
     ready = pull()
