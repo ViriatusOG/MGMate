@@ -56,7 +56,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .ov-row__trips {
+  /* Beside both the map and the status card, the trips take a row of their own. */
+  .ov-row:has(.ov-row__map):has(.ov-row__status) .ov-row__trips {
     grid-column: 1 / -1;
   }
 }
@@ -520,12 +521,17 @@
   position: relative;
 }
 
-/* The car's body follows the theme; the roof is black, as on the two-tone MG4. */
+/* The car's body follows the theme; the roof is black, as on the two-tone MG4. Its size is set
+   only on the Car status card: nested in the Overview card's drawing, x, y, width and height
+   place it, and a CSS width would override them. */
 .ov-topview {
+  overflow: visible;
+}
+
+.ov-status__car > .ov-topview {
   display: block;
   width: 100%;
   height: auto;
-  overflow: visible;
 }
 
 .ov-topview__shade-edge {
@@ -713,6 +719,22 @@
   gap: 0.75rem;
 }
 
+/* Two columns, filled down the left one first; one column when the card is too narrow. */
+.ov-status__list--two {
+  grid-template-rows: repeat(var(--ov-status-rows, 4), auto);
+  grid-auto-flow: column;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1.5rem;
+}
+
+@container (width < 19rem) {
+  .ov-status__list--two {
+    grid-template-rows: none;
+    grid-auto-flow: row;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .ov-status__list dt {
   color: var(--color-text-muted);
 }
@@ -721,6 +743,7 @@
   margin: 0;
   font-weight: 600;
   text-align: right;
+  white-space: nowrap;
 }
 
 .ov-status__list .is-ok {

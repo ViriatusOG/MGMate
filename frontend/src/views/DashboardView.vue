@@ -120,6 +120,8 @@ const CONTROL_CARDS: readonly CardId[] = ['doors', 'climate', 'windows', 'findMy
 const controlCards = computed(() => CONTROL_CARDS.filter((id) => hasData(id)))
 
 const controlsSection = ref<HTMLElement | null>(null)
+// Locks, climate and windows get a row of their own when the full tile wall is hidden.
+const hasControlsRow = computed(() => !settings.showStatusCards && controlCards.value.length > 0)
 
 function scrollToControls() {
   controlsSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -305,15 +307,19 @@ onUnmounted(() => {
             v-if="settings.showTyreDiagram"
             v-bind="carDiagramProps"
             class="ov-hero__car"
+            :has-controls="hasControlsRow"
+            @controls="scrollToControls"
           />
           <LastChargeCard class="ov-hero__charge" />
         </div>
 
         <div class="ov-row">
           <LocationMapWidget v-if="settings.showLocationMap" class="ov-row__map" />
+          <!-- The Overview card shows the car's status itself; on its own only when that is hidden. -->
           <CarStatusCard
+            v-if="!settings.showTyreDiagram"
             class="ov-row__status"
-            :has-controls="!settings.showStatusCards && controlCards.length > 0"
+            :has-controls="hasControlsRow"
             @controls="scrollToControls"
           />
           <RecentTripsCard class="ov-row__trips" />

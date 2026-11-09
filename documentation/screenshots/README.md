@@ -6,11 +6,11 @@ The main pages of MGMate, on a desktop and on a phone. They were taken in [demo 
 
 ### Overview
 
-![The overview: the battery with a 24-hour charge level chart, the car on the road with its speed and tyre pressures, and the last charge with its power curve](desktop-dashboard.webp)
+![The overview: the battery with a 24-hour charge level chart, the Overview card with the car on the road, its speed, tyre pressures and status list, and the last charge with its power curve](desktop-dashboard.webp)
 
 ### Overview while charging
 
-![The overview while charging: the live charging card with power, voltage, current and target, the car parked with the cable in, and the car status card with an open window and boot](desktop-dashboard-charging.webp)
+![The overview while charging: the live charging card with power, voltage, current and target, and the Overview card with the car parked, the cable in, and an open window and boot on the drawing and in its list](desktop-dashboard-charging.webp)
 
 ### Map
 
@@ -86,4 +86,4 @@ docker compose --env-file .env.demo -f docker-compose.demo.yml up -d --build   #
 cd frontend && pnpm screenshots                                                 # or: pnpm screenshots http://localhost:5173
 ```
 
-It signs in as `demo`, switches the Debug page on, and takes the desktop screenshots at 1280 x 800 (the charging overview taller, to show the car status card) and the phone screenshots at 390 x 844 at twice the pixel density, in the dark theme with the date filter on 30 days and the region set to the UK (miles, psi, pounds), plus the overview in the light theme. For the charging overview it parks the demo car and plugs it in through the demo API, and puts it back on the road afterwards. Run it against a freshly started demo API: the API's rate limit can cut a second run short (start the local API with `RATE_LIMIT_GLOBAL_PER_MINUTE=10000` to avoid that). The maps need the internet for their tiles; behind a proxy, `HTTPS_PROXY` is used for them. `CHROMIUM_PATH` points it at a Chromium other than Playwright's own. Keep the manifest's `sizes` in `frontend/vite.config.ts` in step if the sizes change.
+It signs in as `demo`, switches the Debug page on, and takes the desktop screenshots at 1280 x 800 (the charging overview taller, so the whole Overview card shows) and the phone screenshots at 390 x 844 at twice the pixel density, in the dark theme with the date filter on 30 days and the region set to the UK (miles, psi, pounds), plus the overview in the light theme. For the charging overview it parks the demo car and plugs it in through the demo API, and puts it back on the road afterwards. Run it against a freshly started demo API: the API's rate limit can cut a second run short (start the local API with `RATE_LIMIT_GLOBAL_PER_MINUTE=10000` to avoid that). The maps need the internet for their tiles; behind a proxy, `HTTPS_PROXY` is used for them. `CHROMIUM_PATH` points it at a Chromium other than Playwright's own. Keep the manifest's `sizes` in `frontend/vite.config.ts` in step if the sizes change.

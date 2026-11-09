@@ -8,7 +8,9 @@ import LevelBadge from './carDiagram/LevelBadge.vue'
 import SpeedGauge from './carDiagram/SpeedGauge.vue'
 import TyreIndicators from './carDiagram/TyreIndicators.vue'
 import TyreLabels from './carDiagram/TyreLabels.vue'
-import { CAR_SILHOUETTE_VIEWBOX, CAR_SILHOUETTE_MARKUP } from '@/assets/carSilhouette'
+import CarStatusList from './overview/CarStatusList.vue'
+import Mg4TopView from './overview/Mg4TopView.vue'
+import { useCarStatus } from './overview/useCarStatus'
 import type { LevelKind } from '@/composables/useStatisticsCharts'
 import { useTyrePressureThresholds } from '@/composables/useTyrePressureThresholds'
 import { useUnits } from '@/composables/useUnits'
@@ -68,7 +70,15 @@ const props = defineProps<{
   chargerConnected?: boolean | null
   isCharging?: boolean | null
   speed?: number | null
+  /** Whether the overview shows its controls row, which the header link scrolls to. */
+  hasControls?: boolean
 }>()
+const emit = defineEmits<{ controls: [] }>()
+
+// Locks, doors, windows, lids, lights and the cable, in words under the drawing or the photo.
+const carStatus = useCarStatus()
+const statusRows = carStatus.compactRows
+const locked = carStatus.locked
 
 const tyrePressures = computed(() => ({
   frontLeft: props.frontLeft,
@@ -269,6 +279,14 @@ const motionBlurAmount = computed(() => {
         </p>
         <span class="car-photo__actions">
           <button
+            v-if="hasControls"
+            type="button"
+            class="ov-card__link ov-status__link"
+            @click="emit('controls')"
+          >
+            {{ t('overview.status.controls') }}
+          </button>
+          <button
             type="button"
             class="btn btn-sm btn-outline-secondary car-photo__button"
             :disabled="photo.busy.value"
@@ -451,17 +469,12 @@ const motionBlurAmount = computed(() => {
               :dipped-beam="!!lightsDippedBeam"
             />
 
-            <!-- Orange car illustration (top-view) -->
+            <!-- The MG4 traced from above, in the car colour from Settings. Its 250 × 400 view
+                 box is scaled by 0.791 and placed so the axles (y 87 and 317 on its canvas) land
+                 on the tyre dots at y 145 and 327, and the body (x 22-178) between x 108 and 232. -->
             <g filter="url(#car-shadow)" class="tyre-diagram__car">
               <g :filter="motionBlurAmount > 0 ? 'url(#motion-blur)' : undefined">
-                <svg
-                  :viewBox="CAR_SILHOUETTE_VIEWBOX"
-                  x="105"
-                  y="115"
-                  width="130"
-                  height="250"
-                  v-html="CAR_SILHOUETTE_MARKUP"
-                />
+                <Mg4TopView x="71.1" y="76.2" width="197.8" height="316.4" />
               </g>
             </g>
 
@@ -475,10 +488,10 @@ const motionBlurAmount = computed(() => {
               <title>
                 {{ isCharging ? t('vehicle.chargingYes') : t('vehicle.hvBattery.pluggedIn') }}
               </title>
-              <circle cx="170" cy="367" r="16" class="charge-entry-glow" />
-              <rect x="162" y="362" width="16" height="8" rx="2" class="charge-socket" />
+              <circle cx="170" cy="380" r="16" class="charge-entry-glow" />
+              <rect x="162" y="376" width="16" height="8" rx="2" class="charge-socket" />
               <!-- Cable enters the battery badge from below; endpoint inside badge so nothing shows under it -->
-              <path d="M 170,440 L 170,370" class="charge-cable" />
+              <path d="M 170,440 L 170,384" class="charge-cable" />
             </g>
 
             <TyreIndicators :pressures="tyrePressures" />
@@ -486,17 +499,15 @@ const motionBlurAmount = computed(() => {
 
           <TyreLabels :pressures="tyrePressures" @select="openTyreHistory" />
 
-          <!-- Open panel icon badges – positioned over SVG at each panel location -->
-          <template v-for="badge in doorBadges" :key="badge.key">
-            <div
-              v-if="badge.open"
-              class="car-badge"
-              :class="`car-badge--${badge.suffix}`"
-              :title="t(badge.titleKey)"
-            >
-              <font-awesome-icon icon="lock-open" />
-            </div>
-          </template>
+          <!-- The lock sits on the roof; open doors and lids show on the drawing itself. -->
+          <span
+            v-if="locked !== null"
+            class="ov-status__lock tyre-diagram__lock"
+            :class="locked ? 'is-locked' : 'is-unlocked'"
+            :title="locked ? t('overview.status.locked') : t('overview.status.unlocked')"
+          >
+            <font-awesome-icon :icon="locked ? 'lock' : 'lock-open'" />
+          </span>
 
           <!-- Fuel level (front) -->
           <LevelBadge
@@ -527,6 +538,13 @@ const motionBlurAmount = computed(() => {
           <SpeedGauge v-if="isMoving" :speed-kmh="speed ?? 0" />
         </div>
       </div>
+
+      <CarStatusList
+        v-if="statusRows.length"
+        class="tyre-diagram__status"
+        :rows="statusRows"
+        :columns="2"
+      />
     </div>
     <component
       :is="TyreHistoryModal"

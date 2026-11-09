@@ -79,6 +79,9 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
   padding: 1.25rem;
+
+  /* The status list under the drawing drops to one column when the card is narrow. */
+  container-type: inline-size;
 }
 
 /* ── Speedometer gauge ───────────────────────────────────── */
@@ -528,9 +531,13 @@
   gap: 0.5rem;
 }
 
+/* Level with the title, whose bottom margin would otherwise push the buttons down. */
 .car-photo__actions {
   display: flex;
-  gap: 0.35rem;
+  align-self: flex-start;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: -0.2rem;
 }
 
 .car-photo__button {
@@ -650,4 +657,43 @@
 
 .car-photo__tyre--danger {
   border-left-color: var(--color-danger);
+}
+
+/* ── The MG4 drawing and the car's status ───────────────────── */
+
+/* The MG4 takes the car colour chosen in Settings; the roof stays black, as on the two-tone
+   paint. */
+.tyre-diagram .ov-topview__shade-edge {
+  stop-color: color-mix(in srgb, var(--car-secondary, #f39200) 80%, #000);
+}
+
+.tyre-diagram .ov-topview__shade-mid {
+  stop-color: var(--car-primary, #f9b233);
+}
+
+.tyre-diagram .ov-topview__door:not(.is-open) {
+  fill: color-mix(in srgb, var(--car-primary, #f9b233) 88%, #000);
+}
+
+.tyre-diagram .ov-topview__body {
+  stroke: color-mix(in srgb, var(--car-secondary, #f39200) 65%, #000);
+}
+
+/* The padlock sits on the middle of the roof (y 250 of the 480-high view box). */
+.tyre-diagram__lock {
+  top: 52.1%;
+}
+
+.tyre-diagram__status {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Amber alone hardly shows on an orange or yellow car, so an open part is outlined too. */
+.tyre-diagram .ov-topview__panel.is-open {
+  fill: color-mix(in srgb, var(--color-warning) 70%, #fff);
+  stroke: #1a1d27;
+  stroke-width: 2.2;
+  stroke-dasharray: 5 3;
 }
