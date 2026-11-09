@@ -92,6 +92,17 @@ describe('CarStatusCard', () => {
     expect(wrapper.find('.ov-topview__port.is-charging').exists()).toBe(true)
   })
 
+  it('marks an open bonnet and only draws a sunroof when one is reported open', () => {
+    const shut = mountWith(closed)
+    expect(shut.find('.ov-topview__lid.is-open').exists()).toBe(false)
+
+    setActivePinia(createPinia())
+    const open = mountWith({ ...closed, bonnetOpen: true, sunRoofOpen: true })
+    expect(open.findAll('.ov-topview__lid.is-open')).toHaveLength(1)
+    expect(open.findAll('.ov-topview .is-open')).toHaveLength(2)
+    expect(row(open, 'Bonnet')?.text()).toBe('Open')
+  })
+
   it('asks for the controls when its link is pressed', async () => {
     const wrapper = mountWith(closed)
     await wrapper.find('.ov-status__link').trigger('click')
