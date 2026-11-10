@@ -42,7 +42,7 @@ public sealed class DemoGatewayCatalog(GatewayVehicleCatalog catalog) : IGateway
                 ["name"] = name,
                 ["unique_id"] = id,
                 ["device"] = device.DeepClone(),
-                ["o"] = new JsonObject { ["name"] = "SAIC Python MQTT Gateway", ["sw"] = "0.14.0-rc1" },
+                ["o"] = new JsonObject { ["name"] = "SAIC Python MQTT Gateway", ["sw"] = "0.14.0-rc2" },
                 ["state_topic"] = root + topic,
             };
             if (command) config["command_topic"] = root + topic + "/set";
@@ -79,6 +79,7 @@ public sealed class DemoGatewayCatalog(GatewayVehicleCatalog catalog) : IGateway
         Add("switch", "Battery heating", "drivetrain/batteryHeating", O(("payload_on", "True"), ("payload_off", "False")), command: true);
         Add("switch", "Find my car", "location/findMyCar", O(("payload_on", "activate"), ("payload_off", "stop")), command: true);
         Add("switch", "Rear window defroster heating", "climate/rearWindowDefrosterHeating", O(("payload_on", "on"), ("payload_off", "off")), command: true);
+        Add("switch", "Steering wheel heating", "climate/steeringWheelHeating", O(("payload_on", "on"), ("payload_off", "off")), command: true);
         Add("switch", "Front window defroster heating", "climate/remoteClimateState", O(("payload_on", "front"), ("payload_off", "off"),
             ("value_template", "{% if value == \"front\" %}front{% else %}off{% endif %}")), command: true);
         Add("climate", "Vehicle climate", "climate/interiorTemperature", O(
@@ -128,6 +129,7 @@ public sealed class DemoGatewayCatalog(GatewayVehicleCatalog catalog) : IGateway
         Value("doors/locked", "True", 3); Value("doors/boot", "False", 3); Value("drivetrain/charging", "False", 2);
         Value("drivetrain/socTarget", "80"); Value("drivetrain/chargeCurrentLimit", "MAX"); Value("drivetrain/chargingCableLock", "True");
         Value("drivetrain/batteryHeating", "False", 2); Value("climate/rearWindowDefrosterHeating", "off", 3);
+        Value("climate/steeringWheelHeating", "off", 3);
         Value("climate/remoteClimateState", "off", 3); Value("climate/remoteTemperature", "22");
         Value("drivetrain/chargingSchedule", """{"mode": "DISABLED", "startTime": "00:30", "endTime": "05:30"}""");
         Value("drivetrain/soc", "78", 2); Value("drivetrain/range", "319", 2); Value("drivetrain/power", "0.0", 2);

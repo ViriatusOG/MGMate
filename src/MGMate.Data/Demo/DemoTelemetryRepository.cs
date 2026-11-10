@@ -269,6 +269,9 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
             case "rear-defroster":
                 car.RearWindowDefroster = value == "on";
                 break;
+            case "steering-wheel-heat":
+                car.SteeringWheelHeating = value == "on";
+                break;
             case "seat-left":
                 car.HeatedSeatFrontLeft = int.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
                 break;
@@ -381,6 +384,7 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
             HeatedSeatFrontLeft = 0,
             HeatedSeatFrontRight = 0,
             RearWindowDefroster = false,
+            SteeringWheelHeating = false,
             IsAvailable = true,
             LastVehicleStateAt = DateTime.UtcNow,
             LastChargeStateAt = DateTime.UtcNow.AddHours(-8),

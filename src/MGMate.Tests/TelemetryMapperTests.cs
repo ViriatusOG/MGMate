@@ -60,6 +60,8 @@ public class TelemetryMapperTests
     [InlineData("climate/rearWindowDefrosterHeating", "true", nameof(TelemetrySnapshot.RearWindowDefroster), true)]
     [InlineData("climate/heatedSeatsFrontLeftLevel", "2", nameof(TelemetrySnapshot.HeatedSeatFrontLeft), 2)]
     [InlineData("climate/heatedSeatsFrontRightLevel", "3", nameof(TelemetrySnapshot.HeatedSeatFrontRight), 3)]
+    [InlineData("climate/steeringWheelHeating", "on", nameof(TelemetrySnapshot.SteeringWheelHeating), true)]
+    [InlineData("climate/steeringWheelHeating", "off", nameof(TelemetrySnapshot.SteeringWheelHeating), false)]
     // Tyres
     [InlineData("tyres/frontLeftPressure", "2.4", nameof(TelemetrySnapshot.TyrePressureFrontLeft), 2.4)]
     [InlineData("tyres/frontRightPressure", "2.4", nameof(TelemetrySnapshot.TyrePressureFrontRight), 2.4)]
@@ -239,7 +241,7 @@ public class TelemetryMapperTests
         Assert.Equal(new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc), snapshot.ChargingLastStartAt);
     }
 
-    // Payloads as saic-python-mqtt-gateway 0.14.0-rc1 publishes them: the SAIC client's enum names for
+    // Payloads as saic-python-mqtt-gateway 0.14.0-rc2 publishes them: the SAIC client's enum names for
     // the stop reason, a whole percentage for the target, and its own spelling of the limit.
     [Fact]
     public void ApplyMessage_ChargingDetails_AreStoredAsTheGatewaySendsThem()
