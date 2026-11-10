@@ -50,6 +50,13 @@ public static class TripAnchor
     public const int WakeUpReportLimit = 200;
 
     /// <summary>
+    /// The least time between the parked fix and the departure worked out from it. A drive nobody
+    /// followed is saved starting at the very fix that found the car parked, so a trip that leaves
+    /// from that fix must start later: one car's trips are told apart by when they start.
+    /// </summary>
+    public static readonly TimeSpan MinAfterParked = TimeSpan.FromSeconds(1);
+
+    /// <summary>
     /// When the car left <paramref name="parked"/> for the trip starting at <paramref name="first"/>:
     /// <see cref="Departure"/> with the wake-up read from the reports in between.
     /// </summary>
@@ -110,7 +117,8 @@ public static class TripAnchor
     /// <summary>
     /// When the car left the parked spot. The parked fix may be hours old, so its own time is no
     /// use: the car's wake-up when there is a believable one, otherwise the first fix's time less
-    /// the gap at <see cref="AssumedSpeedKmh"/>. Never earlier than the parked fix.
+    /// the gap at <see cref="AssumedSpeedKmh"/>. Always later than the parked fix, by
+    /// <see cref="MinAfterParked"/> when there is that much room before the first fix.
     /// </summary>
     public static DateTime Departure(TripPoint parked, TripPoint first, DateTime? wokeAt) =>
         DepartureOver(parked, first, wokeAt, GapKm(parked, first), AssumedSpeedKmh);
@@ -123,7 +131,18 @@ public static class TripAnchor
             return woke;
 
         var estimate = first.RecordedAt - TimeSpan.FromHours(km / assumedKmh);
-        return estimate > parked.RecordedAt ? estimate : parked.RecordedAt;
+        var earliest = EarliestDeparture(parked, first);
+        return estimate > earliest ? estimate : earliest;
+    }
+
+    // The car left after it was seen parked, never at that very moment: a drive nobody followed
+    // that ended at this fix is saved as a trip starting at the fix's own time
+    // (MissedDrive.Build), and two trips of one car cannot start at the same time.
+    private static DateTime EarliestDeparture(TripPoint parked, TripPoint first)
+    {
+        var room = first.RecordedAt - parked.RecordedAt;
+        if (room <= TimeSpan.Zero) return parked.RecordedAt;
+        return parked.RecordedAt + (room > MinAfterParked + MinAfterParked ? MinAfterParked : room / 2);
     }
 
     /// <summary>

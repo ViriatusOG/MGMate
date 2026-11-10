@@ -265,9 +265,9 @@ public sealed class DemoTripRepository : ITripRepository
         var trip = TripEdit.Summarize(points, id);
         _log[id] = entry with
         {
-            StartedAt = trip.StartedAt,
+            StartedAt = TripEdit.StartedAt(points, entry.StartedAt, entry.LeftAfter),
             EndedAt = trip.EndedAt,
-            DistanceKm = trip.DistanceKm,
+            DistanceKm = TripEdit.DistanceKm(points, entry.LeftAfter is not null, entry.UnfollowedKm, entry.DistanceKm),
             StartLatitude = points[0].Latitude,
             StartLongitude = points[0].Longitude,
             EndLatitude = points[^1].Latitude,

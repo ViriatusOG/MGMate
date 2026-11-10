@@ -128,7 +128,19 @@ public class TripAnchorTests
     {
         var parked = Parked with { RecordedAt = T0.AddMinutes(-5) };
 
-        Assert.Equal(parked.RecordedAt, TripAnchor.Departure(parked, First, null));
+        // Just after it, not at it: a drive nobody followed that ended at this fix is saved as a
+        // trip starting at the fix's own time, and two trips cannot start at the same moment.
+        Assert.Equal(parked.RecordedAt + TripAnchor.MinAfterParked, TripAnchor.Departure(parked, First, null));
+    }
+
+    [Fact]
+    public void Departure_StaysBetweenTheParkedFixAndTheFirstFix_WhenTheyAreMomentsApart()
+    {
+        var parked = Parked with { RecordedAt = First.RecordedAt.AddSeconds(-1) };
+
+        var departure = TripAnchor.Departure(parked, First, null);
+
+        Assert.True(departure > parked.RecordedAt && departure < First.RecordedAt);
     }
 
     // ── Starting the trip there ──────────────────────────────────────────────

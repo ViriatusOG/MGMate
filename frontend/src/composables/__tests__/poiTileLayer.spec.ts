@@ -266,6 +266,30 @@ describe('createTileLayer', () => {
     }
   })
 
+  it('asks again when the source had nothing yet for a view of one tile', async () => {
+    vi.useFakeTimers()
+    try {
+      // Refused first (nothing new, more to come), answered on the second go.
+      const { layer, fetchItems } = setup([
+        { items: [], hasMore: true },
+        { items: [{ id: 'a' }], hasMore: false },
+      ])
+
+      await layer.load()
+      expect(fetchItems).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(fetchItems).toHaveBeenCalledTimes(2)
+      expect([...layer.items.keys()]).toEqual(['a'])
+
+      // Covered now, so the same view costs nothing more.
+      await layer.load()
+      expect(fetchItems).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('stops fetching once the map is gone', async () => {
     const { layer, map, fetchItems } = setup([{ items: [{ id: 'a' }], hasMore: false }])
 

@@ -255,7 +255,12 @@ export function createTileLayer<T>(options: TileLayerOptions<T>) {
         newItems = true
       }
 
-      loadedTiles.add(tileKey(center.lat, center.lng))
+      // An answer with nothing new that still says there is more is the server waiting on its
+      // source (busy, or asked to back off): the centre's tile is not covered yet, so it stays
+      // open and the chain below asks again. A view of that one tile would otherwise never retry.
+      if (!visibleKeys || newItems || !response.hasMore) {
+        loadedTiles.add(tileKey(center.lat, center.lng))
+      }
       if (newItems) redraw()
       if (!visibleKeys) return
 

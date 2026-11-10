@@ -1,6 +1,6 @@
 # Code review: real bugs
 
-Reviewed at `main` a5d6dff (includes PR #34 to PR #38), 2026-11-10. No code was changed.
+Reviewed at `main` a5d6dff (includes PR #34 to PR #38), 2026-11-10. The review itself changed no code; the fixes that followed are listed under "Status of the fixes".
 
 ## Summary
 
@@ -21,6 +21,19 @@ not signed in.
 | 5 | Low | High (harmless in size) | The live-update debounce leaks a small object when two updates arrive back to back |
 
 Line numbers refer to the commit above.
+
+## Status of the fixes
+
+All five are fixed in the same pull request that added this file, each with a test where one can
+be written. The findings below are kept as written, against the commit above.
+
+| # | Status | What changed |
+|---|--------|--------------|
+| 1 | Fixed | A trip that leaves from a parked fix now starts at least one second after that fix, never at its exact time, so it cannot share a start time with the "No route" trip saved at the same fix. An install that was already stuck recovers on the next 5-minute run, because the waiting trip is worked out again with the new start. In the reverse order the "No route" drive is no longer taken for part of the next trip and dropped. |
+| 2 | Fixed | Editing or resetting a route no longer touches what the odometer counted. A "No route" trip keeps its distance and its start time (and a trip damaged by an earlier edit gets them back from its odometer readings on the next edit or reset). A "Part route" trip keeps the odometer's count for the start nobody followed and measures only the followed part along the points. |
+| 3 | Fixed | The centre tile is only marked as covered when the answer brought something new or the server said nothing is left, so a refused request is asked again a few seconds later, up to the usual ten rounds. |
+| 4 | Fixed | A restart only starts a connection that is down. One that is reconnecting by itself is left to its own handlers, and one that is still up just joins the car's group again. |
+| 5 | Fixed | The debounce task is started without the cancellation token, so it always runs and always disposes its token source. |
 
 ## What was covered
 
