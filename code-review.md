@@ -36,7 +36,7 @@ Fixed in the same pull request that added this file, each with a test where one 
 | 3 | Fixed | The debounce only cancels the old timer and tolerates one that was just disposed. |
 | 4 | Fixed | Push requests time out after 10 seconds instead of 100, and the gateway is asked to follow a drive before the engine-start push goes out. Push delivery itself still runs in the receive path. |
 | 5 | Fixed | A row takes messages for at most 30 seconds after its first one. |
-| 6 | Open | Needs a design decision (a trip that is part route, part "No route"), so it is left for a mockup first. |
+| 6 | Fixed | The unfollowed start is added to the trip from the odometer, and the trip is marked "Part route" (`TripAnchor.ApplyUnfollowedStart`). |
 | 7 | Fixed | At most one follow request per car every 5 minutes. A single wake of a car that has just parked is still possible. |
 | 8 | Fixed | A password session carries a fingerprint of the credentials it was started with and is refused once they change. Sessions from before this fix carry none and run out on their own. |
 | 9 | Partly | PostgreSQL now gets a fast shutdown (SIGINT) and the `docker run` examples pass `--stop-timeout 60`. An existing container keeps Docker's 10 seconds until it is recreated with a longer stop timeout. |

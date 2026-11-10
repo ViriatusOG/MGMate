@@ -57,6 +57,12 @@ export interface TripLogEntry {
    * seen parked before it left. Such a trip starts and ends when the car was found at its new spot.
    */
   leftAfter?: string | null
+  /**
+   * Set on a drive the gateway followed from part-way only: how far the odometer says the car
+   * drove from its parking spot before the first fix, in km. That stretch is in the trip's
+   * distance, and when the trip started is an estimate.
+   */
+  unfollowedKm?: number | null
 }
 
 /**

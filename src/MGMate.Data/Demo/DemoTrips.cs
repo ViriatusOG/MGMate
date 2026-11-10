@@ -107,7 +107,8 @@ internal static class DemoTrips
                 SocEndPercent: socEnd,
                 EnergyCounterUsed: usedKwh,
                 OutsideTemperature: outside,
-                LeftAfter: LeftAfter.TryGetValue(id, out var leftAfter) ? leftAfter : null);
+                LeftAfter: LeftAfter.TryGetValue(id, out var leftAfter) ? leftAfter : null,
+                UnfollowedKm: UnfollowedKm.TryGetValue(id, out var unfollowedKm) ? unfollowedKm : null);
             odometer = start;
         }
 
@@ -272,6 +273,19 @@ internal static class DemoTrips
             // and the frontend treats that entry as the active trip whenever CurrentJourneyDistance > 0.
             // A drive the gateway never followed, saved without a route (MissedDrive).
             BuildMissedDrive(11, now.AddDays(-1).AddHours(-2), id: 11, (52.3676, 4.9041), (52.1601, 4.4970)),
+            // A drive the gateway followed from part-way only (TripAnchor.ApplyUnfollowedStart):
+            // parked in Rotterdam, first seen in Delft after going somewhere else on the way.
+            BuildFoundPartWay(12, now.AddDays(-4).AddHours(7), id: FoundPartWayId, (51.9244, 4.4777),
+            [
+                (52.0117, 4.3573, 70),
+                (52.0227, 4.3471, 55),
+                (52.0291, 4.3372, 70),
+                (52.0346, 4.3288, 75),
+                (52.0505, 4.3137, 90),
+                (52.0641, 4.3107, 80),
+                (52.0674, 4.3034, 55),
+                (52.0707, 4.3008, 20),
+            ]),
             BuildTrip(10, now.AddMinutes(-8), "Amsterdam to Duivendrecht", id: null, InProgressWaypoints),
         ];
     }
@@ -291,6 +305,30 @@ internal static class DemoTrips
         var after = new TripPoint(foundAt, to.Lat, to.Lon, 0);
         var km = GeoHelper.Haversine(from.Lat, from.Lon, to.Lat, to.Lon) * 1.25;
         return MissedDrive.Build(before, after, 0, Math.Round(km, 1))! with { Index = index, Id = id };
+    }
+
+    // The demo's drive followed from part-way, and how far the odometer says the car had driven
+    // before its first fix.
+    private const long FoundPartWayId = 12;
+    private const double FoundPartWayUnfollowedKm = 46.0;
+
+    /// <summary>The demo trips followed from part-way, by id: the distance before their first fix, in km.</summary>
+    public static IReadOnlyDictionary<long, double> UnfollowedKm { get; } =
+        new Dictionary<long, double> { [FoundPartWayId] = FoundPartWayUnfollowedKm };
+
+    private static TripDto BuildFoundPartWay(int index, DateTime firstFixAt, long id, (double Lat, double Lon) parked,
+        IReadOnlyList<(double Lat, double Lon, double SpeedKmh)> waypoints)
+    {
+        var followed = BuildTrip(index, firstFixAt, "Rotterdam to Den Haag", id, waypoints);
+        var departure = firstFixAt - TimeSpan.FromHours(FoundPartWayUnfollowedKm / TripAnchor.UnfollowedSpeedKmh);
+        var start = new TripPoint(departure, parked.Lat, parked.Lon, 0, TripPointSource.Anchored);
+        return followed with
+        {
+            StartedAt = departure,
+            DistanceKm = Math.Round(followed.DistanceKm + FoundPartWayUnfollowedKm, 1),
+            PointCount = followed.PointCount + 1,
+            Points = [start, .. followed.Points],
+        };
     }
 
     private static TripDto BuildTrip(int index, DateTime start, string _, long? id,
