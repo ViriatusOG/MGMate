@@ -1095,6 +1095,9 @@ namespace MGMate.Data.Migrations
                     b.Property<DateTime>("StartedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<double?>("UnfollowedKm")
+                        .HasColumnType("double precision");
+
                     b.Property<int>("VehicleId")
                         .HasColumnType("integer");
 

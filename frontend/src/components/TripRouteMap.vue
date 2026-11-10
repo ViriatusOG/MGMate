@@ -25,6 +25,11 @@ const props = defineProps<{
    * they are drawn as the straight line they are, never as a route.
    */
   noRoute?: boolean
+  /**
+   * A drive followed from part-way only: the stretch from its parking spot to the first fix the
+   * car reported is drawn dashed, as the straight line it is, and the rest as the route.
+   */
+  partRoute?: boolean
 }>()
 
 const { t } = useI18n()
@@ -49,13 +54,28 @@ useBasemap(mapInstance, { vector: false })
 // The fixes the car reported no speed for are drawn in the line colour of the map's trips.
 const NO_SPEED_COLOR = '#3b82f6'
 
-const segments = computed(() =>
-  !props.noRoute && props.points && props.points.length >= 2
-    ? speedSegments({ points: [...props.points] }, null).map((segment) => ({
-        coordinates: segment.coordinates,
-        color: speedToColor(segment.speed, NO_SPEED_COLOR),
-      }))
-    : [],
+// Of a part-route trip only the fixes from the first one the car reported itself are a route.
+const followedFrom = computed(() => {
+  if (!props.partRoute || !props.points) return 0
+  const first = props.points.findIndex((p) => p.source == null)
+  return first > 0 ? first : 0
+})
+
+const segments = computed(() => {
+  if (props.noRoute || !props.points) return []
+  const followed = props.points.slice(followedFrom.value)
+  if (followed.length < 2) return []
+  return speedSegments({ points: followed }, null).map((segment) => ({
+    coordinates: segment.coordinates,
+    color: speedToColor(segment.speed, NO_SPEED_COLOR),
+  }))
+})
+
+// The stretch nobody followed: from the parking spot to where the car was first seen driving.
+const unfollowed = computed<LatLng[] | null>(() =>
+  followedFrom.value > 0 && props.points
+    ? latLngsOf(props.points.slice(0, followedFrom.value + 1))
+    : null,
 )
 
 // Without fixes, once they stopped loading, the ends joined by a straight line still say where
@@ -121,6 +141,21 @@ watch(framed, () => {
         dash-array="6 8"
         :interactive="false"
       />
+      <template v-if="unfollowed">
+        <LPolyline
+          :lat-lngs="unfollowed"
+          class-name="trip-route-map__straight trip-route-map__straight--no-route"
+          :weight="3"
+          dash-array="6 8"
+          :interactive="false"
+        />
+        <LCircleMarker
+          :lat-lng="unfollowed[unfollowed.length - 1]!"
+          :radius="4"
+          class-name="trip-route-map__end trip-route-map__end--followed"
+          :interactive="false"
+        />
+      </template>
       <LCircleMarker
         :lat-lng="start"
         :radius="6"

@@ -48,12 +48,19 @@ const { from, to } = useTripEnds({
 
 // A drive saved without a route: when it left is not known, so it shows only when it was found.
 const noRoute = computed(() => !!props.entry.leftAfter)
-const startTime = computed(() => (noRoute.value ? '?' : formatTime(props.entry.startedAt)))
+// A drive followed from part-way only: when it left its parking spot is an estimate.
+const partRoute = computed(() => !noRoute.value && props.entry.unfollowedKm != null)
+const startTime = computed(() => {
+  if (noRoute.value) return '?'
+  const time = formatTime(props.entry.startedAt)
+  return partRoute.value ? `≈${time}` : time
+})
 const endTime = computed(() => formatTime(props.entry.endedAt))
 
-const durationLabel = computed(() =>
-  formatTripDuration(props.entry.startedAt, props.entry.endedAt, t),
-)
+const durationLabel = computed(() => {
+  const duration = formatTripDuration(props.entry.startedAt, props.entry.endedAt, t)
+  return partRoute.value ? `≈${duration}` : duration
+})
 
 const distanceLabel = computed(() => units.value.format('distance', loggedDistanceKm(props.entry)))
 const fromOdometer = computed(() => odometerDistanceKm(props.entry) !== null)
@@ -93,7 +100,7 @@ const purposeTitle = computed(() => {
       'trip-log-item--hidden': entry.isHidden,
       'll-item--hidden': entry.isHidden,
       'trip-log-item--selected': selected,
-      'trip-log-item--no-route': noRoute,
+      'trip-log-item--no-route': noRoute || partRoute,
       'll-item--open': selected,
     }"
   >
@@ -127,6 +134,12 @@ const purposeTitle = computed(() => {
             class="ll-pill ll-pill--warn trip-log-item__no-route"
             :title="t('tripLog.noRouteHint')"
             >{{ t('tripLog.noRoute') }}</span
+          >
+          <span
+            v-if="partRoute"
+            class="ll-pill ll-pill--warn trip-log-item__no-route"
+            :title="t('tripLog.partRouteHint')"
+            >{{ t('tripLog.partRoute') }}</span
           >
           <font-awesome-icon
             v-if="entry.isEdited"

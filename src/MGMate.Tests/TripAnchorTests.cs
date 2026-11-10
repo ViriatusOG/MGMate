@@ -166,4 +166,69 @@ public class TripAnchorTests
 
         Assert.Null(TripAnchor.Apply(trip, parked, TripAnchor.Departure(parked, First, null), 10000, 10006));
     }
+
+    // ── A start nobody followed ──────────────────────────────────────────────
+
+    // Parked about 50 km south of the first fix: further than a straight line may stand in for.
+    private static readonly TripPoint FarParked = Parked with { Latitude = 51.20 };
+
+    [Fact]
+    public void ApplyUnfollowedStart_AStartTooFarForAStraightLine_CountsWhatTheOdometerSays()
+    {
+        var trip = Trip(First, First with { RecordedAt = T0.AddMinutes(5), Latitude = 51.70 });
+        Assert.Null(TripAnchor.Apply(trip, FarParked, T0.AddHours(-1), 10000, 10058));
+
+        var found = TripAnchor.ApplyUnfollowedStart(trip, FarParked, null, 10000, 10058);
+
+        Assert.NotNull(found);
+        // No wake-up was reported: the 58 km at 50 km/h before the first fix.
+        var departure = T0 - TimeSpan.FromHours(58 / TripAnchor.UnfollowedSpeedKmh);
+        Assert.Equal(new TripPoint(departure, 51.20, 0.0, 0, TripPointSource.Anchored), found.Trip.Points[0]);
+        Assert.Equal(trip.Points, found.Trip.Points.Skip(1));
+        Assert.Equal((departure, 3, 63.56), (found.Trip.StartedAt, found.Trip.PointCount, found.Trip.DistanceKm));
+        Assert.Equal(58, found.UnfollowedKm);
+    }
+
+    [Fact]
+    public void ApplyUnfollowedStart_ANearStartByADetour_CountsWhatTheOdometerSays()
+    {
+        // 5.6 km away with 30 km on the clock: the car went somewhere else first.
+        var trip = Trip(First, First with { RecordedAt = T0.AddMinutes(5), Latitude = 51.70 });
+        Assert.Null(TripAnchor.Apply(trip, Parked, T0.AddMinutes(-30), 10000, 10030));
+
+        var found = TripAnchor.ApplyUnfollowedStart(trip, Parked, null, 10000, 10030);
+
+        Assert.NotNull(found);
+        Assert.Equal((30, 35.56), (found.UnfollowedKm, found.Trip.DistanceKm));
+    }
+
+    [Fact]
+    public void ApplyUnfollowedStart_LeavesWhenTheCarWokeUp()
+    {
+        var trip = Trip(First, First with { RecordedAt = T0.AddMinutes(5), Latitude = 51.70 });
+        var wokeAt = T0.AddMinutes(-40);
+
+        Assert.Equal(wokeAt, TripAnchor.ApplyUnfollowedStart(trip, FarParked, wokeAt, 10000, 10058)!.Trip.StartedAt);
+    }
+
+    [Theory]
+    [InlineData(51.20, 10000.0, 10000.0)] // 50 km without a kilometre on the clock: a ferry or a tow truck
+    [InlineData(51.20, 10000.0, 10020.0)] // nor with less than the straight line
+    [InlineData(51.60, 10000.0, 10006.0)] // near and direct: an anchored trip, which Apply makes
+    [InlineData(51.6509, 10000.0, 10040.0)] // 100 m: where the trip already starts
+    public void ApplyUnfollowedStart_NotWhenTheOdometerDoesNotShowIt(double parkedLat, double before, double after)
+    {
+        var trip = Trip(First, First with { RecordedAt = T0.AddMinutes(5), Latitude = 51.70 });
+
+        Assert.Null(TripAnchor.ApplyUnfollowedStart(trip, Parked with { Latitude = parkedLat }, null, before, after));
+    }
+
+    [Fact]
+    public void ApplyUnfollowedStart_NotWithoutBothReadings()
+    {
+        var trip = Trip(First, First with { RecordedAt = T0.AddMinutes(5), Latitude = 51.70 });
+
+        Assert.Null(TripAnchor.ApplyUnfollowedStart(trip, FarParked, null, null, 10058));
+        Assert.Null(TripAnchor.ApplyUnfollowedStart(trip, FarParked, null, 10000, null));
+    }
 }

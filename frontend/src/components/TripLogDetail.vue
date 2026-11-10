@@ -120,15 +120,35 @@ function leftAfterLabel(leftAfter: string): string {
   return sameDay ? time : `${formatDate(leftAfter, { weekday: 'short' })} ${time}`
 }
 
+// A drive followed from part-way only: the stretch before its first fix counts for what the
+// odometer says, and when it left its parking spot is an estimate.
+const partRoute = computed(() => !noRoute.value && props.entry.unfollowedKm != null)
+const approx = computed(() => (partRoute.value ? '≈' : ''))
+
 const timeLabel = computed(() =>
   props.entry.leftAfter
     ? `${t('tripLog.leftAfter', { time: leftAfterLabel(props.entry.leftAfter) })} · ${t('tripLog.arrivedBy', { time: formatTime(props.entry.endedAt) })}`
-    : `${formatTime(props.entry.startedAt)} - ${formatTime(props.entry.endedAt)}`,
+    : `${approx.value}${formatTime(props.entry.startedAt)} - ${formatTime(props.entry.endedAt)}`,
 )
 
-const durationLabel = computed(() =>
-  formatTripDuration(props.entry.startedAt, props.entry.endedAt, t),
+const durationLabel = computed(
+  () => `${approx.value}${formatTripDuration(props.entry.startedAt, props.entry.endedAt, t)}`,
 )
+
+// How much of a part-route trip was followed and how much was not, for the note under its map.
+const partRouteSplit = computed(() => {
+  const unfollowedKm = props.entry.unfollowedKm
+  if (!partRoute.value || unfollowedKm == null) return null
+  const totalKm = Math.max(loggedDistanceKm(props.entry), unfollowedKm)
+  // The first fix the car reported itself is where it was first followed.
+  const firstFollowed = props.routePoints?.find((p) => p.source == null)
+  return {
+    unfollowed: units.value.format('distance', unfollowedKm, { decimals: 1 }),
+    followed: units.value.format('distance', totalKm - unfollowedKm, { decimals: 1 }),
+    unfollowedShare: totalKm > 0 ? (unfollowedKm / totalKm) * 100 : 0,
+    since: firstFollowed ? formatTime(firstFollowed.recordedAt) : null,
+  }
+})
 
 const purposeKey = computed(() => props.entry.purpose ?? 'unclassified')
 
@@ -734,10 +754,34 @@ const notesId = computed(() => `trip-log-notes-${props.entry.id}`)
           :started-at="entry.startedAt"
           :link-to-map="!entry.isHidden"
           :no-route="noRoute"
+          :part-route="partRoute"
         />
         <p v-if="noRoute" class="trip-log-detail__no-route" role="note">
           {{ t('tripLog.noRouteNote') }}
         </p>
+        <div v-if="partRouteSplit" class="trip-log-detail__no-route" role="note">
+          <p>
+            <b>{{ t('tripLog.partRouteNoteLead', { distance: partRouteSplit.unfollowed }) }}</b>
+            {{
+              partRouteSplit.since
+                ? t('tripLog.partRouteNoteSince', { time: partRouteSplit.since })
+                : t('tripLog.partRouteNote')
+            }}
+          </p>
+          <div class="trip-log-detail__split" aria-hidden="true">
+            <i
+              class="trip-log-detail__split-unfollowed"
+              :style="{ width: `${partRouteSplit.unfollowedShare}%` }"
+            />
+            <i class="trip-log-detail__split-followed" />
+          </div>
+          <p class="trip-log-detail__split-legend">
+            <span>{{
+              t('tripLog.partRouteUnfollowed', { distance: partRouteSplit.unfollowed })
+            }}</span>
+            <span>{{ t('tripLog.partRouteFollowed', { distance: partRouteSplit.followed }) }}</span>
+          </p>
+        </div>
         <p v-if="routeError" class="text-xs text-muted" role="status">
           {{ t('tripLog.detail.routeUnavailable') }}
         </p>

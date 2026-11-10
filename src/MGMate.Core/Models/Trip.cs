@@ -41,6 +41,15 @@ public class Trip
     /// </summary>
     public DateTime? LeftAfter { get; set; }
 
+    /// <summary>
+    /// Set on a drive the gateway followed from part-way only
+    /// (<see cref="Helpers.TripAnchor.ApplyUnfollowedStart"/>): how far the odometer says the car
+    /// drove from its parking spot before the first fix, in km. That stretch is in the trip's
+    /// distance and drawn as a straight line; when the trip started is an estimate. Null on every
+    /// other trip.
+    /// </summary>
+    public double? UnfollowedKm { get; set; }
+
     // The first and last fix, kept beside the fixes so the trip log can list a year of trips
     // without reading every fix of every one of them.
     public double StartLatitude { get; set; }

@@ -83,9 +83,13 @@ const recent = computed(() =>
       route: `${endLabel(e.startPlace, e.startLatitude, e.startLongitude)} → ${endLabel(e.endPlace, e.endLatitude, e.endLongitude)}`,
       // A drive saved without a route shows when the car was found at its new spot.
       noRoute: !!e.leftAfter,
+      // A drive followed from part-way only: when it left is an estimate.
+      partRoute: !e.leftAfter && e.unfollowedKm != null,
       when: e.leftAfter
         ? `${formatDate(e.endedAt, { weekday: 'short' })}, ${t('overview.trips.noRoute', { time: formatTime(e.endedAt) })}`
-        : formatDateTime(e.startedAt, { weekday: 'short', hour: '2-digit', minute: '2-digit' }),
+        : !e.leftAfter && e.unfollowedKm != null
+          ? `${formatDate(e.startedAt, { weekday: 'short' })}, ${t('overview.trips.partRoute', { time: formatTime(e.startedAt) })}`
+          : formatDateTime(e.startedAt, { weekday: 'short', hour: '2-digit', minute: '2-digit' }),
       distance: units.value.format('distance', loggedDistanceKm(e), { decimals: 1 }),
       efficiency:
         energy?.whPerKm != null ? units.value.format('energyPerDistance', energy.whPerKm) : null,
@@ -127,8 +131,14 @@ const week = computed(() => {
         <RouterLink
           to="/trip-log"
           class="ov-trip"
-          :class="{ 'ov-trip--no-route': trip.noRoute }"
-          :title="trip.noRoute ? t('tripLog.noRouteHint') : undefined"
+          :class="{ 'ov-trip--no-route': trip.noRoute || trip.partRoute }"
+          :title="
+            trip.noRoute
+              ? t('tripLog.noRouteHint')
+              : trip.partRoute
+                ? t('tripLog.partRouteHint')
+                : undefined
+          "
         >
           <span class="ov-trip__icon"><font-awesome-icon :icon="trip.icon" /></span>
           <span class="ov-trip__text">

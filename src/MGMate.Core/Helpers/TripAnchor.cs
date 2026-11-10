@@ -54,10 +54,18 @@ public static class TripAnchor
     /// <see cref="Departure"/> with the wake-up read from the reports in between.
     /// </summary>
     public static async Task<DateTime> GetDepartureAsync(
+        this ITelemetryRepository telemetry, int vehicleId, TripPoint parked, TripPoint first, CancellationToken ct = default) =>
+        Departure(parked, first, await telemetry.GetWakeUpAsync(vehicleId, parked, first, ct));
+
+    /// <summary>
+    /// When the car woke up for the trip starting at <paramref name="first"/>: <see cref="WakeUp"/>
+    /// with the reports between the two fixes.
+    /// </summary>
+    public static async Task<DateTime?> GetWakeUpAsync(
         this ITelemetryRepository telemetry, int vehicleId, TripPoint parked, TripPoint first, CancellationToken ct = default)
     {
         var reports = await telemetry.GetReportTimesAsync(vehicleId, parked.RecordedAt, first.RecordedAt, WakeUpReportLimit, ct);
-        return Departure(parked, first, WakeUp(parked, first, reports, complete: reports.Count < WakeUpReportLimit));
+        return WakeUp(parked, first, reports, complete: reports.Count < WakeUpReportLimit);
     }
 
     /// <summary>The straight-line distance from the parked spot to the trip's first fix.</summary>
@@ -104,14 +112,17 @@ public static class TripAnchor
     /// use: the car's wake-up when there is a believable one, otherwise the first fix's time less
     /// the gap at <see cref="AssumedSpeedKmh"/>. Never earlier than the parked fix.
     /// </summary>
-    public static DateTime Departure(TripPoint parked, TripPoint first, DateTime? wokeAt)
+    public static DateTime Departure(TripPoint parked, TripPoint first, DateTime? wokeAt) =>
+        DepartureOver(parked, first, wokeAt, GapKm(parked, first), AssumedSpeedKmh);
+
+    // The same over a distance that is not the straight line, at a speed to match.
+    private static DateTime DepartureOver(TripPoint parked, TripPoint first, DateTime? wokeAt, double km, double assumedKmh)
     {
-        var gapKm = GapKm(parked, first);
         if (wokeAt is { } woke && woke > parked.RecordedAt && woke < first.RecordedAt &&
-            gapKm / (first.RecordedAt - woke).TotalHours <= MaxWakeUpSpeedKmh)
+            km / (first.RecordedAt - woke).TotalHours <= MaxWakeUpSpeedKmh)
             return woke;
 
-        var estimate = first.RecordedAt - TimeSpan.FromHours(gapKm / AssumedSpeedKmh);
+        var estimate = first.RecordedAt - TimeSpan.FromHours(km / assumedKmh);
         return estimate > parked.RecordedAt ? estimate : parked.RecordedAt;
     }
 
@@ -157,4 +168,67 @@ public static class TripAnchor
             Points = [start, .. trip.Points],
         };
     }
+
+    /// <summary>
+    /// How fast the car is taken to have driven a stretch nobody followed when nothing says when
+    /// it left. Such a stretch is long or indirect, so it is more road than town.
+    /// </summary>
+    public const double UnfollowedSpeedKmh = 50;
+
+    /// <summary>
+    /// Whether the trip starting at <paramref name="first"/> may have an unfollowed start from
+    /// <paramref name="parked"/>: <see cref="IsCandidate"/> without the limit on how far apart
+    /// they are.
+    /// </summary>
+    public static bool IsUnfollowedStartCandidate(TripPoint parked, TripPoint first) =>
+        parked.RecordedAt < first.RecordedAt && GapKm(parked, first) * 1000 >= MinGapMetres;
+
+    /// <summary>
+    /// A trip the car was first followed on part-way through: it starts at the parked spot like an
+    /// anchored trip, but the stretch to its first fix is too long or too indirect for a straight
+    /// line to stand in for (<see cref="Apply"/> refuses it), so that stretch counts for what the
+    /// odometer says. A drive started with the phone's digital key is found this way, some way down
+    /// the road. Null when the odometer does not show the car drove there (a ferry, a tow truck, a
+    /// GPS jump), when the stretch is one <see cref="Apply"/> handles, or when leaving at the time
+    /// worked out would mean a speed no car drives.
+    /// </summary>
+    /// <param name="trip">The trip as cut from the fixes.</param>
+    /// <param name="parked">The last fix the car reported standing still before it.</param>
+    /// <param name="wokeAt">When the car woke up for the drive, from <see cref="WakeUp"/>.</param>
+    /// <param name="odometerParkedKm">The odometer as reported while parked at <paramref name="parked"/>.</param>
+    /// <param name="odometerAtFirstFixKm">The odometer as reported with the trip's first fix.</param>
+    public static UnfollowedStart? ApplyUnfollowedStart(
+        TripDto trip, TripPoint parked, DateTime? wokeAt, double? odometerParkedKm, double? odometerAtFirstFixKm)
+    {
+        var first = trip.Points[0];
+        if (!IsUnfollowedStartCandidate(parked, first)) return null;
+        if (odometerParkedKm is not { } before || odometerAtFirstFixKm is not { } after) return null;
+
+        var gapKm = GapKm(parked, first);
+        var movedKm = after - before;
+        if (movedKm < MissedDrive.MinDistanceKm || movedKm < gapKm * MinOdometerRatio - OdometerResolutionKm) return null;
+
+        // Near and direct enough for a straight line: that is an anchored trip, not this.
+        if (gapKm <= MaxGapKm && movedKm <= gapKm * MaxOdometerRatio + OdometerResolutionKm) return null;
+
+        var departure = DepartureOver(parked, first, wokeAt, movedKm, UnfollowedSpeedKmh);
+        var start = parked with { RecordedAt = departure, Source = TripPointSource.Anchored };
+        if (!TripSegmenter.IsPlausibleHop(start, first)) return null;
+
+        return new UnfollowedStart(
+            trip with
+            {
+                StartedAt = departure,
+                DistanceKm = Math.Round(trip.DistanceKm + movedKm, 2),
+                PointCount = trip.PointCount + 1,
+                Points = [start, .. trip.Points],
+            },
+            Math.Round(movedKm, 2));
+    }
 }
+
+/// <summary>
+/// A trip with a start nobody followed (<see cref="TripAnchor.ApplyUnfollowedStart"/>) and how far
+/// the odometer says that start was.
+/// </summary>
+public sealed record UnfollowedStart(TripDto Trip, double UnfollowedKm);

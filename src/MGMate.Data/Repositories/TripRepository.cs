@@ -196,6 +196,7 @@ public class TripRepository(
             };
             if (recorded.Energy is { } energy) Apply(saved, energy);
             saved.LeftAfter = recorded.LeftAfter;
+            saved.UnfollowedKm = recorded.UnfollowedKm;
             return saved;
         }));
         vehicle.TripsRecordedUntil = recordedUntil;
@@ -333,6 +334,9 @@ public class TripRepository(
         first.Notes = JoinNotes(first.Notes, second.Notes);
         // Part of the joined trip has a route once either half has one.
         first.LeftAfter = first.LeftAfter is not null && second.LeftAfter is not null ? first.LeftAfter : null;
+        // What nobody followed of either half is still not followed in the joined trip.
+        if (first.UnfollowedKm is not null || second.UnfollowedKm is not null)
+            first.UnfollowedKm = Math.Round((first.UnfollowedKm ?? 0) + (second.UnfollowedKm ?? 0), 2);
 
         // The joined trip as recorded is the two as recorded, so a reset undoes the edits of both
         // and keeps the join.
@@ -546,7 +550,7 @@ public class TripRepository(
         t.OdometerStartKm, t.OdometerEndKm,
         t.StartPlaceJson, t.EndPlaceJson, t.Purpose, t.Notes, t.PurposeIsManual, t.IsHidden, t.EditedAt != null,
         t.MaxSpeedKmh, t.AvgMovingSpeedKmh,
-        t.SocStartPercent, t.SocEndPercent, t.EnergyCounterUsed, t.OutsideTemperature, t.LeftAfter);
+        t.SocStartPercent, t.SocEndPercent, t.EnergyCounterUsed, t.OutsideTemperature, t.LeftAfter, t.UnfollowedKm);
 
     private sealed record LogRow(
         long Id, DateTime StartedAt, DateTime EndedAt, double DistanceKm,
@@ -555,7 +559,7 @@ public class TripRepository(
         string? StartPlaceJson, string? EndPlaceJson, TripPurpose? Purpose, string? Notes, bool PurposeIsManual, bool IsHidden,
         bool IsEdited, double? MaxSpeedKmh, double? AvgMovingSpeedKmh,
         double? SocStartPercent, double? SocEndPercent, double? EnergyCounterUsed, double? OutsideTemperature,
-        DateTime? LeftAfter);
+        DateTime? LeftAfter, double? UnfollowedKm);
 
     private TripLogEntry ToEntry(LogRow r) => new(
         r.Id, r.StartedAt, r.EndedAt, r.DistanceKm,
@@ -565,7 +569,7 @@ public class TripRepository(
         r.Purpose, r.Notes, PurposeIsAutomatic: r.Purpose is not null && !r.PurposeIsManual, IsHidden: r.IsHidden,
         IsEdited: r.IsEdited, MaxSpeedKmh: r.MaxSpeedKmh, AvgMovingSpeedKmh: r.AvgMovingSpeedKmh,
         SocStartPercent: r.SocStartPercent, SocEndPercent: r.SocEndPercent, EnergyCounterUsed: r.EnergyCounterUsed,
-        OutsideTemperature: r.OutsideTemperature, LeftAfter: r.LeftAfter);
+        OutsideTemperature: r.OutsideTemperature, LeftAfter: r.LeftAfter, UnfollowedKm: r.UnfollowedKm);
 
     // A joined trip's temperature: the mean of its halves, or the one that has one.
     private static double? Mean(double? a, double? b) => a is { } x && b is { } y ? Math.Round((x + y) / 2, 1) : a ?? b;

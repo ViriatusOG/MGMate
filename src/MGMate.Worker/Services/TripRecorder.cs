@@ -79,12 +79,14 @@ public class TripRecorder(ITelemetryRepository telemetry, ITripRepository trips,
         foreach (var cut in segmentation.Closed)
         {
             var parked = segmentation.ParkedBefore[cut.Index] ?? await ParkedBeforeTheFixesAsync(vehicleId, cut, fixes, ct);
-            var trip = parked is null ? cut : await AnchorAsync(vehicleId, cut, parked, ct) ?? cut;
+            var unfollowed = parked is null ? null : await UnfollowedStartAsync(vehicleId, cut, parked, ct);
+            var trip = unfollowed?.Start.Trip ?? (parked is null ? cut : await AnchorAsync(vehicleId, cut, parked, ct) ?? cut);
             recorded.Add(new RecordedTrip(
                 trip,
-                await telemetry.GetOdometerAtAsync(vehicleId, trip.StartedAt, ct),
+                unfollowed?.OdometerParkedKm ?? await telemetry.GetOdometerAtAsync(vehicleId, trip.StartedAt, ct),
                 await telemetry.GetOdometerAtAsync(vehicleId, trip.EndedAt + TripSegmenter.ParkThreshold, ct),
-                await energy.ReadAsync(vehicleId, trip.StartedAt, trip.EndedAt, trip.DistanceKm, ct)));
+                await energy.ReadAsync(vehicleId, trip.StartedAt, trip.EndedAt, trip.DistanceKm, ct),
+                UnfollowedKm: unfollowed?.Start.UnfollowedKm));
         }
 
         return recorded;
@@ -122,5 +124,29 @@ public class TripRecorder(ITelemetryRepository telemetry, ITripRepository trips,
                 "Trip for vehicleId={VehicleId} starting {Start:o} now starts at its parking spot {Gap:F2} km away, from {Departure:o}",
                 vehicleId, trip.StartedAt, gapKm, departure);
         return anchored;
+    }
+
+    // A drive found part-way through: the stretch from the parking spot to its first fix is too long
+    // or too indirect to anchor with a straight line, so it counts for what the odometer says. The
+    // odometer is read as the car stood parked, not at the start worked out for the trip: that is an
+    // estimate, and a status read taken on the way may already carry a later mileage by then.
+    private async Task<(UnfollowedStart Start, double OdometerParkedKm)?> UnfollowedStartAsync(
+        int vehicleId, TripDto trip, TripPoint parked, CancellationToken ct)
+    {
+        var first = trip.Points[0];
+        if (!TripAnchor.IsUnfollowedStartCandidate(parked, first)) return null;
+
+        var before = await telemetry.GetOdometerAtAsync(vehicleId, parked.RecordedAt + SettleTime, ct);
+        var after = await telemetry.GetOdometerAtAsync(vehicleId, first.RecordedAt + SettleTime, ct);
+        if (before is not { } parkedKm || after is null) return null;
+
+        var wokeAt = await telemetry.GetWakeUpAsync(vehicleId, parked, first, ct);
+        var start = TripAnchor.ApplyUnfollowedStart(trip, parked, wokeAt, parkedKm, after);
+        if (start is null) return null;
+
+        logger.LogInformation(
+            "Trip for vehicleId={VehicleId} first followed at {Start:o} now starts at its parking spot, {Unfollowed:F1} km by the odometer before that, from {Departure:o}",
+            vehicleId, trip.StartedAt, start.UnfollowedKm, start.Trip.StartedAt);
+        return (start, parkedKm);
     }
 }

@@ -307,4 +307,70 @@ public class TripRecorderTests
         Assert.Equal((51.60, 4), (trip.StartLatitude, trip.PointCount));
         Assert.True(trip.StartedAt < later);
     }
+
+    // A drive first followed about 55.6 km north of where Drive parked: a start with the phone's key.
+    private static (DateTime, double, double?)[] DriveFoundPartWay(DateTime first) =>
+    [
+        (first, 52.10, 90),
+        (first.AddMinutes(5), 52.15, 50),
+        (first.AddMinutes(10), 52.20, 50),
+        (first.AddMinutes(11), 52.20, 0),
+    ];
+
+    [Fact]
+    public async Task TripFoundPartWay_StartsWhereItParkedAndCountsTheOdometer()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var s = new Setup();
+        var found = T0.AddHours(20);
+        await s.AddFixesAsync([.. Drive(T0), .. DriveFoundPartWay(found)], ct);
+        await s.AddOdometerAsync(T0.AddMinutes(12), 24021.0, ct);
+        // A status read on the way, before the first fix: not where the trip's odometer starts.
+        await s.AddOdometerAsync(found.AddMinutes(-20), 24050.0, ct);
+        await s.AddOdometerAsync(found, 24081.0, ct);
+
+        await s.Recorder.RecordAsync(s.Vehicle.Id, found.AddHours(1), ct);
+
+        var trip = (await s.SavedAsync(ct))[1];
+        var points = JsonSerializer.Deserialize<List<TripPoint>>(trip.PointsJson)!;
+        Assert.Equal((51.60, TripPointSource.Anchored), (points[0].Latitude, points[0].Source));
+        Assert.Null(points[1].Source);
+        Assert.Equal(60, trip.UnfollowedKm);
+        Assert.Equal((51.60, 4, 71.12), (trip.StartLatitude, trip.PointCount, trip.DistanceKm));
+        Assert.Equal(24021.0, trip.OdometerStartKm);
+        Assert.True(trip.StartedAt < found);
+    }
+
+    [Fact]
+    public async Task TripFoundFarAway_StaysAsRecordedWhenTheOdometerDidNotMove()
+    {
+        // 55.6 km without a kilometre on the clock: a ferry or a tow truck.
+        var ct = TestContext.Current.CancellationToken;
+        await using var s = new Setup();
+        var found = T0.AddHours(20);
+        await s.AddFixesAsync([.. Drive(T0), .. DriveFoundPartWay(found)], ct);
+        await s.AddOdometerAsync(T0.AddMinutes(12), 24021.0, ct);
+        await s.AddOdometerAsync(found, 24021.0, ct);
+
+        await s.Recorder.RecordAsync(s.Vehicle.Id, found.AddHours(1), ct);
+
+        var trip = (await s.SavedAsync(ct))[1];
+        Assert.Equal((found, 52.10, 3), (trip.StartedAt, trip.StartLatitude, trip.PointCount));
+        Assert.Null(trip.UnfollowedKm);
+    }
+
+    [Fact]
+    public async Task TripAfterTheCarSlept_IsNotMarkedAsFoundPartWay()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var s = new Setup();
+        var morning = T0.AddHours(20);
+        await s.AddFixesAsync([.. Drive(T0), .. MorningDrive(morning)], ct);
+        await s.AddOdometerAsync(T0.AddMinutes(12), 24021.0, ct);
+        await s.AddOdometerAsync(morning, 24027.0, ct);
+
+        await s.Recorder.RecordAsync(s.Vehicle.Id, morning.AddHours(1), ct);
+
+        Assert.Null((await s.SavedAsync(ct))[1].UnfollowedKm);
+    }
 }

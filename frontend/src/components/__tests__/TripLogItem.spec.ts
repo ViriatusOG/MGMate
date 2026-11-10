@@ -83,6 +83,15 @@ describe('TripLogItem', () => {
     expect(wrapper.find('.trip-log-item__when').text()).toMatch(/^\? → /)
   })
 
+  it('marks a drive followed from part-way, with its start time and duration as estimates', () => {
+    const wrapper = mountItem(logEntry({ unfollowedKm: 13.5 }))
+
+    expect(wrapper.find('.trip-log-item--no-route').exists()).toBe(true)
+    expect(wrapper.find('.trip-log-item__no-route').text()).toBe('Part route')
+    expect(wrapper.find('.trip-log-item__duration').text()).toBe('≈34 min')
+    expect(wrapper.find('.trip-log-item__when').text()).toMatch(/^≈\d/)
+  })
+
   it('counts the trip for the distance on the odometer, and leaves the readings to the detail', () => {
     const wrapper = mountItem(logEntry())
 

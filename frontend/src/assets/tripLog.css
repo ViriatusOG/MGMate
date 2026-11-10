@@ -488,6 +488,41 @@
   fill: var(--color-danger);
 }
 
+/* Where a part-route trip was first followed: the end of its dashed stretch. */
+.trip-route-map__end--followed {
+  fill: var(--color-warning);
+}
+
+.trip-log-detail__no-route p {
+  margin: 0;
+}
+
+/* How much of a part-route trip was followed: dashed for the stretch that was not. */
+.trip-log-detail__split {
+  display: flex;
+  height: 6px;
+  margin: 0.6rem 0 0.3rem;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.trip-log-detail__split-unfollowed {
+  flex: none;
+  background: repeating-linear-gradient(90deg, var(--color-warning) 0 6px, transparent 6px 10px);
+}
+
+.trip-log-detail__split-followed {
+  flex: 1;
+  background: var(--color-primary, #3b82f6);
+}
+
+.trip-log-detail__split-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+}
+
 /* Distance, duration and speeds: two by two in the panel, four across in a wide dialog. */
 .trip-log-detail__figures {
   display: grid;
