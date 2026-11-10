@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+
 namespace MGMate.Api.Authentication;
 
 /// <summary>
@@ -21,6 +24,24 @@ public sealed class PasswordLoginOptions
     /// the default of "on unless OIDC is configured".
     /// </summary>
     public bool ExplicitlyConfigured { get; init; }
+
+    /// <summary>
+    /// A fingerprint of the username and password, carried by every session the password login
+    /// starts. A session whose fingerprint no longer matches was signed in with credentials that
+    /// have since been changed, and is refused: changing the password signs every device out.
+    /// </summary>
+    internal string CredentialStamp => _credentialStamp ??= ComputeCredentialStamp();
+
+    private string? _credentialStamp;
+
+    // Worked out once: it sits inside the encrypted session cookie, never in the open, but a
+    // fingerprint of a password is derived slowly all the same.
+    private string ComputeCredentialStamp()
+    {
+        var salt = SHA256.HashData(Encoding.UTF8.GetBytes($"mgmate-session\n{Username}"));
+        return Convert.ToHexStringLower(
+            Rfc2898DeriveBytes.Pbkdf2(Password, salt, 100_000, HashAlgorithmName.SHA256, 16));
+    }
 
     /// <summary>
     /// Reads the credentials, preferring dedicated ones (AUTH_USERNAME and AUTH_PASSWORD fill

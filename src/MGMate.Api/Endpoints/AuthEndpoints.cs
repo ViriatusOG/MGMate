@@ -132,7 +132,8 @@ public static class AuthEndpoints
                 providedUsername,
                 providedUsername,
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                SessionPrincipal.NewSessionId());
+                SessionPrincipal.NewSessionId(),
+                passwordLogin.CredentialStamp);
 
             await httpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,

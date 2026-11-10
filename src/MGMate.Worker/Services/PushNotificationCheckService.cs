@@ -75,7 +75,7 @@ public class PushNotificationCheckService(
 
             var now = DateTime.UtcNow;
             await CheckLevelsAsync(vehicle, snapshot, telemetry, notifications, now, ct);
-            await CheckParkedAsync(vehicle, snapshot, telemetry, notifications, now, ct);
+            await CheckParkedAsync(vehicle, snapshot, telemetry, notifications, now, ct, vehicleRepo);
         }
     }
 
@@ -123,12 +123,26 @@ public class PushNotificationCheckService(
     /// poll it last sent. A car that left the spot it parked on is warned about once per parking.
     /// </summary>
     internal async Task CheckParkedAsync(
-        Vehicle vehicle, TelemetrySnapshot snapshot, ITelemetryRepository telemetry, INotificationRepository notifications, DateTime now, CancellationToken ct)
+        Vehicle vehicle, TelemetrySnapshot snapshot, ITelemetryRepository telemetry, INotificationRepository notifications, DateTime now, CancellationToken ct,
+        IVehicleRepository? vehicles = null)
     {
+        if (!IsParked(snapshot)) return;
+
+        // A drive nobody followed leaves the car at a new spot with the old one still stored. It
+        // was driven there, not moved while parked: it is parked anew, where it is now.
+        if (await WasDrivenUnseenAsync(vehicle, snapshot, telemetry, ct))
+        {
+            logger.LogInformation(
+                "VIN={Vin} was driven to a new spot without the engine being seen on; parking it there", LogRedaction.Vin(vehicle.Vin));
+            if (vehicles is not null)
+                await vehicles.SetParkedAsync(vehicle.Id, now, snapshot.Latitude, snapshot.Longitude, ct);
+            return;
+        }
+
         // The MQTT consumer records when the engine last stopped (it also sends the
         // engine-start push, the moment the car reports it). A car parked a moment ago is
         // being unloaded, not left open, so the parked alerts wait out a grace period.
-        if (!IsParked(snapshot) || IsWithinParkingGrace(vehicle.LastParkedAt, now)) return;
+        if (IsWithinParkingGrace(vehicle.LastParkedAt, now)) return;
 
         var readings = await telemetry.GetStatusReadingsAsync(vehicle.Id, StatusReadingsToWeigh, ct);
         var alerts = new List<(string key, string title, string body)>();
@@ -155,6 +169,25 @@ public class PushNotificationCheckService(
     /// off: towed, lifted onto a truck, or taken on a ferry. A car only says where it is when it
     /// reports, so the warning comes with its first report after the move.
     /// </summary>
+    /// <summary>
+    /// Whether the car stands well away from its stored parking spot because it was driven there:
+    /// the odometer counted a drive since it parked. The gateway only follows a drive MG announces,
+    /// and not every start is announced (the phone's digital key, for one), so such a drive ends
+    /// with the engine never seen on and the old spot still stored. A tow truck or a ferry moves
+    /// the car without the odometer, and still counts as moved while parked.
+    /// </summary>
+    internal static async Task<bool> WasDrivenUnseenAsync(
+        Vehicle vehicle, TelemetrySnapshot snapshot, ITelemetryRepository telemetry, CancellationToken ct)
+    {
+        if (vehicle is not { LastParkedAt: { } parkedAt, ParkedLatitude: { } parkedLat, ParkedLongitude: { } parkedLon }) return false;
+        if (snapshot is not { Latitude: { } lat, Longitude: { } lon, OdometerKm: { } odometerNow }) return false;
+        if (GeoHelper.Haversine(parkedLat, parkedLon, lat, lon) * 1000 < MovedWhileParkedMeters) return false;
+
+        // Read a little after it parked: the car reports its final mileage a poll or two after it stops.
+        var odometerParked = await telemetry.GetOdometerAtAsync(vehicle.Id, parkedAt + TripSegmenter.ParkThreshold, ct);
+        return odometerParked is { } parkedKm && odometerNow - parkedKm >= MissedDrive.MinDistanceKm;
+    }
+
     internal void CheckMovedWhileParked(Vehicle vehicle, TelemetrySnapshot snapshot, List<(string, string, string)> alerts)
     {
         if (vehicle is not { ParkedLatitude: { } parkedLat, ParkedLongitude: { } parkedLon }) return;

@@ -59,7 +59,18 @@ public sealed class ClimateScheduleService(
 
             var dueAt = DateTime.SpecifyKind(due.NextRunUtc!.Value, DateTimeKind.Utc);
             var missed = now - dueAt > MissedAfter;
-            var claimed = await schedules.TryClaimAsync(due, s => Claim(s, now, dueAt, missed, ZoneOf(s)), ct);
+            bool claimed;
+            try
+            {
+                claimed = await schedules.TryClaimAsync(due, s => Claim(s, now, dueAt, missed, ZoneOf(s)), ct);
+            }
+            catch
+            {
+                // A claim that fails (the database restarting, say) must not leave the car marked
+                // busy: nothing else would clear it, and no schedule for the car would run again.
+                _busyVehicles.TryRemove(due.VehicleId, out _);
+                throw;
+            }
 
             if (!claimed || missed)
             {

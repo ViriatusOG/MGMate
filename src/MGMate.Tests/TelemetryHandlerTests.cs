@@ -271,6 +271,52 @@ public class TelemetryHandlerTests
         Assert.Equal((52.37, 4.89), (vehicle.ParkedLatitude, vehicle.ParkedLongitude));
     }
 
+    // Messages that keep arriving less than 15 seconds apart would otherwise all fold into the
+    // row of the first one, however long that went on: two polls back to back became one fix.
+    [Fact]
+    public async Task MergeOrAddTelemetryAsync_MessagesThatKeepComing_StartANewRowAfterThirtySeconds()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var repo = new SlowFakeTelemetryRepository();
+        var handler = CreateHandler(new FakePushSender());
+        var start = DateTime.UtcNow;
+
+        // Ten seconds apart: 0, 10, 20 and 30 s share the first row, 40 s starts the second.
+        foreach (var seconds in new[] { 0, 10, 20, 30, 40 })
+            await handler.MergeOrAddTelemetryAsync(
+                1, new TelemetrySnapshot { VehicleId = 1, RecordedAt = start.AddSeconds(seconds) }, repo, ct);
+
+        Assert.Equal(2, repo.AddCount);
+        Assert.Equal(3, repo.MergeCount);
+    }
+
+    // A live poll wakes the car, so an engine reading that flips off and on again within minutes
+    // (a cached status lagging behind a live one) asks for one only once.
+    [Fact]
+    public async Task FollowTheDriveAsync_AskedAgainWithinTheCooldown_AsksOnce()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var published = new List<(string Topic, string Payload)>();
+        var handler = new TelemetryHandler(
+            NullLogger.Instance,
+            new VehicleResolver(new FakeServiceScopeFactory()),
+            new FakePushSender(),
+            WorkerLocalizer.Notifications(),
+            (topic, payload, _) => { published.Add((topic, payload)); return Task.CompletedTask; });
+
+        await handler.FollowTheDriveAsync("user@example.com", "FAKEVN00000000001", ct);
+        await handler.FollowTheDriveAsync("user@example.com", "FAKEVN00000000001", ct);
+        await handler.FollowTheDriveAsync("user@example.com", "FAKEVN00000000002", ct);
+
+        Assert.Equal(
+            new[]
+            {
+                "saic/user@example.com/vehicles/FAKEVN00000000001/refresh/mode/set",
+                "saic/user@example.com/vehicles/FAKEVN00000000002/refresh/mode/set",
+            },
+            published.Select(p => p.Topic).ToArray());
+    }
+
     // MG sends no "vehicle started" message for some starts (the phone's digital key), so the
     // gateway does not follow the drive. A status read that catches the engine on asks for a live
     // poll, which makes the gateway follow it from there.

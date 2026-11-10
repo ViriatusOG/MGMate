@@ -10,6 +10,22 @@ public class PasswordLoginOptionsTests
             .AddInMemoryCollection(settings.Select(s => new KeyValuePair<string, string?>(s.Key, s.Value)))
             .Build();
 
+    // A session carries the stamp of the credentials it was started with, and is refused once
+    // they change: the stamp has to move with either of them, and with nothing else.
+    [Fact]
+    public void CredentialStamp_ChangesWithThePasswordOrTheUsername_AndOnlyThen()
+    {
+        static PasswordLoginOptions With(string username, string password) =>
+            PasswordLoginOptions.Resolve(Config(("Auth:Username", username), ("Auth:Password", password)), oidcEnabled: false);
+
+        var stamp = With("garage", "garage-secret").CredentialStamp;
+
+        Assert.Equal(stamp, With("garage", "garage-secret").CredentialStamp);
+        Assert.NotEqual(stamp, With("garage", "another-secret").CredentialStamp);
+        Assert.NotEqual(stamp, With("someone", "garage-secret").CredentialStamp);
+        Assert.DoesNotContain("garage-secret", stamp);
+    }
+
     [Fact]
     public void Resolve_PrefersDedicatedAuthCredentials()
     {

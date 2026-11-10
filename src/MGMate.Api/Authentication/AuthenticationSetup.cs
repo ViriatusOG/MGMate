@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using MGMate.Api.Endpoints;
+using MGMate.Api.Security;
 using MGMate.Core.Helpers;
 using MGMate.Data;
 using Microsoft.AspNetCore.Authentication;
@@ -117,6 +118,19 @@ internal static class AuthenticationSetup
             // logout would keep working until it expired on its own.
             OnValidatePrincipal = async ctx =>
             {
+                // A password session is tied to the credentials it was started with, so a changed
+                // password ends it. Sessions from before the stamp existed carry none and run out
+                // on their own; an identity provider's sessions never carry one.
+                var stamp = ctx.Principal?.FindFirst(SessionPrincipal.CredentialStampClaimType)?.Value;
+                if (!string.IsNullOrEmpty(stamp)
+                    && !SecretComparer.FixedTimeEquals(
+                        stamp, ctx.HttpContext.RequestServices.GetRequiredService<PasswordLoginOptions>().CredentialStamp))
+                {
+                    ctx.RejectPrincipal();
+                    await ctx.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return;
+                }
+
                 var sessionId = ctx.Principal?.FindFirst(SessionPrincipal.SessionIdClaimType)?.Value;
                 if (string.IsNullOrEmpty(sessionId))
                     return;
