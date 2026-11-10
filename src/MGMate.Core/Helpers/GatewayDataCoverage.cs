@@ -29,7 +29,7 @@ public static class GatewayDataCoverage
         "ccu/offboardChargerPlugStatus", "ccu/onboardChargerPlugStatus",
         "climate/active", "climate/exteriorTemperature", "climate/heatedSeatsFrontLeftLevel",
         "climate/heatedSeatsFrontRightLevel", "climate/interiorTemperature", "climate/on",
-        "climate/rearWindowDefrosterHeating", "climate/remoteClimateState", "climate/remoteTemperature",
+        "climate/rearWindowDefrosterHeating", "climate/remoteClimateState", "climate/remoteTemperature", "climate/steeringWheelHeating",
         "doors/bonnet", "doors/boot", "doors/driver", "doors/hood", "doors/locked", "doors/passenger",
         "doors/rearLeft", "doors/rearRight", "doors/trunk",
         "drivetrain/auxiliaryBatteryVoltage", "drivetrain/batteryHeating", "drivetrain/batteryHeatingSchedule",

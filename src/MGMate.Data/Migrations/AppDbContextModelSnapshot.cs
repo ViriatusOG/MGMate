@@ -961,6 +961,9 @@ namespace MGMate.Data.Migrations
                     b.Property<double?>("Speed")
                         .HasColumnType("double precision");
 
+                    b.Property<bool?>("SteeringWheelHeating")
+                        .HasColumnType("boolean");
+
                     b.Property<bool?>("SunRoofOpen")
                         .HasColumnType("boolean");
 

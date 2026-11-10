@@ -46,7 +46,7 @@ public class GatewayCatalogTests
         {
             ["name"] = name,
             ["device"] = new JsonObject { ["name"] = "MG MG4", ["manufacturer"] = "MG", ["model"] = "MG4 2026", ["hw_version"] = "EH32 S", ["identifiers"] = new JsonArray(Vin) },
-            ["o"] = new JsonObject { ["sw"] = "0.14.0-rc1" },
+            ["o"] = new JsonObject { ["sw"] = "0.14.0-rc2" },
         };
         foreach (var (k, v) in extra) config[k] = v?.DeepClone();
         return config.ToJsonString();
@@ -128,7 +128,7 @@ public class GatewayCatalogTests
         var other = Assert.Single(response.OtherValues);
         Assert.Equal(("info/color", "latest"), (other.Topic, other.Kept));
         Assert.Equal("EH32 S", response.Device?.HardwareVersion);
-        Assert.Equal("0.14.0-rc1", response.Device?.GatewayVersion);
+        Assert.Equal("0.14.0-rc2", response.Device?.GatewayVersion);
     }
 
     [Fact]

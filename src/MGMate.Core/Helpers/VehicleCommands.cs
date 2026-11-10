@@ -45,6 +45,7 @@ public static class VehicleCommands
                 : "'climate' value must be 'on', 'off', 'front' or 'blowingonly'"),
         ["climate-temperature"] = new("climate/remoteTemperature", value => IntegerBetween("climate-temperature", value, 16, 28)),
         ["rear-defroster"] = new("climate/rearWindowDefrosterHeating", value => OnOff("rear-defroster", value)),
+        ["steering-wheel-heat"] = new("climate/steeringWheelHeating", value => OnOff("steering-wheel-heat", value)),
         ["seat-left"] = new("climate/heatedSeatsFrontLeftLevel", value => IntegerBetween("seat-left", value, 0, 3)),
         ["seat-right"] = new("climate/heatedSeatsFrontRightLevel", value => IntegerBetween("seat-right", value, 0, 3)),
         ["find-my-car"] = new("location/findMyCar", value =>
