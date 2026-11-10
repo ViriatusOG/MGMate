@@ -46,7 +46,9 @@ const { from, to } = useTripEnds({
   commutePlaces: toRef(props, 'commutePlaces'),
 })
 
-const startTime = computed(() => formatTime(props.entry.startedAt))
+// A drive saved without a route: when it left is not known, so it shows only when it was found.
+const noRoute = computed(() => !!props.entry.leftAfter)
+const startTime = computed(() => (noRoute.value ? '?' : formatTime(props.entry.startedAt)))
 const endTime = computed(() => formatTime(props.entry.endedAt))
 
 const durationLabel = computed(() =>
@@ -91,6 +93,7 @@ const purposeTitle = computed(() => {
       'trip-log-item--hidden': entry.isHidden,
       'll-item--hidden': entry.isHidden,
       'trip-log-item--selected': selected,
+      'trip-log-item--no-route': noRoute,
       'll-item--open': selected,
     }"
   >
@@ -118,7 +121,13 @@ const purposeTitle = computed(() => {
       <span class="ll-row__main">
         <span class="trip-log-item__when ll-row__time">
           {{ startTime }}<span class="trip-log-item__end-time"> → {{ endTime }}</span>
-          <small class="trip-log-item__duration">{{ durationLabel }}</small>
+          <small v-if="!noRoute" class="trip-log-item__duration">{{ durationLabel }}</small>
+          <span
+            v-else
+            class="ll-pill ll-pill--warn trip-log-item__no-route"
+            :title="t('tripLog.noRouteHint')"
+            >{{ t('tripLog.noRoute') }}</span
+          >
           <font-awesome-icon
             v-if="entry.isEdited"
             icon="pen-to-square"

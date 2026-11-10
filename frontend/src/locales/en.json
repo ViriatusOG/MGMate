@@ -944,6 +944,11 @@
     "editRoute": "Edit route",
     "edited": "Edited",
     "editedHint": "The route was edited by hand. The distance still comes from the odometer.",
+    "noRoute": "No route",
+    "noRouteHint": "MG did not report that the car started, so this drive was not followed. The distance comes from the odometer and the energy from the battery level.",
+    "noRouteNote": "No route for this trip. MG did not tell MGMate the car had started, so it was not followed while driving. The distance comes from the odometer and the energy from the battery level. The line only joins where it was parked before and after.",
+    "leftAfter": "Left after {time}",
+    "arrivedBy": "Found here by {time}",
     "downloadGpx": "Download GPX",
     "tiles": {
       "distance": "Distance",
@@ -1577,6 +1582,7 @@
       "title": "Recent trips",
       "all": "All trips →",
       "none": "No trips in the last two weeks.",
+      "noRoute": "by {time} · no route",
       "week": "Last 7 days",
       "count": "{n} trip | {n} trips"
     },

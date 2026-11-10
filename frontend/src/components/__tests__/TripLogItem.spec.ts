@@ -69,6 +69,20 @@ describe('TripLogItem', () => {
     expect(mountItem(logEntry()).find('.trip-log-item__duration').text()).toBe('34 min')
   })
 
+  it('marks a drive saved without a route, with no start time or duration', () => {
+    const entry = logEntry({
+      startedAt: '2026-11-10T06:31:00Z',
+      endedAt: '2026-11-10T06:31:00Z',
+      leftAfter: '2026-11-09T23:40:00Z',
+    })
+    const wrapper = mountItem(entry)
+
+    expect(wrapper.find('.trip-log-item--no-route').exists()).toBe(true)
+    expect(wrapper.find('.trip-log-item__no-route').text()).toBe('No route')
+    expect(wrapper.find('.trip-log-item__duration').exists()).toBe(false)
+    expect(wrapper.find('.trip-log-item__when').text()).toMatch(/^\? → /)
+  })
+
   it('counts the trip for the distance on the odometer, and leaves the readings to the detail', () => {
     const wrapper = mountItem(logEntry())
 

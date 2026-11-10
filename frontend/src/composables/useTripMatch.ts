@@ -65,6 +65,9 @@ function keyOf(trip: Trip): string {
 async function fetchMatch(trip: Trip): Promise<void> {
   const key = keyOf(trip)
   if (!enabled.value || matches.has(key) || unmatchable.has(key) || inFlight.has(key)) return
+  // A drive saved without a route has only the spots it was parked at either side: snapping
+  // those to roads would draw a route nobody drove.
+  if (trip.points.every((p) => p.source === 'anchored')) return
 
   const points = downsample(trip.points, MAX_MATCH_POINTS_PER_REQUEST)
   if (points.length < 2) return
