@@ -32,7 +32,13 @@ public sealed class TelemetryHandler(
     // this class shouldn't assume. The dictionary itself is concurrent for the same reason: two
     // different vehicles may write it at once.
     private static readonly TimeSpan MergeWindow = TimeSpan.FromSeconds(15);
-    internal readonly ConcurrentDictionary<int, (long RowId, DateTime RecordedAt)> _mergeState = new();
+
+    // A row carries the time of its first message. The window above is measured from the latest
+    // one, so messages that keep coming less than 15 seconds apart (two polls back to back, or a
+    // backlog) would otherwise all land in one row, however long that went on. Past this age the
+    // row is closed and the next message starts a new one.
+    internal static readonly TimeSpan MaxRowSpan = TimeSpan.FromSeconds(30);
+    internal readonly ConcurrentDictionary<int, (long RowId, DateTime RecordedAt, DateTime StartedAt)> _mergeState = new();
     private readonly ConcurrentDictionary<int, SemaphoreSlim> _mergeGates = new();
 
     // Subtopics already reported as unmapped. The gateway republishes every topic on every poll, so
@@ -47,6 +53,10 @@ public sealed class TelemetryHandler(
     // observed start. The gate also checks AppNotifications, so a restart does not forget a push
     // it just sent.
     private readonly NotificationCooldownGate _engineStartCooldownGate = new(NotificationCooldownGate.AlertCooldown);
+
+    // When the gateway was last asked for a live poll to follow a drive, per VIN.
+    internal static readonly TimeSpan FollowRequestCooldown = TimeSpan.FromMinutes(5);
+    private readonly ConcurrentDictionary<string, DateTime> _lastFollowRequest = new();
 
     // When each vehicle parked, until its parking poll's position is in. The gateway publishes a
     // poll's basic status (the engine stopping among it) before that poll's GPS fix, so at the
@@ -120,9 +130,7 @@ public sealed class TelemetryHandler(
             await ParkAtThisPollsFixAsync(vehicleId, patch, telemetryRepo, resolved.Vehicles, places, ct);
             await ArriveWithoutAFixAsync(vin, vehicleId, patch.RecordedAt, resolved.Vehicles, places, ct);
 
-            var transition = await ObserveEngineAsync(vin, patch, notifications, ct);
-            if (transition == StateTransition.TurnedOn)
-                await FollowTheDriveAsync(saicUser, vin, ct);
+            var transition = await ObserveEngineAsync(vin, patch, notifications, ct, () => FollowTheDriveAsync(saicUser, vin, ct));
             if (transition == StateTransition.TurnedOn && vehicleId > 0)
                 await _placeAlerts.EngineStartedAsync(vehicleId, await resolved.Vehicles.GetByVinAsync(vin, ct), places, ct);
 
@@ -200,15 +208,16 @@ public sealed class TelemetryHandler(
         try
         {
             if (_mergeState.TryGetValue(vehicleId, out var last) &&
-                patch.RecordedAt - last.RecordedAt <= MergeWindow)
+                patch.RecordedAt - last.RecordedAt <= MergeWindow &&
+                patch.RecordedAt - last.StartedAt <= MaxRowSpan)
             {
                 await telemetryRepo.MergeIntoAsync(last.RowId, patch, ct);
-                _mergeState[vehicleId] = (last.RowId, patch.RecordedAt);
+                _mergeState[vehicleId] = (last.RowId, patch.RecordedAt, last.StartedAt);
             }
             else
             {
                 var newId = await telemetryRepo.AddAsync(patch, ct);
-                _mergeState[vehicleId] = (newId, patch.RecordedAt);
+                _mergeState[vehicleId] = (newId, patch.RecordedAt, patch.RecordedAt);
             }
         }
         finally
@@ -228,6 +237,14 @@ public sealed class TelemetryHandler(
     internal async Task FollowTheDriveAsync(string saicUser, string vin, CancellationToken ct)
     {
         if (publish is null) return;
+
+        // A live poll wakes the car. One is enough to make the gateway follow a drive, so an
+        // engine reading that flips back and forth (a cached status that lags behind a live one)
+        // does not get to ask for one each time.
+        var now = DateTime.UtcNow;
+        if (_lastFollowRequest.TryGetValue(vin, out var asked) && now - asked < FollowRequestCooldown) return;
+        _lastFollowRequest[vin] = now;
+
         try
         {
             logger.LogInformation("Engine seen running for VIN={Vin} - asking the gateway for a live poll so it follows the drive", LogRedaction.Vin(vin));
@@ -243,7 +260,9 @@ public sealed class TelemetryHandler(
     /// Follows the engine across messages. A start sends the engine-start push, once per cooldown.
     /// </summary>
     /// <returns>What the message changed about the engine; a message without an engine reading changes nothing.</returns>
-    internal async Task<StateTransition> ObserveEngineAsync(string vin, TelemetrySnapshot snapshot, INotificationRepository notifications, CancellationToken ct)
+    // onStarted runs on a start, before the push goes out, so a slow push service does not hold it up.
+    internal async Task<StateTransition> ObserveEngineAsync(
+        string vin, TelemetrySnapshot snapshot, INotificationRepository notifications, CancellationToken ct, Func<Task>? onStarted = null)
     {
         if (snapshot.EngineRunning is not { } running)
             return StateTransition.Unchanged;
@@ -253,6 +272,8 @@ public sealed class TelemetryHandler(
 
         if (transition == StateTransition.TurnedOn)
         {
+            if (onStarted is not null) await onStarted();
+
             var shouldNotify = await _engineStartCooldownGate.ShouldNotifyAsync(
                 vin, snapshot.VehicleId, NotificationCategories.EngineStart, notifications, ct);
             if (shouldNotify)

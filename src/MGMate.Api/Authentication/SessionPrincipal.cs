@@ -32,7 +32,11 @@ internal static class SessionPrincipal
         ClaimTypes.NameIdentifier,
     ];
 
-    internal static ClaimsPrincipal Create(string displayName, string? subject, string authenticationType, string sessionId)
+    /// <summary>The fingerprint of the credentials a password session was started with.</summary>
+    internal const string CredentialStampClaimType = "garagestack:cred";
+
+    internal static ClaimsPrincipal Create(
+        string displayName, string? subject, string authenticationType, string sessionId, string? credentialStamp = null)
     {
         var identity = new ClaimsIdentity(authenticationType, ClaimTypes.Name, ClaimTypes.Role);
         identity.AddClaim(new Claim(ClaimTypes.Name, displayName));
@@ -40,6 +44,8 @@ internal static class SessionPrincipal
 
         if (!string.IsNullOrWhiteSpace(subject))
             identity.AddClaim(new Claim(SubjectClaimType, subject));
+        if (!string.IsNullOrWhiteSpace(credentialStamp))
+            identity.AddClaim(new Claim(CredentialStampClaimType, credentialStamp));
 
         return new ClaimsPrincipal(identity);
     }

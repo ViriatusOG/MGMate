@@ -93,6 +93,7 @@ docker build `
 docker run -d \
   --name mgmate \
   --restart unless-stopped \
+  --stop-timeout 60 \
   -p 8080:80 \
   -v ./mgmate-data:/data \
   -e SAIC_USER=your@email.com \
@@ -110,6 +111,7 @@ docker run -d \
 docker run -d `
   --name mgmate `
   --restart unless-stopped `
+  --stop-timeout 60 `
   -p 8080:80 `
   -v "${PWD}\mgmate-data:/data" `
   -e SAIC_USER=your@email.com `

@@ -683,6 +683,55 @@ public class PushNotificationCheckServiceTests
         Assert.Contains("km", body);
     }
 
+    // A drive the gateway never followed (a start with the phone's digital key that MG did not
+    // announce) ends with the car two kilometres from the spot still stored, engine off. The
+    // odometer says it was driven there, so it is no "moved while parked": it is parked anew.
+    [Fact]
+    public async Task CheckParkedAsync_DrivenToANewSpotUnseen_ParksItThereWithoutAnAlert()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var now = DateTime.UtcNow;
+        await using var db = CreateDb();
+        var vehicle = ParkedInAmsterdam(now.AddHours(-3));
+        db.Vehicles.Add(vehicle);
+        await db.SaveChangesAsync(ct);
+        db.TelemetrySnapshots.Add(new TelemetrySnapshot { VehicleId = vehicle.Id, RecordedAt = now.AddHours(-3), OdometerKm = 1200 });
+        await db.SaveChangesAsync(ct);
+        var push = new FakePushSender();
+        var here = Parked(s => { s.Latitude = 52.3880; s.Longitude = 4.8900; s.OdometerKm = 1203; });
+
+        await CreateService(push: push).CheckParkedAsync(
+            vehicle, here, new TelemetryRepository(db), new NotificationRepository(db), now, ct, new VehicleRepository(db));
+
+        Assert.Empty(push.Sent);
+        Assert.Equal((now, 52.3880, 4.8900), (vehicle.LastParkedAt, vehicle.ParkedLatitude, vehicle.ParkedLongitude));
+    }
+
+    // A tow truck moves the car and leaves the odometer where it was: still moved while parked.
+    [Fact]
+    public async Task CheckParkedAsync_MovedWithoutTheOdometerCounting_SendsTheAlert()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var now = DateTime.UtcNow;
+        await using var db = CreateDb();
+        var vehicle = ParkedInAmsterdam(now.AddHours(-3));
+        db.Vehicles.Add(vehicle);
+        await db.SaveChangesAsync(ct);
+        db.TelemetrySnapshots.Add(new TelemetrySnapshot
+        {
+            VehicleId = vehicle.Id, RecordedAt = now.AddHours(-3), LastVehicleStateAt = now.AddHours(-3),
+            OdometerKm = 1200, IsLocked = true, EngineRunning = false,
+        });
+        await db.SaveChangesAsync(ct);
+        var push = new FakePushSender();
+        var here = Parked(s => { s.Latitude = 52.3880; s.Longitude = 4.8900; s.OdometerKm = 1200; });
+
+        await CreateService(push: push).CheckParkedAsync(
+            vehicle, here, new TelemetryRepository(db), new NotificationRepository(db), now, ct, new VehicleRepository(db));
+
+        Assert.Equal(NotificationCategories.MovedParked, Assert.Single(push.Sent).Category);
+    }
+
     // A garage or a car park can put a parked car's fix a hundred metres off.
     [Fact]
     public void CheckMovedWhileParked_GpsWanderingNearby_StaysQuiet()

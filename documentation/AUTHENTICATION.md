@@ -206,6 +206,8 @@ OIDC_PROVIDER_NAME=Google
 
 On by default while `OIDC_AUTHORITY` is empty. Credentials come from `AUTH_USERNAME` / `AUTH_PASSWORD`, falling back to the MG account (`SAIC_USER` / `SAIC_PASSWORD`) so existing installs keep working untouched.
 
+Changing the username or password (and restarting MGMate) signs every device out: a session only stays valid for the credentials it was started with. Sessions started before this was introduced carry no such mark and run out on their own, after 30 days at most.
+
 Sessions last 12 hours, or 30 days with "remember me". Login is rate-limited to 10 attempts per 5 minutes per IP address.
 
 Setting dedicated credentials is worth it even without an identity provider: it keeps your MG cloud password out of the browser login form.

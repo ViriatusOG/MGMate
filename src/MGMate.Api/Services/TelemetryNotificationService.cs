@@ -121,10 +121,18 @@ internal sealed class TelemetryNotificationService(
 
     private void ScheduleBroadcast(int vehicleId, CancellationToken stoppingToken)
     {
+        // Only cancelled here: the task that waits on it disposes it, in its own finally. Disposing
+        // it here too raced with that, and a Cancel that lost the race threw out of the reader loop.
         if (_pending.TryRemove(vehicleId, out var old))
         {
-            old.Cancel();
-            old.Dispose();
+            try
+            {
+                old.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Its broadcast had just finished.
+            }
         }
 
         var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);

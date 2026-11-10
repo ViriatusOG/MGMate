@@ -23,6 +23,10 @@ internal sealed class ClimateScheduleTestWorker : IDisposable
     public FixedTimeProvider Clock { get; } = new(Now);
     public FakeCommandClient Car { get; } = new();
     public FakePushSender Push { get; } = new();
+
+    /// <summary>While set, claiming a due schedule fails the way a database that just went away does.</summary>
+    public bool FailClaims { get; set; }
+
     public IServiceScopeFactory Scopes { get; }
     public ClimateScheduleRunner Runner { get; }
 
@@ -35,7 +39,9 @@ internal sealed class ClimateScheduleTestWorker : IDisposable
             // On the fixture's clock: the merged status only reads the last week, which a fixed date
             // would otherwise fall out of a week after it was written.
             .AddScoped<ITelemetryRepository>(sp => new TelemetryRepository(sp.GetRequiredService<AppDbContext>(), time: Clock))
-            .AddScoped<IClimateScheduleRepository, ClimateScheduleRepository>()
+            .AddScoped<ClimateScheduleRepository>()
+            .AddScoped<IClimateScheduleRepository>(sp =>
+                new FailingClaimRepository(sp.GetRequiredService<ClimateScheduleRepository>(), () => FailClaims))
             .BuildServiceProvider();
         Scopes = _services.GetRequiredService<IServiceScopeFactory>();
         Runner = new ClimateScheduleRunner(
@@ -106,6 +112,24 @@ internal sealed class ClimateScheduleTestWorker : IDisposable
     }
 
     public void Dispose() => _services.Dispose();
+}
+
+/// <summary>The real repository, except that a claim fails for as long as it is told to.</summary>
+internal sealed class FailingClaimRepository(IClimateScheduleRepository inner, Func<bool> failClaims) : IClimateScheduleRepository
+{
+    public Task<IReadOnlyList<ClimateSchedule>> ListAsync(int vehicleId, CancellationToken ct = default) => inner.ListAsync(vehicleId, ct);
+    public Task<int> CountAsync(int vehicleId, CancellationToken ct = default) => inner.CountAsync(vehicleId, ct);
+    public Task<ClimateSchedule> AddAsync(ClimateSchedule schedule, CancellationToken ct = default) => inner.AddAsync(schedule, ct);
+    public Task<ClimateSchedule?> UpdateAsync(int vehicleId, int id, Action<ClimateSchedule> change, CancellationToken ct = default) =>
+        inner.UpdateAsync(vehicleId, id, change, ct);
+    public Task<bool> DeleteAsync(int vehicleId, int id, CancellationToken ct = default) => inner.DeleteAsync(vehicleId, id, ct);
+    public Task<IReadOnlyList<ClimateSchedule>> GetDueAsync(DateTime nowUtc, CancellationToken ct = default) => inner.GetDueAsync(nowUtc, ct);
+    public Task MarkInterruptedAsync(CancellationToken ct = default) => inner.MarkInterruptedAsync(ct);
+
+    public Task<bool> TryClaimAsync(ClimateSchedule due, Action<ClimateSchedule> claim, CancellationToken ct = default) =>
+        failClaims()
+            ? Task.FromException<bool>(new InvalidOperationException("The database went away."))
+            : inner.TryClaimAsync(due, claim, ct);
 }
 
 /// <summary>A car that answers every command as told, and remembers what it was sent.</summary>
@@ -351,6 +375,22 @@ public class ClimateScheduleServiceTests : IDisposable
         await PassAsync(_worker.Service());
 
         Assert.Equal(ClimateScheduleOutcome.Unconfirmed, (await _worker.ReadAsync(schedule.Id)).LastRunOutcome);
+    }
+
+    // A claim that failed used to leave the car marked as busy for good: the schedule stayed due,
+    // and neither it nor any other schedule for the car ran again until the Worker restarted.
+    [Fact]
+    public async Task AClaimThatFails_LeavesTheScheduleToTheNextPass()
+    {
+        var schedule = await _worker.AddScheduleAsync();
+        var service = _worker.Service();
+
+        _worker.FailClaims = true;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.RunPassAsync(TestContext.Current.CancellationToken));
+        _worker.FailClaims = false;
+        await PassAsync(service);
+
+        Assert.Equal(ClimateScheduleOutcome.Started, (await _worker.ReadAsync(schedule.Id)).LastRunOutcome);
     }
 
     [Fact]

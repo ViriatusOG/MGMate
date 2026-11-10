@@ -25,6 +25,22 @@ Scope, so the result is not read as more than it is:
 
 Line numbers refer to the commit above.
 
+## Status of the fixes
+
+Fixed in the same pull request that added this file, each with a test where one can be written:
+
+| # | Status | What changed |
+|---|--------|--------------|
+| 1 | Fixed | A failed claim releases the car again, so the next pass picks the schedule up. |
+| 2 | Fixed | When the odometer shows the car was driven to its new spot, no "moved while parked" alert goes out and the car is parked anew there. A move without the odometer counting (tow truck, ferry) still alerts. |
+| 3 | Fixed | The debounce only cancels the old timer and tolerates one that was just disposed. |
+| 4 | Fixed | Push requests time out after 10 seconds instead of 100, and the gateway is asked to follow a drive before the engine-start push goes out. Push delivery itself still runs in the receive path. |
+| 5 | Fixed | A row takes messages for at most 30 seconds after its first one. |
+| 6 | Open | Needs a design decision (a trip that is part route, part "No route"), so it is left for a mockup first. |
+| 7 | Fixed | At most one follow request per car every 5 minutes. A single wake of a car that has just parked is still possible. |
+| 8 | Fixed | A password session carries a fingerprint of the credentials it was started with and is refused once they change. Sessions from before this fix carry none and run out on their own. |
+| 9 | Partly | PostgreSQL now gets a fast shutdown (SIGINT) and the `docker run` examples pass `--stop-timeout 60`. An existing container keeps Docker's 10 seconds until it is recreated with a longer stop timeout. |
+
 | # | Severity | Confidence it is real | Issue |
 |---|----------|-----------------------|-------|
 | 1 | Medium | High (rare trigger) | A database error while claiming a climate schedule stops all schedules for that car until the Worker restarts |
