@@ -79,4 +79,24 @@ public class ActivityTimelineBuilderTests
         var timeline = ActivityTimelineBuilder.Build([S(0, locked: true)], T0, T0.AddMinutes(10), TimeSpan.FromHours(1));
         Assert.Empty(timeline.Soc);
     }
+
+    [Fact]
+    public void Build_StartsTheLevelLineAtThePeriodStart_WithTheLevelFromBefore()
+    {
+        // Parked all morning with no reading: the level reported before the period still holds.
+        var samples = new[] { S(300, soc: 67), S(360, soc: 52) };
+
+        var timeline = ActivityTimelineBuilder.Build(samples, T0, T0.AddMinutes(420), TimeSpan.FromHours(1), socBefore: 67);
+
+        Assert.Equal(
+            [new ActivitySocPoint(T0, 67), new ActivitySocPoint(T0.AddMinutes(300), 67), new ActivitySocPoint(T0.AddMinutes(360), 52)],
+            timeline.Soc);
+    }
+
+    [Fact]
+    public void Build_WithALevelFromBeforeAndNoReadings_DrawsItAcrossThePeriod()
+    {
+        var timeline = ActivityTimelineBuilder.Build([], T0, T0.AddHours(3), TimeSpan.FromHours(1), socBefore: 40);
+        Assert.Equal([new ActivitySocPoint(T0, 40)], timeline.Soc);
+    }
 }

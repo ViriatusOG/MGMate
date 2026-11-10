@@ -110,8 +110,20 @@ const dateLabel = computed(() =>
   }),
 )
 
-const timeLabel = computed(
-  () => `${formatTime(props.entry.startedAt)} - ${formatTime(props.entry.endedAt)}`,
+// A drive saved without a route: when it left is not known, only when the car was last seen
+// parked before it and when it was found at its new spot.
+const noRoute = computed(() => !!props.entry.leftAfter)
+
+function leftAfterLabel(leftAfter: string): string {
+  const sameDay = formatDate(leftAfter) === formatDate(props.entry.endedAt)
+  const time = formatTime(leftAfter)
+  return sameDay ? time : `${formatDate(leftAfter, { weekday: 'short' })} ${time}`
+}
+
+const timeLabel = computed(() =>
+  props.entry.leftAfter
+    ? `${t('tripLog.leftAfter', { time: leftAfterLabel(props.entry.leftAfter) })} · ${t('tripLog.arrivedBy', { time: formatTime(props.entry.endedAt) })}`
+    : `${formatTime(props.entry.startedAt)} - ${formatTime(props.entry.endedAt)}`,
 )
 
 const durationLabel = computed(() =>
@@ -284,7 +296,8 @@ const figures = computed((): Figure[] => [
     key: 'duration',
     icon: 'clock',
     label: t('tripLog.detail.duration'),
-    measure: { value: durationLabel.value, unit: '' },
+    // Nothing was measured on the way of a drive without a route.
+    measure: noRoute.value ? null : { value: durationLabel.value, unit: '' },
     title: undefined,
     note: null,
   },
@@ -720,7 +733,11 @@ const notesId = computed(() => `trip-log-notes-${props.entry.id}`)
           :trip-id="entry.id"
           :started-at="entry.startedAt"
           :link-to-map="!entry.isHidden"
+          :no-route="noRoute"
         />
+        <p v-if="noRoute" class="trip-log-detail__no-route" role="note">
+          {{ t('tripLog.noRouteNote') }}
+        </p>
         <p v-if="routeError" class="text-xs text-muted" role="status">
           {{ t('tripLog.detail.routeUnavailable') }}
         </p>

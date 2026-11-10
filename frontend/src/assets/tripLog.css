@@ -242,6 +242,17 @@
   color: var(--color-text-muted);
 }
 
+/* A drive saved without a route: dashed, like the straight line its detail draws. */
+.trip-log-item--no-route {
+  border-style: dashed;
+}
+
+.trip-log-item__no-route {
+  flex: none;
+  align-self: center;
+  font-size: 0.72rem;
+}
+
 /* Edited route and notes, as icons only: the detail names them. */
 .trip-log-item__mark {
   flex: none;
@@ -446,6 +457,21 @@
 
 .trip-route-map__straight {
   stroke: var(--color-text-muted);
+}
+
+.trip-route-map__straight--no-route {
+  stroke: var(--color-warning);
+}
+
+/* Why a drive saved without a route has none: under its straight line. */
+.trip-log-detail__no-route {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgb(245 158 11 / 30%);
+  border-radius: 8px;
+  background: rgb(245 158 11 / 8%);
+  color: var(--color-warning-text);
+  font-size: 0.8125rem;
 }
 
 .trip-route-map__end {

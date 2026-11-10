@@ -34,6 +34,13 @@ public class Trip
     /// <summary>When the route was last edited, or null while it is as recorded.</summary>
     public DateTime? EditedAt { get; set; }
 
+    /// <summary>
+    /// Set on a drive the gateway never followed (<see cref="Helpers.MissedDrive"/>): the last time
+    /// the car was seen parked where it left from. Such a trip has no route, only its two parking
+    /// spots, and starts and ends when the car was found at the new one. Null on every other trip.
+    /// </summary>
+    public DateTime? LeftAfter { get; set; }
+
     // The first and last fix, kept beside the fixes so the trip log can list a year of trips
     // without reading every fix of every one of them.
     public double StartLatitude { get; set; }

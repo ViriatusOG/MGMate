@@ -106,7 +106,8 @@ internal static class DemoTrips
                 SocStartPercent: Math.Round(socEnd + usedKwh / DemoBatteryKwh * 100, 1),
                 SocEndPercent: socEnd,
                 EnergyCounterUsed: usedKwh,
-                OutsideTemperature: outside);
+                OutsideTemperature: outside,
+                LeftAfter: LeftAfter.TryGetValue(id, out var leftAfter) ? leftAfter : null);
             odometer = start;
         }
 
@@ -269,8 +270,27 @@ internal static class DemoTrips
             // In progress: the road already driven, ending at the demo snapshot's live position.
             // It starts last, so it stays the final entry once DemoTripRepository orders the list,
             // and the frontend treats that entry as the active trip whenever CurrentJourneyDistance > 0.
+            // A drive the gateway never followed, saved without a route (MissedDrive).
+            BuildMissedDrive(11, now.AddDays(-1).AddHours(-2), id: 11, (52.3676, 4.9041), (52.1601, 4.4970)),
             BuildTrip(10, now.AddMinutes(-8), "Amsterdam to Duivendrecht", id: null, InProgressWaypoints),
         ];
+    }
+
+    // The demo's drive without a route: last seen parked at one spot, found at the other this long
+    // after, with the road a quarter longer than the straight line between them.
+    private static readonly TimeSpan MissedDriveParkedFor = TimeSpan.FromHours(9);
+
+    /// <summary>The demo trips saved without a route, by id: when the car was last seen before each.</summary>
+    public static IReadOnlyDictionary<long, DateTime> LeftAfter =>
+        All.Where(t => t.Id is not null && t.Points.All(p => p.Source == TripPointSource.Anchored))
+            .ToDictionary(t => t.Id!.Value, t => t.Points[0].RecordedAt);
+
+    private static TripDto BuildMissedDrive(int index, DateTime foundAt, long id, (double Lat, double Lon) from, (double Lat, double Lon) to)
+    {
+        var before = new TripPoint(foundAt - MissedDriveParkedFor, from.Lat, from.Lon, 0);
+        var after = new TripPoint(foundAt, to.Lat, to.Lon, 0);
+        var km = GeoHelper.Haversine(from.Lat, from.Lon, to.Lat, to.Lon) * 1.25;
+        return MissedDrive.Build(before, after, 0, Math.Round(km, 1))! with { Index = index, Id = id };
     }
 
     private static TripDto BuildTrip(int index, DateTime start, string _, long? id,

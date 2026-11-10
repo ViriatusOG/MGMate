@@ -8,7 +8,7 @@ import { tripLogApi, type TripLogEntry } from '@/services/tripLogApi'
 import { useUnits } from '@/composables/useUnits'
 import { loggedDistanceKm, endLabel, missingPlaces, PURPOSE_ICONS } from '@/utils/tripLog'
 import { tripEnergy } from '@/utils/energy'
-import { formatDateTime, formatNumber } from '@/utils/format'
+import { formatDate, formatDateTime, formatNumber, formatTime } from '@/utils/format'
 
 // The last few trips, and what the past seven days added up to.
 const { t } = useI18n()
@@ -81,7 +81,11 @@ const recent = computed(() =>
       id: e.id,
       icon: PURPOSE_ICONS[e.purpose ?? 'unclassified'],
       route: `${endLabel(e.startPlace, e.startLatitude, e.startLongitude)} → ${endLabel(e.endPlace, e.endLatitude, e.endLongitude)}`,
-      when: formatDateTime(e.startedAt, { weekday: 'short', hour: '2-digit', minute: '2-digit' }),
+      // A drive saved without a route shows when the car was found at its new spot.
+      noRoute: !!e.leftAfter,
+      when: e.leftAfter
+        ? `${formatDate(e.endedAt, { weekday: 'short' })}, ${t('overview.trips.noRoute', { time: formatTime(e.endedAt) })}`
+        : formatDateTime(e.startedAt, { weekday: 'short', hour: '2-digit', minute: '2-digit' }),
       distance: units.value.format('distance', loggedDistanceKm(e), { decimals: 1 }),
       efficiency:
         energy?.whPerKm != null ? units.value.format('energyPerDistance', energy.whPerKm) : null,
@@ -120,7 +124,12 @@ const week = computed(() => {
     </header>
     <ul v-if="recent.length > 0" class="ov-trips__list">
       <li v-for="trip in recent" :key="trip.id">
-        <RouterLink to="/trip-log" class="ov-trip">
+        <RouterLink
+          to="/trip-log"
+          class="ov-trip"
+          :class="{ 'ov-trip--no-route': trip.noRoute }"
+          :title="trip.noRoute ? t('tripLog.noRouteHint') : undefined"
+        >
           <span class="ov-trip__icon"><font-awesome-icon :icon="trip.icon" /></span>
           <span class="ov-trip__text">
             <b>{{ trip.route }}</b>

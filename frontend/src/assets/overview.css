@@ -806,6 +806,10 @@
   text-decoration: none;
 }
 
+.ov-trip--no-route {
+  outline: 1px dashed var(--color-border);
+}
+
 .ov-trip:hover {
   outline: 1px solid var(--color-border);
 }

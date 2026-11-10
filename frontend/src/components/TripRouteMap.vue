@@ -20,6 +20,11 @@ const props = defineProps<{
   startedAt: string
   /** A hidden trip is left off the map, so there is nothing there to open. */
   linkToMap: boolean
+  /**
+   * A drive saved without a route: its two points are where it was parked before and after, so
+   * they are drawn as the straight line they are, never as a route.
+   */
+  noRoute?: boolean
 }>()
 
 const { t } = useI18n()
@@ -45,7 +50,7 @@ useBasemap(mapInstance, { vector: false })
 const NO_SPEED_COLOR = '#3b82f6'
 
 const segments = computed(() =>
-  props.points && props.points.length >= 2
+  !props.noRoute && props.points && props.points.length >= 2
     ? speedSegments({ points: [...props.points] }, null).map((segment) => ({
         coordinates: segment.coordinates,
         color: speedToColor(segment.speed, NO_SPEED_COLOR),
@@ -107,7 +112,11 @@ watch(framed, () => {
       <LPolyline
         v-if="straightLine"
         :lat-lngs="straightLine"
-        class-name="trip-route-map__straight"
+        :class-name="
+          noRoute
+            ? 'trip-route-map__straight trip-route-map__straight--no-route'
+            : 'trip-route-map__straight'
+        "
         :weight="3"
         dash-array="6 8"
         :interactive="false"

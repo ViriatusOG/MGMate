@@ -358,7 +358,8 @@ public class TripEditorRepositoryTests
 
         var merged = (await demo.MergeWithNextAsync(1, first.Id, ct)).Merged!;
 
-        Assert.All(log, e => Assert.NotNull(e.MaxSpeedKmh));
+        // Every trip but the one saved without a route, which has no speeds to read.
+        Assert.All(log.Where(e => e.LeftAfter is null), e => Assert.NotNull(e.MaxSpeedKmh));
         Assert.Equal(Math.Max(first.MaxSpeedKmh!.Value, second.MaxSpeedKmh!.Value), merged.MaxSpeedKmh);
         Assert.NotNull(merged.AvgMovingSpeedKmh);
     }

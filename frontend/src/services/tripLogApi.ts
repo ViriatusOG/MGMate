@@ -52,6 +52,11 @@ export interface TripLogEntry {
   energyCounterUsed?: number | null
   /** The mean outside temperature while it was driven, in °C. */
   outsideTemperature?: number | null
+  /**
+   * Set on a drive the gateway never followed, saved without a route: the last time the car was
+   * seen parked before it left. Such a trip starts and ends when the car was found at its new spot.
+   */
+  leftAfter?: string | null
 }
 
 /**
