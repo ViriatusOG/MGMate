@@ -45,8 +45,23 @@ public class MqttConsumerService : BackgroundService
             new GatewayLatestValueHandler(logger, vehicles),
             new VehicleMessageHandler(logger, scopeFactory, pushSender, strings, TimeProvider.System),
             new CommandResultHandler(logger, vehicles, answers),
-            new TelemetryHandler(logger, vehicles, pushSender, strings),
+            new TelemetryHandler(logger, vehicles, pushSender, strings, PublishAsync),
         ];
+    }
+
+    // The connected client, for the few messages the Worker sends the gateway itself. These go out
+    // at QoS 0: they are sent from inside a received-message handler, and waiting there for the
+    // broker's acknowledgement would wait on the very loop that is busy running the handler.
+    private IMqttClient? _client;
+
+    private async Task PublishAsync(string topic, string payload, CancellationToken ct)
+    {
+        if (_client is not { IsConnected: true } client) return;
+        await client.PublishAsync(new MqttApplicationMessageBuilder()
+            .WithTopic(topic)
+            .WithPayload(payload)
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce)
+            .Build(), ct);
     }
 
     protected virtual IMqttClient CreateMqttClient() => new MqttClientFactory().CreateMqttClient();
@@ -58,6 +73,7 @@ public class MqttConsumerService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var client = CreateMqttClient();
+        _client = client;
 
         client.ApplicationMessageReceivedAsync += msg => HandleMessageAsync(msg, stoppingToken);
 

@@ -271,6 +271,40 @@ public class TelemetryHandlerTests
         Assert.Equal((52.37, 4.89), (vehicle.ParkedLatitude, vehicle.ParkedLongitude));
     }
 
+    // MG sends no "vehicle started" message for some starts (the phone's digital key), so the
+    // gateway does not follow the drive. A status read that catches the engine on asks for a live
+    // poll, which makes the gateway follow it from there.
+    [Fact]
+    public async Task EngineStart_AsksTheGatewayForALivePollOnce()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        const string vehicleTopic = "saic/user@example.com/vehicles/FAKEVN00000000001";
+        var databaseName = Guid.NewGuid().ToString();
+        await using var services = new ServiceCollection()
+            .AddDbContext<AppDbContext>(o => o.UseInMemoryDatabase(databaseName))
+            .AddScoped<IVehicleRepository, VehicleRepository>()
+            .AddScoped<ITelemetryRepository>(sp => new TelemetryRepository(sp.GetRequiredService<AppDbContext>()))
+            .AddScoped<INotificationRepository, NotificationRepository>()
+            .AddScoped<ICommutePlaceRepository, CommutePlaceRepository>()
+            .BuildServiceProvider();
+        var published = new List<(string Topic, string Payload)>();
+        var handler = new TelemetryHandler(
+            NullLogger.Instance,
+            new VehicleResolver(services.GetRequiredService<IServiceScopeFactory>()),
+            new FakePushSender(),
+            WorkerLocalizer.Notifications(),
+            (topic, payload, _) => { published.Add((topic, payload)); return Task.CompletedTask; });
+
+        // Parked: the first reading only seeds the engine state.
+        await handler.TryHandleAsync(new MqttMessage($"{vehicleTopic}/drivetrain/running", "false", Retain: false), ct);
+        Assert.Empty(published);
+
+        await handler.TryHandleAsync(new MqttMessage($"{vehicleTopic}/drivetrain/running", "true", Retain: false), ct);
+        await handler.TryHandleAsync(new MqttMessage($"{vehicleTopic}/drivetrain/running", "true", Retain: false), ct);
+
+        Assert.Equal(($"{vehicleTopic}/refresh/mode/set", "force"), Assert.Single(published));
+    }
+
     // The gateway publishes a poll's basic status, the engine stopping among it, before that poll's
     // GPS fix. The spot it parked on is the fix that follows, not the previous poll's, which at
     // speed lies hundreds of metres back and read as the car having moved while parked.

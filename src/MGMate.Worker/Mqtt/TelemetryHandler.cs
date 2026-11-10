@@ -17,7 +17,8 @@ public sealed class TelemetryHandler(
     ILogger logger,
     VehicleResolver vehicles,
     IPushSender pushSender,
-    IStringLocalizer<NotificationStrings> strings) : IMqttMessageHandler
+    IStringLocalizer<NotificationStrings> strings,
+    Func<string, string, CancellationToken, Task>? publish = null) : IMqttMessageHandler
 {
     // MQTT polling cycles emit several messages within ~2 seconds (one per topic). Messages
     // arriving within this window are merged into the same DB row so that each row represents a
@@ -120,6 +121,8 @@ public sealed class TelemetryHandler(
             await ArriveWithoutAFixAsync(vin, vehicleId, patch.RecordedAt, resolved.Vehicles, places, ct);
 
             var transition = await ObserveEngineAsync(vin, patch, notifications, ct);
+            if (transition == StateTransition.TurnedOn)
+                await FollowTheDriveAsync(saicUser, vin, ct);
             if (transition == StateTransition.TurnedOn && vehicleId > 0)
                 await _placeAlerts.EngineStartedAsync(vehicleId, await resolved.Vehicles.GetByVinAsync(vin, ct), places, ct);
 
@@ -211,6 +214,28 @@ public sealed class TelemetryHandler(
         finally
         {
             gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Asks the gateway for a live poll the moment the engine is seen running. The gateway only
+    /// starts following a drive (a live poll every 30 s, which is where the route comes from) when
+    /// MG sends a "vehicle started" message, and MG does not always send one: not for a start with
+    /// the phone's digital key, for one. The half-hourly cached status read can still catch the
+    /// engine on; a live poll that sees the car running makes the gateway follow it from there.
+    /// When the gateway is following already, this is one extra poll.
+    /// </summary>
+    internal async Task FollowTheDriveAsync(string saicUser, string vin, CancellationToken ct)
+    {
+        if (publish is null) return;
+        try
+        {
+            logger.LogInformation("Engine seen running for VIN={Vin} - asking the gateway for a live poll so it follows the drive", LogRedaction.Vin(vin));
+            await publish($"saic/{saicUser}/vehicles/{vin}/refresh/mode/set", "force", ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not ask the gateway for a live poll - VIN={Vin}", LogRedaction.Vin(vin));
         }
     }
 
