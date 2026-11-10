@@ -1038,6 +1038,9 @@ namespace MGMate.Data.Migrations
                     b.Property<bool>("IsHidden")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("LeftAfter")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<double?>("MaxSpeedKmh")
                         .HasColumnType("double precision");
 

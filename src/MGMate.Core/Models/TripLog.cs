@@ -2,9 +2,10 @@ namespace MGMate.Core.Models;
 
 /// <summary>
 /// A finished trip with the odometer readings at either end, as the Worker saves it, and what it
-/// took out of the battery (null when that was not read).
+/// took out of the battery (null when that was not read). <c>LeftAfter</c> marks a drive saved
+/// without a route (<see cref="Trip.LeftAfter"/>).
 /// </summary>
-public sealed record RecordedTrip(TripDto Trip, double? OdometerStartKm, double? OdometerEndKm, TripEnergy? Energy = null);
+public sealed record RecordedTrip(TripDto Trip, double? OdometerStartKm, double? OdometerEndKm, TripEnergy? Energy = null, DateTime? LeftAfter = null);
 
 /// <summary>
 /// One line of the trip log: a saved trip without its fixes, plus what the driver recorded about
@@ -40,7 +41,9 @@ public sealed record TripLogEntry(
     double? SocEndPercent = null,
     double? EnergyCounterUsed = null,
     // The mean outside temperature while it was driven, in °C (Trip.OutsideTemperature).
-    double? OutsideTemperature = null);
+    double? OutsideTemperature = null,
+    // A drive saved without a route: the last time the car was seen parked before it (Trip.LeftAfter).
+    DateTime? LeftAfter = null);
 
 /// <summary>A saved trip whose energy has not been read yet (<see cref="Trip.EnergyRead"/>).</summary>
 public sealed record TripEnergyPending(long Id, int VehicleId, DateTime StartedAt, DateTime EndedAt, double DistanceKm);
