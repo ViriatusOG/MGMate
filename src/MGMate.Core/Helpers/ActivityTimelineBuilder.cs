@@ -21,11 +21,9 @@ public static class ActivityTimelineBuilder
         (s => s.EngineRunning, "driveStarted", "driveEnded"),
     ];
 
-    /// <param name="socBefore">
-    /// The level as last reported before <paramref name="from"/>, if any. A parked car can go hours
-    /// without a reading, and the level it last reported still holds, so the line starts with it at
-    /// the start of the period instead of only at the first reading inside it.
-    /// </param>
+    // socBefore: the level as last reported before the period, if any. A parked car can go hours
+    // without a reading, and the level it last reported still holds, so the line starts with it at
+    // the start of the period instead of only at the first reading inside it.
     public static ActivityTimeline Build(
         IReadOnlyList<ActivitySample> samples, DateTime from, DateTime to, TimeSpan gap, double? socBefore = null)
     {
