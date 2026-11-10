@@ -719,8 +719,12 @@ public class PushNotificationCheckServiceTests
         await db.SaveChangesAsync(ct);
         db.TelemetrySnapshots.Add(new TelemetrySnapshot
         {
-            VehicleId = vehicle.Id, RecordedAt = now.AddHours(-3), LastVehicleStateAt = now.AddHours(-3),
-            OdometerKm = 1200, IsLocked = true, EngineRunning = false,
+            VehicleId = vehicle.Id,
+            RecordedAt = now.AddHours(-3),
+            LastVehicleStateAt = now.AddHours(-3),
+            OdometerKm = 1200,
+            IsLocked = true,
+            EngineRunning = false,
         });
         await db.SaveChangesAsync(ct);
         var push = new FakePushSender();
