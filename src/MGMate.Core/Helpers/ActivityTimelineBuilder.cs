@@ -21,17 +21,23 @@ public static class ActivityTimelineBuilder
         (s => s.EngineRunning, "driveStarted", "driveEnded"),
     ];
 
+    /// <param name="socBefore">
+    /// The level as last reported before <paramref name="from"/>, if any. A parked car can go hours
+    /// without a reading, and the level it last reported still holds, so the line starts with it at
+    /// the start of the period instead of only at the first reading inside it.
+    /// </param>
     public static ActivityTimeline Build(
-        IReadOnlyList<ActivitySample> samples, DateTime from, DateTime to, TimeSpan gap)
+        IReadOnlyList<ActivitySample> samples, DateTime from, DateTime to, TimeSpan gap, double? socBefore = null)
     {
         var events = new List<ActivityEvent>();
         var gaps = new List<ActivityGap>();
         var socPoints = new List<ActivitySocPoint>();
         // Each switch keeps the last value it saw, so a reading that leaves it out changes nothing.
         var last = new bool?[Switches.Length];
-        double? soc = null;
-        DateTime? socAt = null;
+        double? soc = socBefore;
+        DateTime? socAt = socBefore is null ? null : from;
         DateTime? previous = null;
+        if (socBefore is { } carried) socPoints.Add(new ActivitySocPoint(from, carried));
 
         foreach (var s in samples)
         {

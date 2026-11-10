@@ -24,7 +24,9 @@ public static class ActivityEndpoints
 
             var gap = gapMinutes is { } minutes ? TimeSpan.FromMinutes(minutes) : ActivityTimelineBuilder.DefaultGap;
             var samples = await telemetry.GetActivitySamplesAsync(vehicle.Id, start, end, ct);
-            return Results.Ok(ActivityTimelineBuilder.Build(samples, start, end, gap));
+            // The level the car last reported before the period, so the line starts at its left edge.
+            var before = await telemetry.GetSocAtAsync(vehicle.Id, start.AddTicks(-1), ct);
+            return Results.Ok(ActivityTimelineBuilder.Build(samples, start, end, gap, before?.Value));
         })
         .WithTags("Activity")
         .RequireAuthorization()
