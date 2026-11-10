@@ -221,7 +221,7 @@ public sealed class TelemetryHandler(
     /// Asks the gateway for a live poll the moment the engine is seen running. The gateway only
     /// starts following a drive (a live poll every 30 s, which is where the route comes from) when
     /// MG sends a "vehicle started" message, and MG does not always send one: not for a start with
-    /// the phone's digital key, for one. The half-hourly cached status read can still catch the
+    /// the phone's digital key, for one. The cached status read, every couple of minutes, can still catch the
     /// engine on; a live poll that sees the car running makes the gateway follow it from there.
     /// When the gateway is following already, this is one extra poll.
     /// </summary>

@@ -139,7 +139,7 @@ public sealed class DemoGatewayCatalog(GatewayVehicleCatalog catalog) : IGateway
         Value("tyres/frontLeftPressure", "2.5", 3); Value("tyres/frontRightPressure", "2.5", 3);
         Value("tyres/rearLeftPressure", "2.4", 3); Value("tyres/rearRightPressure", "2.5", 3);
         Value("climate/interiorTemperature", "14", 3); Value("climate/exteriorTemperature", "9", 3);
-        Value("refresh/mode", "periodic"); Value("refresh/period/active", "30"); Value("refresh/period/cachedStatus", "1800");
+        Value("refresh/mode", "periodic"); Value("refresh/period/active", "30"); Value("refresh/period/cachedStatus", "120");
         Value("refresh/lastStatusTime", now.AddMinutes(-2).ToString("O"), 2); Value("refresh/lastError", "None");
         Value("refresh/pollingPhase", "inactive", 2); Value("bms/chargeStatus", "NOT_CHARGING", 2);
         Value("location/position", """{"latitude": 52.4862, "longitude": -1.8904, "speed": 0}""", 3);
