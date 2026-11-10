@@ -1,263 +1,276 @@
 # Code review: real bugs
 
-Reviewed at `main` 210f1cb (includes PR #35), 2026-11-10. No code was changed.
+Reviewed at `main` a5d6dff (includes PR #34 to PR #38), 2026-11-10. No code was changed.
 
 ## Summary
 
-**Nothing critical or high was found.** There are two medium issues and seven low ones. All of
-them need a specific, fairly narrow situation to show up; none loses stored data and none opens
-the app to someone who is not signed in.
+**One serious issue was found, in the trip code merged today.** Two trips can be given exactly the
+same start time, the database refuses the second one, and from then on no trip is saved at all
+until someone removes a row by hand. Nothing is lost while that lasts (the telemetry is all kept),
+but it does not recover by itself. It needs a particular kind of drive, described below.
 
-Scope, so the result is not read as more than it is:
-
-- Read closely: the whole Worker (MQTT consumer and handlers, trip, charge and missed-drive
-  recorders, climate schedules, push checks, heartbeat, housekeeping), the API's background
-  services, command path, authentication, rate limiting and health checks, and the all-in-one
-  container's entrypoint and supervisord setup.
-- Read for the parts MGMate depends on: the bundled SAIC gateway (upstream 0.14.0-rc1), to check
-  what a cached status read publishes and how `refresh/mode/set = force` behaves.
-- Skimmed only: the web front end (the live-update connection and the command composable were
-  read; the pages, charts and stores were not), the map, geocoding and POI services, the data
-  export and the RDW sync.
-- Left out on purpose: what PR #16 and PR #23 already fixed, and the items declined or deferred
-  earlier (multi-vehicle, retention in Settings, backup container, metrics, languages,
-  compaction).
-
-Line numbers refer to the commit above.
-
-## Status of the fixes
-
-Fixed in the same pull request that added this file, each with a test where one can be written:
-
-| # | Status | What changed |
-|---|--------|--------------|
-| 1 | Fixed | A failed claim releases the car again, so the next pass picks the schedule up. |
-| 2 | Fixed | When the odometer shows the car was driven to its new spot, no "moved while parked" alert goes out and the car is parked anew there. A move without the odometer counting (tow truck, ferry) still alerts. |
-| 3 | Fixed | The debounce only cancels the old timer and tolerates one that was just disposed. |
-| 4 | Fixed | Push requests time out after 10 seconds instead of 100, and the gateway is asked to follow a drive before the engine-start push goes out. Push delivery itself still runs in the receive path. |
-| 5 | Fixed | A row takes messages for at most 30 seconds after its first one. |
-| 6 | Fixed | The unfollowed start is added to the trip from the odometer, and the trip is marked "Part route" (`TripAnchor.ApplyUnfollowedStart`). |
-| 7 | Fixed | At most one follow request per car every 5 minutes. A single wake of a car that has just parked is still possible. |
-| 8 | Fixed | A password session carries a fingerprint of the credentials it was started with and is refused once they change. Sessions from before this fix carry none and run out on their own. |
-| 9 | Partly | PostgreSQL now gets a fast shutdown (SIGINT) and the `docker run` examples pass `--stop-timeout 60`. An existing container keeps Docker's 10 seconds until it is recreated with a longer stop timeout. |
+Besides that there are four low issues. None of them loses data and none lets in someone who is
+not signed in.
 
 | # | Severity | Confidence it is real | Issue |
 |---|----------|-----------------------|-------|
-| 1 | Medium | High (rare trigger) | A database error while claiming a climate schedule stops all schedules for that car until the Worker restarts |
-| 2 | Medium | Medium | A drive the gateway never followed raises a false "Car moved while parked" alert |
-| 3 | Low | High (very rare trigger) | A timing race in the live-update debounce can stop the API process |
-| 4 | Low | High (rare trigger) | Push delivery runs inside the MQTT receive path, so a slow push service holds up all telemetry |
-| 5 | Low | Medium | The 15-second merge window slides without a cap, so closely spaced polls can collapse into one row |
-| 6 | Low | Medium | The first part of a phone-key drive is dropped when the trip cannot be anchored to the parking spot |
-| 7 | Low | Low | The new "follow the drive" request can wake a car that has already parked |
-| 8 | Low | High | Changing the login password does not end sessions that are already signed in |
-| 9 | Low | Medium | The all-in-one container has no stop grace period, so a slow shutdown kills PostgreSQL and Mosquitto mid-stop |
+| 1 | High | Medium | A "No route" trip and the next trip can get the same start time, which stops all trip saving for good |
+| 2 | Low | High | "Edit route" on a "No route" or "Part route" trip replaces its odometer distance, and "Reset" does not bring it back |
+| 3 | Low | Medium | A map layer that was refused once stays empty for that area until the map is opened again |
+| 4 | Low | Medium | A connection drop at the wrong moment leaves "Live updates paused" showing until the page is reloaded |
+| 5 | Low | High (harmless in size) | The live-update debounce leaks a small object when two updates arrive back to back |
+
+Line numbers refer to the commit above.
+
+## What was covered
+
+- **Read closely, because it is new today:** "No route" trips (PR #34), the live check when a
+  cached status read sees the engine on (PR #35), the fixes of the last review (PR #36), the
+  gateway update and the steering wheel heater (PR #37), and "Part route" trips (PR #38). That is
+  the trip recorder, the missed-drive recorder, the trip anchor and segmenter, the telemetry
+  handler, the parked-car checks, sign-in and session handling, and the trip repository.
+- **Read properly this time, after being skimmed last time:** the web front end's logic (API
+  client, live-update connection, stores, command handling, push subscription, service worker,
+  trip pages, map layers and popups, timers and listeners), the map, place-lookup and
+  road-snapping services with their rate limiting, the data export, and the RDW sync.
+- **Not read again:** the SAIC gateway's own source. PR #37 moves it from 0.14.0-rc1 to
+  0.14.0-rc2 and only the wiring on MGMate's side was checked. Styling and translations were not
+  reviewed, by design.
+- **Left out on purpose:** what earlier rounds fixed (PR #16, PR #23), and what was declined or
+  deferred (multi-vehicle, retention in Settings, backup container, metrics, languages,
+  compaction). Home Assistant was removed on purpose and the app is English only on purpose.
+
+## The nine findings of the last review
+
+All nine were fixed in PR #36 and PR #38. Each fix was read again for this round, and none of them
+was found to be wrong or to have brought a new bug with it, with one exception: finding 6 was fixed
+by "Part route" trips, and the code that works out when such a trip left its parking spot is the
+same code behind issue 1 below. The weakness was there before PR #38; "No route" trips (PR #34)
+are what turned it into a failure.
+
+Notes on three of the fixes, none of which is a bug:
+
+- **Password change signs devices out (finding 8).** Works as intended. Because the login falls
+  back to the MG account when `AUTH_USERNAME` and `AUTH_PASSWORD` are empty, changing the MG
+  password also signs every device out of MGMate. That is the safe behaviour.
+- **Re-parking after an unseen drive (finding 2).** Correct. A car moved without the odometer
+  counting (tow truck, ferry) still raises the alert.
+- **Follow request cooldown (finding 7).** Correct. One follow request per car per five minutes.
 
 ---
 
-## Medium
+## High
 
-### 1. A failed claim leaves the car marked busy, and its climate schedules stop running
+### 1. Two trips with the same start time stop all trip saving
 
-- **Where:** `src/MGMate.Worker/Services/ClimateScheduleService.cs:58-62` (`RunPassAsync`)
-- **What goes wrong:** the pass adds the vehicle to `_busyVehicles` (line 58) and then awaits
-  `TryClaimAsync` (line 62). The vehicle is only removed again on the "not claimed or missed"
-  path (line 66) or in `RunInBackground`'s `finally`. If `TryClaimAsync` throws anything other
-  than `DbUpdateConcurrencyException` (which the repository catches), the exception leaves
-  `RunPassAsync` with the vehicle still in the set. `PeriodicBackgroundService` logs the failed
-  pass and carries on, but every later pass hits `TryAdd` returning false and skips the car.
-- **Trigger:** a schedule becomes due at a moment the database call fails: PostgreSQL restarting,
-  a dropped connection, a command timeout. The schedule is still due and still enabled, yet it
-  never runs, and neither does any other schedule for that car, until the Worker is restarted.
-  Nothing is logged after the first error, and the schedule's "last run" on the page does not
-  change, so it fails silently. After more than ten minutes the eventual restart records it as
-  missed.
-- **Severity:** medium. The car is simply not pre-heated, with no notice, for as long as the
-  Worker stays up (which can be weeks).
-- **Confidence:** high that the defect is real (there is no `try`/`finally` around the claim);
-  the trigger itself is rare because it needs a database error in a 15-second window around a
-  due time.
+**Where**
 
-### 2. A drive nobody followed is reported as "Car moved while parked"
+- `src/MGMate.Core/Helpers/TripAnchor.cs:119-127` (`DepartureOver`), line 126: when the estimated
+  departure is earlier than the parked fix, the departure becomes exactly the parked fix's time.
+- `src/MGMate.Core/Helpers/MissedDrive.cs:60`: a "No route" trip starts exactly at the time of the
+  fix that found the car at its new spot.
+- `src/MGMate.Data/AppDbContext.cs:103`: a vehicle may not have two trips with the same start time
+  (unique index).
+- `src/MGMate.Data/Repositories/TripRepository.cs:165-206` (`SaveRecordedAsync`), called from
+  `src/MGMate.Worker/Services/TripRecorder.cs:60`: nothing catches the refusal.
 
-- **Where:** `src/MGMate.Worker/Services/PushNotificationCheckService.cs:131` and `:158-168`
-  (`CheckParkedAsync`, `CheckMovedWhileParked`); the parking spot is only written at
-  `src/MGMate.Worker/Mqtt/TelemetryHandler.cs:139` and `:175`.
-- **What goes wrong:** the parked position (`ParkedLatitude`/`ParkedLongitude`) is stored only
-  when the Worker sees the engine go from on to off. The moved-while-parked check then compares
-  that spot with the newest position whenever the newest engine reading is "off". A drive during
-  which the Worker never saw the engine on (the same drives PR #34 saves as "No route" trips)
-  ends with the car somewhere else, engine off, and the old parking spot still stored. If that
-  is more than 1.5 km away the check fires: "Your car is X km from where it was parked, with the
-  engine off."
-- **Trigger:** a start with the phone's digital key where MG sends no "vehicle started" message
-  and none of the cached status reads during the drive shows the engine on (MG's cached copy
-  only changes when the car reports in, so a short drive can pass between two reports). The next
-  cached read at the destination then delivers the new position with the engine off. The alert
-  goes out once per such drive (it is held back by `onceSince: vehicle.LastParkedAt` afterwards).
-  The stored parking spot also stays wrong until the next drive that is followed, so the
-  10-minute "just parked" grace for open doors and windows does not apply at the new spot.
-- **Severity:** medium. It reads like a theft or tow alert for an ordinary drive.
-- **Confidence:** medium. The code path is certain; how often MG's cached status skips the
-  engine-on state on a real drive is not something the code can tell. PR #35's 2-minute read
-  interval makes it less likely than before, not impossible.
+**What goes wrong**
+
+A "No route" trip takes the time of the fix that found the car parked at the new spot. A trip that
+is followed afterwards and anchored back to that same fix takes the departure time worked out by
+`DepartureOver`. That is normally an estimate somewhere after the parked fix, but it is clamped so
+that it is never earlier than the parked fix, and when the clamp applies it is exactly the parked
+fix's time. Both trips then have the same `StartedAt`, to the microsecond, because both read it
+from the same telemetry row.
+
+The database refuses the second one. The trip recorder saves the trips and moves its recording
+line in one transaction, so the line does not move either. Five minutes later it cuts the same
+trip from the same fixes, works out the same start, and is refused again. This repeats on every
+run. No trip is saved from that moment on, including the "No route" pass that runs after it.
+
+**The scenario that triggers it**
+
+Two drives in a row that MG does not announce, with a short stop between them:
+
+1. The car is driven from A to B without being followed. A cached status read finds it parked at
+   B at time T. That is the only fix at B. Within about five minutes a "No route" trip from A to B
+   is saved, starting at T.
+2. A few minutes later the car leaves B, again unannounced. A cached status read catches the
+   engine on part-way, and the first fix of the followed trip is some distance from B.
+3. The trip is anchored to the fix at B. The estimate is "first fix, minus the gap at 25 km/h".
+   If the car covered the gap faster than 25 km/h counted over the whole time since T, the stop
+   included, the estimate falls before T and is clamped to T.
+
+Example: found parked at 08:00:00, leaves at 08:03, first followed fix at 08:07 and 3 km away in
+a straight line. 3 km at 25 km/h is 7 minutes 12 seconds, so the estimate is 07:59:48, which is
+before 08:00:00, and the trip is given 08:00:00. A school run or a quick stop at a shop on a
+morning when MG stays silent fits this.
+
+A second way in, without a stop: the first cached read that catches an unannounced drive finds
+the car standing still (a junction, traffic lights) at least 1 km from where it was parked, and
+the live poll that follows a moment later finds it moving again. The standing-still fix becomes
+both the end of a "No route" trip and the anchor of the followed trip.
+
+The "Part route" path (`ApplyUnfollowedStart`, lines 200-227) uses the same clamp and can collide
+the same way.
+
+**What it looks like**
+
+- The Worker log shows the trip recorder failing every five minutes with a duplicate key error on
+  the trips table.
+- New drives still appear on the map and the Overview, because those are cut live from the fixes
+  past the recording line. They never reach the trip log, and they have no anchoring, no "No
+  route" or "Part route" handling and no saved energy figures.
+- It stays that way across restarts. It ends only when the earlier "No route" row is removed from
+  the database, or the code is fixed.
+
+**Severity: High.** Trip saving stops completely and does not recover without manual work in the
+database. No telemetry is lost, so every trip can still be saved once it is unblocked.
+
+**Confidence: Medium.** The mechanism is certain from the code: both start times come from the
+same row, the index is unique, and nothing handles the refusal. It was not reproduced, because the
+.NET tests cannot be run in the review environment. What is uncertain is how often MG reports the
+car in the pattern needed. This car does have unannounced morning drives, so it is not a remote
+case.
 
 ---
 
 ## Low
 
-### 3. Cancelling a debounce timer that has just been disposed can stop the API
+### 2. "Edit route" changes the distance of a "No route" or "Part route" trip, and "Reset" does not restore it
 
-- **Where:** `src/MGMate.Api/Services/TelemetryNotificationService.cs:124-127` and `:143-144`
-  (`ScheduleBroadcast`)
-- **What goes wrong:** the reader loop removes the pending `CancellationTokenSource` for a
-  vehicle and then calls `old.Cancel()`. The background task that owns that source disposes it in
-  its `finally`. If the task reaches `cts.Dispose()` between the loop's `TryRemove` and its
-  `Cancel()`, `Cancel()` throws `ObjectDisposedException`. That exception escapes the
-  `await foreach` in `ExecuteAsync`, the hosted service faults, and .NET's default behaviour for a
-  faulted `BackgroundService` is to stop the host.
-- **Trigger:** a `telemetry_updated` notification arrives in the same instant the previous
-  broadcast for that vehicle finishes (2 seconds after the last message of a poll). The window is
-  microseconds wide.
-- **Effect:** the API process exits; supervisord or Docker restarts it within seconds, and the
-  page reconnects on its own.
-- **Severity:** low. **Confidence:** high that the race exists, low that it is ever hit in
-  practice.
+**Where**
 
-### 4. Push delivery is awaited inside the MQTT receive path
+- `src/MGMate.Data/Repositories/TripRepository.cs:415-432` (`ApplyPointsAsync`), used by
+  `SetPointsAsync` (line 377) and `ResetPointsAsync` (line 396).
+- `src/MGMate.Core/Helpers/TripEdit.cs:77` (`Summarize`).
+- `frontend/src/components/TripLogDetail.vue:822-827`: the "Edit route" button is shown for every
+  trip.
 
-- **Where:** `src/MGMate.Worker/Mqtt/TelemetryHandler.cs:261` (engine-start push, awaited before
-  the follow request on line 125), `src/MGMate.Worker/Mqtt/VehicleMessageHandler.cs` (MG app
-  messages), `src/MGMate.Worker/Mqtt/AccountStatusHandler.cs` (sign-in alert) and
-  `src/MGMate.Worker/Mqtt/PlaceAlerts.cs`; the delivery itself is
-  `src/MGMate.Worker/Services/PushSenderService.cs:116`. The HTTP client is registered at
-  `src/MGMate.Worker/Program.cs:34` with no timeout of its own, so the default of 100 seconds
-  applies.
-- **What goes wrong:** MQTT messages are handled one at a time, and these handlers wait for
-  `SendToAllAsync`, which waits for every subscribed device's push request. A push service that
-  accepts the connection but does not answer holds the whole receive path for up to 100 seconds.
-  Telemetry is stamped with the time it is processed (`TelemetryHandler.cs:117`), so every
-  message queued behind it gets a late timestamp, several polls fold into one row, and the
-  `refresh/mode/set = force` request that makes the gateway follow a phone-key drive is sent
-  that much later.
-- **Trigger:** an engine start (or MG app message, or arrival/departure alert) at a moment one
-  device's push service (Google, Mozilla, Apple) is slow or unreachable.
-- **Severity:** low. **Confidence:** high that it blocks as described; the trigger depends on an
-  outside service being slow.
+**What goes wrong**
 
-### 5. The merge window has no upper limit
+Both kinds of trip carry a distance that does not come from their points: a "No route" trip has
+the odometer distance over two points, and a "Part route" trip adds the odometer distance of the
+stretch nobody followed. Saving an edit, and resetting one, recompute the trip from its points
+alone. So:
 
-- **Where:** `src/MGMate.Worker/Mqtt/TelemetryHandler.cs:195-218` (`MergeOrAddTelemetryAsync`),
-  line 206 in particular
-- **What goes wrong:** a message merges into the current row when it arrives within 15 seconds of
-  the previous *message*, and each merge moves that reference time forward. The row keeps the
-  timestamp of its first message. As long as messages keep arriving less than 15 seconds apart,
-  they all land in the same row, last value wins, however long that goes on.
-- **Trigger:** two polls closer together than 15 seconds end to end: the extra live poll PR #35
-  now requests right behind a cached read or a regular poll, a command's follow-up refresh, or
-  the backlog after the stall in issue 4. Two positions then become one fix and the earlier one
-  is lost from the route; a value can also land in a row stamped up to a poll earlier than it was
-  read. Late additions to an old row can fall behind the trip recorder's one-minute settle time
-  (`TripRecorder.SettleTime`) and be missed by it.
-- **Severity:** low (a lost fix or a slightly wrong timestamp, not lost trips).
-- **Confidence:** medium. In steady 30-second polling the gap between polls is long enough; the
-  overlap cases above are occasional.
+- A "Part route" trip loses the difference between the odometer distance of the unfollowed
+  stretch and the straight line across it. "Reset" runs the same computation on the original
+  points, so it does not bring the recorded distance back.
+- A "No route" trip gets the straight-line distance between its two spots, and its start time
+  becomes the time the car was last seen at the old spot, which can be hours earlier. It stays
+  marked "No route". "Reset" leaves it like that too.
 
-### 6. The unfollowed start of a drive is dropped when the trip cannot be anchored
+**Scenario.** Open a "No route" trip, choose "Edit route" to draw the route by hand, save. Or open
+a "Part route" trip, move one point, then press "Reset".
 
-- **Where:** `src/MGMate.Core/Helpers/MissedDrive.cs:34` (pairs with a moving fix are skipped) and
-  `src/MGMate.Core/Helpers/TripAnchor.cs:20` and `:122-128` (`MaxGapKm`, `OdometerAgrees`)
-- **What goes wrong:** since PR #35 a phone-key drive is followed from the moment a status read
-  shows the engine on, so its first fix is usually a moving one some way down the road. The
-  stretch from the parking spot to that fix is only recovered by `TripAnchor`, which refuses when
-  the straight-line gap is over 30 km or the odometer moved more than three times the gap (a
-  detour, or a winding road). `MissedDrive.Candidates` cannot pick the stretch up either, because
-  it only pairs two standing-still fixes. The distance and energy of that first stretch then
-  appear in no trip.
-- **Trigger:** a phone-key drive first noticed late (MG's cached status did not change for a
-  while) or on an indirect route.
-- **Severity:** low (totals understate; the odometer readings on the trip still show the truth).
-- **Confidence:** medium. The gap in the logic is certain; how often a drive is noticed that late
-  with 2-minute reads is not.
+**Effect.** The trip log itself mostly hides it, because it shows the odometer distance when both
+odometer readings exist. The statistics and reports use the stored distance and show the smaller
+figure. Only trips someone edits are affected.
 
-### 7. The follow request can wake a car that is already parked
+**Severity: Low. Confidence: High.**
 
-- **Where:** `src/MGMate.Worker/Mqtt/TelemetryHandler.cs:124-125` and `:228-240`
-  (`FollowTheDriveAsync`)
-- **What goes wrong:** any off-to-on change of `drivetrain/running` makes the Worker publish
-  `refresh/mode/set = force`, and the gateway answers a forced refresh with a live poll, which
-  wakes the car. The change can come from a cached read, which reports what the car last told MG,
-  not what it is doing now. There is no cooldown on the request (the engine-start push has one,
-  the request does not).
-- **Trigger:** a short drive: the car reports "engine on" to MG, parks and goes to sleep, and the
-  next cached read (up to 2 minutes later) delivers that last report. The Worker asks for a live
-  poll and the sleeping car is woken once. One wake per such drive, not a loop: the gateway only
-  publishes a cached status that is newer than its last live one.
-- **Severity:** low (one extra wake of the 12V system per occurrence).
-- **Confidence:** low. It depends on the car's last report before sleeping still saying "engine
-  on", which the code cannot show either way.
+### 3. A map layer that was refused once stays empty for that area
 
-### 8. A password change leaves existing sessions signed in
+**Where**
 
-- **Where:** `src/MGMate.Api/Endpoints/AuthEndpoints.cs:103-144` (login) and
-  `src/MGMate.Api/Authentication/AuthenticationSetup.cs:118-132` (`OnValidatePrincipal`)
-- **What goes wrong:** a session cookie is checked against the revocation list only, and a session
-  gets on that list only through its own logout. Nothing ties a session to the password it was
-  created with. After `AUTH_PASSWORD` (or the MG account password it falls back to) is changed and
-  the container restarted, every cookie issued before stays valid until it expires: up to 30 days
-  with "remember me". The key ring is persisted on purpose, so a restart does not end them either.
-- **Trigger:** changing the password because a device was lost or the password leaked. The lost
-  device stays signed in and can still unlock the car and read its position.
-- **Severity:** low for a single-user install on a LAN, but it is the one case where the password
-  change is expected to lock someone out. **Confidence:** high.
-- **Workaround today:** deleting the files in the data-protection key folder
-  (`/data/dataprotection`) and restarting signs every device out.
+- `frontend/src/composables/poiTileLayer.ts:258`: the tile under the map centre is marked as
+  loaded whatever the answer was.
+- `frontend/src/composables/poiTileLayer.ts:262-272`: another round is only started when a visible
+  tile is not marked as loaded.
+- `src/MGMate.Core/Helpers/PoiTileFetcher.cs:12` and `src/MGMate.Api/Services/PoiService.cs`: the
+  server answers "has more" with no items when Overpass is busy or backing off.
 
-### 9. No stop grace period for the all-in-one container
+**What goes wrong**
 
-- **Where:** `docker/all-in-one/supervisord.conf:30` (`stopwaitsecs=60` for PostgreSQL) against
-  the compose files, none of which sets `stop_grace_period` (`docker-compose.yml`, and the ZimaOS
-  compose file used on the NAS)
-- **What goes wrong:** `docker stop` (and the recreate behind every update) gives the container
-  10 seconds before it kills everything. supervisord stops its programs one after another in
-  reverse start order: nginx, Worker, API, gateway, Mosquitto, and PostgreSQL last. If the ones
-  in front take more than about 10 seconds together (a .NET host can take up to 30 seconds to
-  drain; the Worker may be in the middle of a push delivery or a database write), PostgreSQL and
-  Mosquitto are killed without a clean stop.
-- **Effect:** PostgreSQL recovers from its write-ahead log on the next start, so stored data is
-  safe, but the start is slower and the log shows a crash recovery. Mosquitto only writes its
-  retained messages and sessions to disk every 30 minutes or on a clean stop, so a kill loses the
-  newest retained values until the gateway publishes them again. A climate schedule that was
-  mid-run is recorded as unconfirmed.
-- **Severity:** low. **Confidence:** medium: the 10 seconds against a sequential stop of six
-  programs is certain; whether a given stop overruns depends on what the services are doing.
+When the place data service (Overpass) is busy or rate limited, the API answers at once with
+nothing and says there is more to come. The page still marks the centre tile as loaded. A tile is
+half a degree wide, so a zoomed-in view is usually one tile, and then every visible tile counts as
+loaded: no retry is scheduled, and later pans inside that tile ask nothing. The comment at
+`usePoiLayers.ts:229-232` says the page should back off and try again; in this case it never does.
+
+**Scenario.** Open the map on an area that is not cached yet with fuel stations, service areas and
+speed cameras all on. The three layers ask at the same moment and share one Overpass gate, which
+spaces requests five seconds apart and makes a browser request wait five seconds at most, so the
+last in line is refused. Those layers stay empty until the layer is switched off
+and on, or the map page is opened again.
+
+**Effect.** Missing markers only. The Worker pre-caches everything within 100 km of the car, so
+this shows on a new install and when looking at places far from the car.
+
+**Severity: Low. Confidence: Medium** (read from the code, not tried against a rate-limited
+Overpass).
+
+### 4. A connection drop between connecting and joining leaves "live updates down" switched on
+
+**Where:** `frontend/src/composables/useSignalR.ts:165-188` (`openConnection`).
+
+**What goes wrong**
+
+`openConnection` starts the connection and then joins the vehicle's group. If the connection
+drops between those two steps, the join fails and a restart is scheduled. But the connection
+object is still there and reconnects by itself, and that path joins the group and marks the page
+connected. The scheduled restart then calls `start()` on a connection that is already up, which
+always fails, so the page marks itself disconnected and schedules the next restart. This repeats
+every 30 seconds for as long as the page is open.
+
+**Scenario.** The page opens on a flaky mobile connection that drops within a fraction of a second
+of connecting.
+
+**Effect.** Live updates still arrive, but the sidebar shows "Live updates paused" and the page
+also fetches the stored status over HTTP once a minute, until it is reloaded. A wrong warning and
+some wasted requests; the data on screen is right, and the car is never woken.
+
+**Severity: Low. Confidence: Medium** (the start-while-connected failure is certain; the trigger
+window is narrow).
+
+### 5. The live-update debounce leaks a small object on back-to-back updates
+
+**Where:** `src/MGMate.Api/Services/TelemetryNotificationService.cs:122-155` (`ScheduleBroadcast`),
+line 154.
+
+**What goes wrong**
+
+Each update creates a cancellation source linked to the service's shutdown token and hands the
+same token to `Task.Run`. The source is disposed in the task's `finally`. When the next update
+cancels it before the task has started, the task is cancelled without ever running, the `finally`
+never runs, and the source stays registered with the shutdown token until the API stops. This is
+the code changed for finding 3 of the last review; the crash that finding described is fixed, and
+this small leak was there before as well.
+
+**Scenario.** Two telemetry notifications for the same car within the same instant, which a poll
+produces routinely since one poll is several messages.
+
+**Effect.** A couple of hundred bytes each time, freed when the API restarts. At a few hundred
+occurrences a day that is well under a megabyte a week. It will not cause a problem between
+updates of the container.
+
+**Severity: Low. Confidence: High** that it leaks, and equally high that it does not matter in
+practice. Listed because resource leaks were asked for.
 
 ---
 
-## Checked and found sound
+## Looked at and found sound
 
-These are the areas the request asked about where no bug was found, so their absence above is a
-result and not an omission:
+Checked with a specific failure in mind, and nothing found:
 
-- **MQTT reconnect and shutdown** in the Worker and the API's two clients: the disconnect handler
-  is added and removed per attempt, a failed connect retries, and cancellation ends the loops
-  cleanly.
-- **PostgreSQL LISTEN loop** in the API: reconnects after an error; a lost `command_result` falls
-  back to the gate's 45-second hold, and a lost telemetry push is covered by the page's catch-up
-  read.
-- **Vehicle command gate**: released on publish failure, on the gateway's answer, and on timeout;
-  a schedule's request cannot be published after the Worker has given up on it.
-- **Trip and charge recorders**: trips and the recording line are saved in one transaction; a
-  restart mid-run resumes from the line without saving a trip twice. PR #35's change to the
-  missed-drive overlap check does what it says for both directions.
-- **Climate schedule times across clock changes**: a time in the skipped hour and one in the
-  repeated hour both resolve to a single instant.
-- **Authentication**: fixed-time comparison of credentials, login rate limit with a per-device
-  backstop, session revocation on logout, read-only API tokens kept away from the export, the
-  logs and token management.
-- **Push endpoints**: only public addresses are connected to, re-checked on every connection.
-- **Photo upload**: size capped while reading, type detected from the content.
-- **Debug page commands**: only commands the gateway itself announced, with values checked
-  against the announced limits, through the same gate as every other command.
-- **Front end live updates**: timers and the connection are released on stop and on unmount;
-  a stale start cannot resurrect a stopped connection.
+- **"No route" trips counted twice.** A drive saved without a route is not saved again on a later
+  pass, and a trip that is followed or anchored over the same stretch covers it.
+- **The engine-on live check and the 12V battery.** The request is made once per observed start
+  and at most once per five minutes. As noted last time, one wake of a car that has just parked
+  remains possible.
+- **Session handling.** Fixed-time comparison, the credential fingerprint, rate limits on login,
+  the read-only rule for API tokens (no export, no logs, no changes), the redirect guard on
+  sign-in, and the origin check.
+- **Export.** Built in a temporary file that is removed when the response is sent or fails;
+  session only; rate limited; values are quoted.
+- **RDW sync.** Off unless `RDW_ENABLED` is set, which it is not on a UK install. With it on, a
+  failed lookup is recorded and retried, and a recall is pushed once.
+- **Place lookups and road snapping.** Input sizes are capped, upstream calls go through one gate
+  with a back-off, and "could not ask" is never cached as "nothing there".
+- **Map popups.** Every value that comes from OpenStreetMap or Open Charge Map is escaped before
+  it reaches the page.
+- **Front end timers and listeners.** Every interval, observer and listener that a page sets up
+  is removed when the page is left.
+- **Shutdown.** PostgreSQL now stops quickly, and the documented `docker run` commands give the
+  container 60 seconds.
