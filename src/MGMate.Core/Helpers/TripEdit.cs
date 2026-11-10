@@ -82,6 +82,45 @@ public static class TripEdit
         return new TripDto(0, points[0].RecordedAt, points[^1].RecordedAt, Math.Round(distance, 2), points.Count, points, id);
     }
 
+    /// <summary>
+    /// The distance of an edited trip. A trip's points give it, except for what nobody followed,
+    /// which no line on the map can measure: a drive saved without a route keeps the distance the
+    /// odometer counted, and a drive followed from part-way keeps the odometer's count for the
+    /// stretch before its first fix, however its start is drawn.
+    /// </summary>
+    /// <param name="points">The trip's points after the edit.</param>
+    /// <param name="noRoute">Whether the drive was saved without a route (<see cref="Trip.LeftAfter"/>).</param>
+    /// <param name="unfollowedKm">How far the car drove before its first fix (<see cref="Trip.UnfollowedKm"/>).</param>
+    /// <param name="odometerKm">What the odometer counted over a drive without a route.</param>
+    public static double DistanceKm(IReadOnlyList<TripPoint> points, bool noRoute, double? unfollowedKm, double odometerKm)
+    {
+        if (noRoute) return odometerKm;
+        if (unfollowedKm is not { } unfollowed) return Summarize(points).DistanceKm;
+
+        // The stretch nobody followed runs from the parked spot, and any point someone placed after
+        // it, to the first fix the car reported. Without such a start it all counts.
+        var followedFrom = 0;
+        while (followedFrom < points.Count && points[followedFrom].Source is not null) followedFrom++;
+        if (followedFrom == points.Count) followedFrom = 0;
+
+        var followed = 0.0;
+        for (var i = followedFrom + 1; i < points.Count; i++)
+            followed += GeoHelper.Haversine(points[i - 1].Latitude, points[i - 1].Longitude, points[i].Latitude, points[i].Longitude);
+        return Math.Round(unfollowed + followed, 2);
+    }
+
+    /// <summary>
+    /// When an edited trip starts. A drive saved without a route (<paramref name="leftAfter"/> set)
+    /// starts when the car was found at its new spot, not at its first point, which is where it
+    /// was last seen parked hours before.
+    /// </summary>
+    public static DateTime StartedAt(IReadOnlyList<TripPoint> points, DateTime current, DateTime? leftAfter)
+    {
+        if (leftAfter is not { } parkedAt) return points[0].RecordedAt;
+        var end = points[^1].RecordedAt;
+        return current <= parkedAt || current > end ? end : current;
+    }
+
     /// <summary>Whether an end at <paramref name="latitude"/>, <paramref name="longitude"/> moved far enough to <paramref name="now"/> to need its address again.</summary>
     public static bool AddressMoved(double latitude, double longitude, TripPoint now) =>
         GeoHelper.Haversine(latitude, longitude, now.Latitude, now.Longitude) * 1000 > AddressMovedMetres;

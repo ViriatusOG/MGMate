@@ -411,16 +411,21 @@ public class TripRepository(
     }
 
     // Everything read off a trip's points follows them. The odometer readings stay: the trip log
-    // counts what the car's own odometer counted, whatever line is drawn on the map.
+    // counts what the car's own odometer counted, whatever line is drawn on the map. So does the
+    // distance of a drive, or the start of one, that nobody followed (TripEdit.DistanceKm).
     private async Task ApplyPointsAsync(Trip trip, IReadOnlyList<TripPoint> points, CancellationToken ct)
     {
         var dto = TripEdit.Summarize(points);
         if (TripEdit.AddressMoved(trip.StartLatitude, trip.StartLongitude, points[0])) trip.StartPlaceJson = null;
         if (TripEdit.AddressMoved(trip.EndLatitude, trip.EndLongitude, points[^1])) trip.EndPlaceJson = null;
 
-        trip.StartedAt = dto.StartedAt;
+        // What nobody followed is not on the map, so the points cannot say how far it was.
+        var odometerKm = trip is { OdometerStartKm: { } startKm, OdometerEndKm: { } endKm } && endKm - startKm >= MissedDrive.MinDistanceKm
+            ? Math.Round(endKm - startKm, 2)
+            : trip.DistanceKm;
+        trip.StartedAt = TripEdit.StartedAt(points, trip.StartedAt, trip.LeftAfter);
         trip.EndedAt = dto.EndedAt;
-        trip.DistanceKm = dto.DistanceKm;
+        trip.DistanceKm = TripEdit.DistanceKm(points, trip.LeftAfter is not null, trip.UnfollowedKm, odometerKm);
         trip.PointCount = dto.PointCount;
         trip.PointsJson = JsonSerializer.Serialize(points);
         trip.StartLatitude = points[0].Latitude;

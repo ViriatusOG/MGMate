@@ -164,6 +164,42 @@ describe('useSignalR', () => {
     expect(api.connected.value).toBe(true)
   })
 
+  // A restart that finds the connection in the given state. The real client only lets a
+  // connection that is down be started: start() on any other throws.
+  async function restartFinding(state: string) {
+    const { api } = mountSignalR()
+    await api.start(7)
+    const connection = hub.connections[0]!
+    Object.assign(connection, { state })
+    connection.start!.mockRejectedValue(new Error('Cannot start a HubConnection that is not down'))
+    handlerOf(connection, 'onreconnecting')()
+    handlerOf(connection, 'onclose')()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await flushPromises()
+    return { api, connection }
+  }
+
+  it('does not start a connection again that is reconnecting by itself', async () => {
+    const { api, connection } = await restartFinding('Reconnecting')
+
+    // Left alone: no second start and no join of its own.
+    expect(connection.start).toHaveBeenCalledOnce()
+    expect(connection.invoke).toHaveBeenCalledOnce()
+    expect(api.connected.value).toBe(false)
+
+    // Its own handler joins once it is back.
+    await handlerOf(connection, 'onreconnected')()
+    expect(api.connected.value).toBe(true)
+  })
+
+  it('joins again without a second start when the connection is still up', async () => {
+    const { api, connection } = await restartFinding('Connected')
+
+    expect(connection.start).toHaveBeenCalledOnce()
+    expect(connection.invoke).toHaveBeenCalledTimes(2)
+    expect(api.connected.value).toBe(true)
+  })
+
   describe('catch-up while disconnected', () => {
     it('reads the live state once a minute only while the connection is down', async () => {
       vi.useFakeTimers()

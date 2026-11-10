@@ -347,6 +347,78 @@ public class TripEditorRepositoryTests
     }
 
     // The trip log's speeds come from the demo's fixes, and a join reads them off both trips' fixes.
+    // ── Drives nobody followed ───────────────────────────────────────────────
+
+    private static async Task<(Setup S, long Id)> SaveOneAsync(RecordedTrip trip, CancellationToken ct)
+    {
+        var s = new Setup();
+        s.Db.Vehicles.Add(s.Vehicle);
+        await s.Db.SaveChangesAsync(ct);
+        await s.Repo.SaveRecordedAsync(s.Vehicle.Id, [trip], T0.AddHours(12), ct);
+        return (s, await s.Db.Trips.Select(t => t.Id).SingleAsync(ct));
+    }
+
+    [Fact]
+    public async Task EditAndReset_OfADriveWithoutARoute_KeepTheOdometerDistanceAndTheStart()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        // Seen parked at home, found six hours later 33 km north with 40 km more on the odometer.
+        var home = new TripPoint(T0, 52.00, 5.0, 0);
+        var found = new TripPoint(T0.AddHours(6), 52.30, 5.0, 0);
+        var drive = MissedDrive.Build(home, found, 1000, 1040)!;
+        var (s, id) = await SaveOneAsync(new RecordedTrip(drive, 1000, 1040, LeftAfter: home.RecordedAt), ct);
+        await using var _ = s;
+
+        var saved = await s.Repo.SetPointsAsync(s.Vehicle.Id, id,
+            [Input(drive.Points[0]), Input(T0.AddHours(3), 52.15), Input(drive.Points[1])], ct);
+        var edited = await s.RowAsync(id, ct);
+
+        Assert.Equal(TripEditOutcome.Ok, saved.Outcome);
+        Assert.Equal(3, edited.PointCount);
+        Assert.Equal((40.0, found.RecordedAt, found.RecordedAt), (edited.DistanceKm, edited.StartedAt, edited.EndedAt));
+
+        await s.Repo.ResetPointsAsync(s.Vehicle.Id, id, ct);
+        var reset = await s.RowAsync(id, ct);
+
+        Assert.Equal(2, reset.PointCount);
+        Assert.Equal((40.0, found.RecordedAt, found.RecordedAt), (reset.DistanceKm, reset.StartedAt, reset.EndedAt));
+    }
+
+    [Fact]
+    public async Task EditAndReset_OfADriveFollowedFromPartWay_KeepTheOdometersCountOfItsStart()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        // Left home unseen, first followed an hour later 55 km north: 60 km by the odometer, then
+        // 11 km along the fixes.
+        TripPoint[] fixes =
+        [
+            new(T0.AddMinutes(60), 52.50, 5.0, 80),
+            new(T0.AddMinutes(65), 52.55, 5.0, 80),
+            new(T0.AddMinutes(70), 52.60, 5.0, 40),
+        ];
+        var start = new TripPoint(T0, 52.00, 5.0, 0, TripPointSource.Anchored);
+        var followedKm = TripEdit.Summarize(fixes).DistanceKm;
+        var drive = TripEdit.Summarize([start, .. fixes]) with { DistanceKm = Math.Round(60 + followedKm, 2) };
+        var (s, id) = await SaveOneAsync(new RecordedTrip(drive, 1000, 1071, UnfollowedKm: 60), ct);
+        await using var _ = s;
+
+        // The start dragged a kilometre north, and a point placed on the way to the first fix.
+        var saved = await s.Repo.SetPointsAsync(s.Vehicle.Id, id,
+            [Input(T0, 52.01), Input(T0.AddMinutes(30), 52.25), .. fixes.Select(Input)], ct);
+        var edited = await s.RowAsync(id, ct);
+
+        Assert.Equal(TripEditOutcome.Ok, saved.Outcome);
+        Assert.Equal(5, edited.PointCount);
+        Assert.Equal(60 + followedKm, edited.DistanceKm, 2);
+        Assert.Equal(60, edited.UnfollowedKm);
+
+        await s.Repo.ResetPointsAsync(s.Vehicle.Id, id, ct);
+        var reset = await s.RowAsync(id, ct);
+
+        Assert.Equal(60 + followedKm, reset.DistanceKm, 2);
+        Assert.Equal(T0, reset.StartedAt);
+    }
+
     [Fact]
     public async Task Demo_LogCarriesSpeedFigures_ThroughAJoin()
     {

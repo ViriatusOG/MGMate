@@ -171,7 +171,12 @@ export function useSignalR(callbacks: SignalRCallbacks) {
         if (attempt !== session) return
         connection = createConnection(client, vehicleId)
       }
-      await connection.start()
+      // Only a connection that is down can be started. One that dropped between its start and
+      // the join is reconnecting by itself: its own handlers join the group or, when that fails,
+      // close it and come back here. Starting it again would throw, on every retry for good.
+      const state = connection.state as string | undefined
+      if (state === 'Connecting' || state === 'Reconnecting' || state === 'Disconnecting') return
+      if (state !== 'Connected') await connection.start()
       await connection.invoke('JoinVehicle', vehicleId)
       connected.value = true
       restartAttempt = 0

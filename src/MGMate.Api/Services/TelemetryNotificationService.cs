@@ -138,6 +138,8 @@ internal sealed class TelemetryNotificationService(
         var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         _pending[vehicleId] = cts;
 
+        // Started without the token: a task cancelled before it starts never runs, and its finally
+        // is the only place the source is disposed. The delay sees the cancel straight away.
         _ = Task.Run(async () =>
         {
             try
@@ -151,7 +153,7 @@ internal sealed class TelemetryNotificationService(
                 _pending.TryRemove(new KeyValuePair<int, CancellationTokenSource>(vehicleId, cts));
                 cts.Dispose();
             }
-        }, cts.Token);
+        });
     }
 
     private async Task BroadcastTelemetryAsync(int vehicleId, CancellationToken ct)

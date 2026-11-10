@@ -77,6 +77,22 @@ public class MissedDriveTests
     }
 
     [Fact]
+    public void Candidates_FindsAMissedDriveWhoseSecondFixTheNextTripLeftFrom()
+    {
+        // The car was found parked at work and left again within minutes: the trip away is anchored
+        // to the work fix and starts just after it (TripAnchor.MinAfterParked), so the drive there
+        // is still a drive of its own, with its own start time.
+        var home = Fix(0, 51.50, -0.42);
+        var work = Fix(410, 51.43, -0.96);
+        var away = (work.RecordedAt + TripAnchor.MinAfterParked, T0.AddMinutes(450));
+
+        var pairs = MissedDrive.Candidates([home, work], [away]);
+
+        Assert.Equal((home, work), Assert.Single(pairs));
+        Assert.NotEqual(away.Item1, MissedDrive.Build(home, work, 100, 160)!.StartedAt);
+    }
+
+    [Fact]
     public void Candidates_LeavesOutMovingFixesAndPollsTooCloseTogether()
     {
         Assert.Empty(MissedDrive.Candidates([Fix(0, 51.50, -0.42), Fix(60, 51.43, -0.96, speed: 40)], []));
