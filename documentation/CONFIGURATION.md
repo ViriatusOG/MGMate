@@ -31,7 +31,7 @@ all-in-one container and the Unraid template take them as container variables.
 | --- | --- | --- |
 | `SAIC_REGION` | `eu` | Region the car is registered in: `eu`, `au` or `tr`, mapped to the right MG API endpoint. |
 | `SAIC_REST_URI` | from `SAIC_REGION` | The MG API endpoint itself, for a region not in the list above. |
-| `CACHED_STATUS_INTERVAL` | `1800` | Seconds between reads of the status MG's servers hold for the car. Never wakes the car, so it costs no battery. `0` turns it off. |
+| `CACHED_STATUS_INTERVAL` | `120` | Seconds between reads of the status MG's servers hold for the car while it is parked. Never wakes the car, so it costs no battery. It is also how a drive MG never announced is noticed, so a longer interval means more of such a drive goes without a route. `0` turns it off. |
 
 ## Database (Docker Compose)
 

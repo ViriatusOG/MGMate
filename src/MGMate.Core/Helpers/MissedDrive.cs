@@ -33,7 +33,7 @@ public static class MissedDrive
             var after = fixes[i];
             if (IsMoving(before) || IsMoving(after)) continue;
             if (after.RecordedAt - before.RecordedAt < MinGap) continue;
-            if (trips.Any(t => t.StartedAt <= after.RecordedAt && t.EndedAt >= before.RecordedAt)) continue;
+            if (trips.Any(t => Covers(t, before, after))) continue;
             pairs.Add((before, after));
         }
 
@@ -59,6 +59,13 @@ public static class MissedDrive
         ];
         return new TripDto(0, after.RecordedAt, after.RecordedAt, Math.Round(distance, 2), points.Length, points);
     }
+
+    // A trip covers a pair when it runs between the two fixes or starts at the second one. A trip
+    // that only ends at the first fix does not: that is the drive that brought the car there, and
+    // a missed drive saved there starts and ends at that one fix, so the next drive away from the
+    // same spot must still be found.
+    private static bool Covers((DateTime StartedAt, DateTime EndedAt) trip, TripPoint before, TripPoint after) =>
+        trip.StartedAt <= after.RecordedAt && trip.EndedAt > before.RecordedAt;
 
     // A fix without a speed comes from the position topic; a drive the gateway followed is saved as a
     // trip, and the trip check above leaves its fixes out either way.

@@ -41,6 +41,42 @@ public class MissedDriveTests
     }
 
     [Fact]
+    public void Candidates_FindsTheDriveBackAfterAMissedDriveSavedAtTheSameSpot()
+    {
+        // Out in the morning and back in the afternoon, neither followed: the morning drive is saved
+        // at the work fix, which is also where the drive home starts.
+        var home = Fix(0, 51.50, -0.42);
+        var work = Fix(410, 51.43, -0.96);
+        var homeAgain = Fix(1050, 51.50, -0.42);
+        var morning = (work.RecordedAt, work.RecordedAt);
+
+        var pairs = MissedDrive.Candidates([home, work, homeAgain], [morning]);
+
+        Assert.Equal((work, homeAgain), Assert.Single(pairs));
+    }
+
+    [Fact]
+    public void Candidates_FindsAMissedDriveRightAfterAFollowedOne()
+    {
+        var parked = Fix(60, 51.43, -0.96);
+        var later = Fix(500, 51.50, -0.42);
+        var followed = (T0, parked.RecordedAt);
+
+        var pairs = MissedDrive.Candidates([Fix(0, 51.50, -0.42, speed: 50), parked, later], [followed]);
+
+        Assert.Equal((parked, later), Assert.Single(pairs));
+    }
+
+    [Fact]
+    public void Candidates_LeavesOutAPairWhoseSecondFixStartsAFollowedTrip()
+    {
+        var fixes = new[] { Fix(0, 51.50, -0.42), Fix(410, 51.43, -0.96) };
+        var next = (T0.AddMinutes(410), T0.AddMinutes(450));
+
+        Assert.Empty(MissedDrive.Candidates(fixes, [next]));
+    }
+
+    [Fact]
     public void Candidates_LeavesOutMovingFixesAndPollsTooCloseTogether()
     {
         Assert.Empty(MissedDrive.Candidates([Fix(0, 51.50, -0.42), Fix(60, 51.43, -0.96, speed: 40)], []));

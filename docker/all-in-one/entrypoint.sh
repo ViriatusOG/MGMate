@@ -57,9 +57,9 @@ export Mqtt__Password="${MQTT_BROKER_PASSWORD}"
 export MQTT_URI="tcp://127.0.0.1:1883"
 export MQTT_USER="${MQTT_BROKER_USERNAME}"
 export MQTT_PASSWORD="${MQTT_BROKER_PASSWORD}"
-# Reads the status MG's servers already hold for the car every 30 minutes. This never wakes
+# Reads the status MG's servers already hold for the car every 2 minutes. This never wakes
 # the car, so it costs neither the 12V nor the traction battery; 0 turns it off.
-export CACHED_STATUS_INTERVAL="${CACHED_STATUS_INTERVAL:-1800}"
+export CACHED_STATUS_INTERVAL="${CACHED_STATUS_INTERVAL:-120}"
 
 # auto marks the session cookie Secure whenever the browser uses HTTPS (also behind a
 # TLS-terminating proxy) and keeps plain-HTTP LAN installs working.
