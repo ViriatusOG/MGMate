@@ -6,7 +6,7 @@ namespace MGMate.Data.Demo;
 
 /// <summary>
 /// Fills the in-memory demo database with the demo vehicle, a handful of maintenance items in
-/// various due states, two climate schedules and an RDW lookup (with the two notifications the
+/// various due states, two climate schedules, a few notifications and an RDW lookup (with the two notifications the
 /// Worker would have sent about it), so those pages and their dashboard cards have something to
 /// show.
 /// Telemetry and trips come from the in-memory demo repositories instead.
@@ -28,6 +28,9 @@ public static class DemoSeeder
 
         if (!await db.ClimateSchedules.AnyAsync(ct))
             await SeedClimateSchedulesAsync(db, ct);
+
+        if (!await db.AppNotifications.AnyAsync(ct))
+            await SeedNotificationsAsync(db, ct);
 
         if (rdwEnabled && !await db.RdwVehicleInfos.AnyAsync(ct))
             await SeedRdwAsync(db, ct);
@@ -137,6 +140,27 @@ public static class DemoSeeder
                 Category = NotificationCategories.RdwApkDue(ApkReminder.MonthNoticeDays, registration.ApkExpiresOn!.Value),
                 VehicleId = vehicle.Id,
             });
+        await db.SaveChangesAsync(ct);
+    }
+
+    // A few of the everyday notifications the Worker sends, worded as it words them, so the
+    // notification panel has today's, yesterday's and an archived one to show.
+    private static async Task SeedNotificationsAsync(AppDbContext db, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var today = now.Date;
+        var vehicleId = DemoVehicleRepository.DemoVehicle.Id;
+        AppNotification Make(string category, string title, string body, DateTime at, bool archived = false) =>
+            new() { Category = category, Title = title, Body = body, CreatedAt = at, IsArchived = archived, VehicleId = vehicleId };
+
+        db.AppNotifications.AddRange(
+            Make(NotificationCategories.EngineStart, "Engine started", "Your car has been started.", now.AddMinutes(-13)),
+            Make(NotificationCategories.ChargingComplete, "Charging Complete", "Your car has finished charging (SOC: 80%)",
+                now.Hour >= 6 ? today.AddHours(5).AddMinutes(42) : now.AddMinutes(-40)),
+            Make(NotificationCategories.LowTyre, "Low Tyre Pressure", "Tyre pressure low: RL", today.AddDays(-1).AddHours(7).AddMinutes(58)),
+            Make(NotificationCategories.UnlockedParked, "Car Left Unlocked", "Your car is parked and unlocked",
+                today.AddDays(-1).AddHours(18).AddMinutes(31)),
+            Make(NotificationCategories.EngineStart, "Engine started", "Your car has been started.", today.AddDays(-4).AddHours(8), archived: true));
         await db.SaveChangesAsync(ct);
     }
 

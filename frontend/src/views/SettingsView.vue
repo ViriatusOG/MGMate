@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import '@/assets/settingsPage.css'
-import { computed, watch } from 'vue'
+import { computed, nextTick, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import { useUiSettingsStore } from '@/stores/settingsUi'
 import { useRdwStore } from '@/stores/rdw'
 import { useVehicleStore } from '@/stores/vehicle'
@@ -54,9 +54,19 @@ const sections = computed(() => [
   { id: 'advanced', title: t('settings.advanced.title') },
 ])
 
-function jumpTo(id: string) {
-  document.getElementById(`settings-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+function jumpTo(id: string, behavior: ScrollBehavior = 'smooth') {
+  document.getElementById(`settings-${id}`)?.scrollIntoView({ behavior, block: 'start' })
 }
+
+// A link straight to one card (/settings#notifications, from the notifications panel) opens the
+// page at that card.
+const route = useRoute()
+onMounted(async () => {
+  const id = route.hash.replace(/^#(settings-)?/, '')
+  if (!id) return
+  await nextTick()
+  jumpTo(id, 'auto')
+})
 </script>
 
 <template>
