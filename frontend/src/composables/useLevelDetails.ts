@@ -5,6 +5,7 @@ import { useVehicleStore } from '@/stores/vehicle'
 import type { LevelKind } from '@/composables/useStatisticsCharts'
 import { formatDateTime, formatNumber } from '@/utils/format'
 import type { BadgeVariant } from '@/utils/levels'
+import { formatChargeTimeLeft } from '@/utils/chargeTime'
 import { plugsIn } from '@/utils/vehicleType'
 import { useUnits } from './useUnits'
 
@@ -75,10 +76,7 @@ export function useLevelDetails(level: Ref<LevelKind>): Ref<LevelDetail[]> {
         key: 'remaining',
         icon: 'clock',
         label: t('vehicle.remainingCharge'),
-        value:
-          s.isCharging && s.remainingChargingTime !== null
-            ? `${s.remainingChargingTime} ${t('common.min')}`
-            : null,
+        value: s.isCharging ? formatChargeTimeLeft(s.remainingChargingTime, t) : null,
       },
       {
         key: 'target',

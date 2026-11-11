@@ -196,6 +196,15 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
         return Task.FromResult(new VehicleAggregateStats(pct, on, known));
     }
 
+    // The car's own estimate of the time to its charge target, in seconds, the way the gateway
+    // publishes it (MG's minutes times 60), at a home wallbox's 7 kW.
+    private static int? DemoSecondsToTarget(TelemetrySnapshot car)
+    {
+        if (car.EvSocPercent is not { } soc || car.SocTargetPercent is not { } target || target <= soc) return null;
+        var kwh = (target - soc) / 100.0 * (car.HvTotalCapacityKwh ?? 70.0);
+        return (int)Math.Round(kwh / 7.0 * 60) * 60;
+    }
+
     public void ApplyOverride(DemoStatusOverrideDto dto)
     {
         lock (_lock)
@@ -218,7 +227,11 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
             if (dto.RearLeftWindowOpen.HasValue) _current.RearLeftWindowOpen = dto.RearLeftWindowOpen;
             if (dto.RearRightWindowOpen.HasValue) _current.RearRightWindowOpen = dto.RearRightWindowOpen;
             if (dto.ChargerConnected.HasValue) _current.ChargerConnected = dto.ChargerConnected;
-            if (dto.IsCharging.HasValue) _current.IsCharging = dto.IsCharging;
+            if (dto.IsCharging.HasValue)
+            {
+                _current.IsCharging = dto.IsCharging;
+                _current.RemainingChargingTime = dto.IsCharging.Value ? DemoSecondsToTarget(_current) : null;
+            }
             if (dto.LightsMainBeam.HasValue) _current.LightsMainBeam = dto.LightsMainBeam;
             if (dto.LightsDippedBeam.HasValue) _current.LightsDippedBeam = dto.LightsDippedBeam;
             if (dto.LightsSide.HasValue) _current.LightsSide = dto.LightsSide;
