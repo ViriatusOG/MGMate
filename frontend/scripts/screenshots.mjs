@@ -4,6 +4,8 @@
 //   docker compose --env-file .env.demo -f docker-compose.demo.yml up -d --build   (repository root)
 //   cd frontend && pnpm screenshots [base URL, http://localhost:8080 by default]
 //
+// SCREENSHOTS_ONLY=notifications,settings retakes just those gallery shots (by file name).
+//
 // Desktop shots are 1280 x 800, phone shots 390 x 844 at twice the density, in the dark theme with
 // the date filter on 30 days, in the UK, and one of each in the light theme. CHROMIUM_PATH points at a
 // browser other than Playwright's own; HTTPS_PROXY, when set, is where the map's tiles are fetched.
@@ -37,6 +39,7 @@ const PAGES = [
   { file: 'climate-schedules', path: '/climate-schedules' },
   { file: 'settings', path: '/settings' },
   { file: 'debug', path: '/debug' },
+  { file: 'notifications', path: '/', prepare: openNotifications },
   { file: 'dashboard-charging', path: '/', prepare: parkAndCharge, after: driveOn, tall: true },
 ]
 
@@ -51,12 +54,15 @@ const browser = await chromium.launch({
     : undefined,
 })
 
+const only = process.env.SCREENSHOTS_ONLY?.split(',').map((f) => f.trim())
+
 try {
   for (const device of [DESKTOP, PHONE]) {
-    await shoot(device, 'dark', PAGES)
-    await shoot(device, 'light', [{ file: 'dashboard-light', path: '/' }])
+    const light = [{ file: 'dashboard-light', path: '/' }]
+    await shoot(device, 'dark', only ? PAGES.filter((p) => only.includes(p.file)) : PAGES)
+    await shoot(device, 'light', only ? light.filter((p) => only.includes(p.file)) : light)
   }
-  for (const [page, name] of Object.entries(MANIFEST)) {
+  for (const [page, name] of Object.entries(only ? {} : MANIFEST)) {
     for (const device of ['desktop', 'mobile']) {
       await copyFile(
         new URL(`${device}-${page}.webp`, docs),
@@ -69,6 +75,7 @@ try {
 }
 
 async function shoot(device, theme, pages) {
+  if (pages.length === 0) return
   const { name, ...options } = device
   // The region follows the browser's time zone: London gives the gallery's miles, psi, pounds and
   // 24-hour clock whatever machine runs this.
@@ -159,6 +166,14 @@ async function selectTrip(page) {
   const toUtrecht = trips.filter({ hasText: 'Utrecht' }).first()
   await ((await toUtrecht.count()) > 0 ? toUtrecht : trips.first()).click()
   await settled(page)
+}
+
+// The notification panel over the Overview, from the bell (in the sidebar on a wide screen).
+async function openNotifications(page) {
+  const bell = page.locator('.sidebar-notif-btn:visible, .notif-bell:visible').first()
+  await bell.click()
+  await page.locator('.notif-item').first().waitFor()
+  await page.waitForTimeout(500)
 }
 
 // The demo car parked on the drive and charging, with the boot and a window open, so the Overview

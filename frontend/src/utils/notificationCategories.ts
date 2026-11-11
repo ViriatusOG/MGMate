@@ -64,3 +64,34 @@ export function notificationCategoryId(category: string | null): NotificationCat
     ? (category as NotificationCategoryId)
     : null
 }
+
+// The page a notification is about, which tapping it in the panel opens. A category with no
+// page of its own (an unknown one, say) opens nothing: the notification just stays put.
+const CATEGORY_PAGES: Record<NotificationCategoryId, string> = {
+  'low-tyre': '/',
+  'high-tyre': '/',
+  'slow-puncture': '/',
+  'low-ev': '/',
+  'charging-complete': '/charges',
+  'charging-interrupted': '/charges',
+  'engine-start': '/trip-log',
+  'unlocked-parked': '/',
+  'doors-open-parked': '/',
+  'windows-open-parked': '/',
+  'moved-parked': '/',
+  'vehicle-message': '/',
+  'climate-schedule': '/climate-schedules',
+  'low-12v': '/',
+  'low-fuel': '/',
+  'gateway-login': '/',
+  'data-stale': '/',
+  'place-arrival': '/trip-log',
+  'place-departure': '/trip-log',
+  maintenance: '/maintenance',
+  rdw: '/',
+}
+
+export function notificationPage(category: string | null): string | null {
+  const id = notificationCategoryId(category)
+  return id ? CATEGORY_PAGES[id] : null
+}

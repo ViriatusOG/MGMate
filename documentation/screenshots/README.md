@@ -56,6 +56,10 @@ The main pages of MGMate, on a desktop and on a phone. They were taken in [demo 
 
 ![The Debug page: device info, data coverage, what MG cannot do, and the controls and sensors with their latest values](desktop-debug.webp)
 
+### Notifications
+
+![The notifications dialog over the overview: Active and Archived tabs, the notifications grouped by today, yesterday and older days, each with an icon, the time and a chevron to open its page, and Archive all and Delete all at the bottom](desktop-notifications.webp)
+
 ### Light theme
 
 ![The dashboard in the light theme](desktop-dashboard-light.webp)
@@ -71,8 +75,8 @@ The main pages of MGMate, on a desktop and on a phone. They were taken in [demo 
 | <img src="mobile-trips.webp" alt="Trips on a phone" width="180"> | <img src="mobile-charges.webp" alt="Charges on a phone" width="180"> | <img src="mobile-reports.webp" alt="Reports on a phone" width="180"> | <img src="mobile-battery-health.webp" alt="Battery health on a phone" width="180"> |
 | **Statistics** | **Maintenance** | **Climate schedules** | **Charging** |
 | <img src="mobile-statistics.webp" alt="The statistics on a phone" width="180"> | <img src="mobile-maintenance.webp" alt="The maintenance list on a phone" width="180"> | <img src="mobile-climate-schedules.webp" alt="The climate schedules on a phone" width="180"> | <img src="mobile-dashboard-charging.webp" alt="The live charging card on a phone" width="180"> |
-| **Settings** | **Debug** | | |
-| <img src="mobile-settings.webp" alt="Settings on a phone" width="180"> | <img src="mobile-debug.webp" alt="The Debug page on a phone" width="180"> | | |
+| **Settings** | **Debug** | **Notifications** | |
+| <img src="mobile-settings.webp" alt="Settings on a phone" width="180"> | <img src="mobile-debug.webp" alt="The Debug page on a phone" width="180"> | <img src="mobile-notifications.webp" alt="The notifications, full screen on a phone" width="180"> | |
 
 <!-- markdownlint-enable MD033 -->
 
@@ -86,4 +90,4 @@ docker compose --env-file .env.demo -f docker-compose.demo.yml up -d --build   #
 cd frontend && pnpm screenshots                                                 # or: pnpm screenshots http://localhost:5173
 ```
 
-It signs in as `demo`, switches the Debug page on, and takes the desktop screenshots at 1280 x 800 (the charging overview taller, so the whole Overview card shows) and the phone screenshots at 390 x 844 at twice the pixel density, in the dark theme with the date filter on 30 days and the region set to the UK (miles, psi, pounds), plus the overview in the light theme. For the charging overview it parks the demo car and plugs it in through the demo API, and puts it back on the road afterwards. Run it against a freshly started demo API: the API's rate limit can cut a second run short (start the local API with `RATE_LIMIT_GLOBAL_PER_MINUTE=10000` to avoid that). The maps need the internet for their tiles; behind a proxy, `HTTPS_PROXY` is used for them. `CHROMIUM_PATH` points it at a Chromium other than Playwright's own. Keep the manifest's `sizes` in `frontend/vite.config.ts` in step if the sizes change.
+It signs in as `demo`, switches the Debug page on, and takes the desktop screenshots at 1280 x 800 (the charging overview taller, so the whole Overview card shows) and the phone screenshots at 390 x 844 at twice the pixel density, in the dark theme with the date filter on 30 days and the region set to the UK (miles, psi, pounds), plus the overview in the light theme and the notification panel opened from the bell. `SCREENSHOTS_ONLY=notifications,settings` retakes just the named ones (and leaves the manifest's alone). For the charging overview it parks the demo car and plugs it in through the demo API, and puts it back on the road afterwards. Run it against a freshly started demo API: the API's rate limit can cut a second run short (start the local API with `RATE_LIMIT_GLOBAL_PER_MINUTE=10000` to avoid that). The maps need the internet for their tiles; behind a proxy, `HTTPS_PROXY` is used for them. `CHROMIUM_PATH` points it at a Chromium other than Playwright's own. Keep the manifest's `sizes` in `frontend/vite.config.ts` in step if the sizes change.

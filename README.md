@@ -65,6 +65,16 @@ With **Settings > Advanced** switched on, the Debug page lists everything the MG
 
 ![The Debug page: the car's model and gateway version, how many values are saved on every poll, what MG cannot do (open or close windows), and the controls and sensors with their latest values](documentation/screenshots/desktop-debug.webp)
 
+### Notifications
+
+The bell opens the notifications, grouped by day. On a phone they fill the screen: tap one to open the page it is about (Engine started opens Trips, Charging complete opens Charges, a tyre or the doors open the Overview, a service item opens Maintenance), or swipe it left to archive or delete it, with a few seconds to undo. Archive all and Delete all ask first. On a wide screen they open in a dialog, with archive and delete on the row you point at.
+
+<!-- markdownlint-disable MD033 -->
+
+<img src="documentation/screenshots/mobile-notifications.webp" alt="The notifications on a phone, full screen: Active and Archived tabs, today's Engine started and Charging complete, yesterday's car left unlocked and low tyre pressure, each with a chevron to open its page, and Archive all and Delete all at the bottom" width="260">
+
+<!-- markdownlint-enable MD033 -->
+
 ### On a phone
 
 <!-- markdownlint-disable MD033 -->
@@ -141,7 +151,7 @@ Thanks to Jos for the foundation.
 - **Energy statistics** -- Track daily energy consumption, efficiency (Wh/km on a plug-in car, L/100 km on a hybrid), fuel use, electric share, average driving speed, and more, for any period from the last 24 hours to several years.
 - **Remote commands** -- Trigger climate pre-conditioning (normal climate, fan only or front defrost), lock or unlock the car, open the boot, and activate the horn and lights remotely from the dashboard. On a plug-in car also start or stop charging, lock or unlock the charging cable, switch battery heating on or off, set the charging and battery heating schedules, and set the charge current limit and, where the car takes one, the charge target. Opening the boot and unlocking the cable ask for a second tap. Each command reports whether the car carried it out, and if it refused, the reason the MG servers gave.
 - **Climate schedules** -- Switch climate on at a set time on chosen weekdays, or once. A schedule sets the temperature or mode, seat heating and the rear defroster, and can skip mild days by the car's outside temperature. Schedules run on the server, so no browser needs to be open, and each run sends a push notification saying whether the car started climate.
-- **Push notifications** -- Browser and in-app alerts for key events: engine started, low or high tyre pressure, a slow puncture, low EV battery, low fuel, a weak 12V battery, car left unlocked, doors or windows left open, the car moving while parked, arriving at or leaving home or work, a charge that finished or stopped early, maintenance coming due, the APK running out or a recall on a Dutch plate, a climate schedule that ran, the messages the official MG app receives, and data that stopped arriving because the MG sign-in failed or the car went quiet. Each device chooses which ones it gets.
+- **Push notifications** -- Browser and in-app alerts for key events: engine started, low or high tyre pressure, a slow puncture, low EV battery, low fuel, a weak 12V battery, car left unlocked, doors or windows left open, the car moving while parked, arriving at or leaving home or work, a charge that finished or stopped early, maintenance coming due, the APK running out or a recall on a Dutch plate, a climate schedule that ran, the messages the official MG app receives, and data that stopped arriving because the MG sign-in failed or the car went quiet. Each device chooses which ones it gets. In the app they are listed by day under the bell: tap one to open the page it is about, swipe it left on a phone to archive or delete it (with Undo).
 - **Homepage widget** -- A read-only API endpoint for the [gethomepage.dev](https://gethomepage.dev) Custom API widget, exposing key vehicle stats at a glance, along with the APK days left, open recalls, the maintenance due next and the last trip.
 - **Log viewer** -- The Logs page shows the entries of the API's and the Worker's log files, newest first and older ones loading as you scroll, filtered by service, level and text, with exceptions folded open on request and a live mode that adds what was written every ten seconds. The files themselves stay on the server, one per day (`LOG_RETAINED_FILES`).
 - **Full data export** -- Settings > Your data downloads everything MGMate keeps as one zip: per car its trips, maintenance, schedules, places and every telemetry reading (as CSV), and your notifications and settings.

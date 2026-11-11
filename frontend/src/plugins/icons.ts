@@ -64,6 +64,7 @@ export {
   faGaugeHigh,
   faGear,
   faGripLines,
+  faHandPointer,
   faHeartPulse,
   faHouse,
   faKey,

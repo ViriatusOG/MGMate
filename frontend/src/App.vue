@@ -82,6 +82,13 @@ const {
   deleteAllNotifications,
 } = useNotifications()
 
+// A tapped notification (or the panel's settings button) opens its page behind the panel, which
+// closes.
+function openFromNotifications(path: string) {
+  closePanel()
+  void router.push(path)
+}
+
 // The unread badge is visible text inside both notification buttons, so their names carry the
 // count as well: a screen reader announces it (the badge itself is hidden from them, or it would
 // be read twice), and someone using voice control can say what they see.
@@ -479,6 +486,7 @@ watch(
       :action-error="notificationActionError"
       @retry="fetchNotifications"
       @close="closePanel"
+      @navigate="openFromNotifications"
       @archive="archiveNotification"
       @archive-all="archiveAllNotifications"
       @delete="deleteNotification"
