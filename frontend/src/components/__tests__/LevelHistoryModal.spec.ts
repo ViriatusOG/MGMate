@@ -166,7 +166,7 @@ describe('LevelHistoryModal', () => {
         evSocPercent: 64,
         isCharging: true,
         chargerConnected: true,
-        remainingChargingTime: 45,
+        remainingChargingTime: 2700,
       }),
     )
 

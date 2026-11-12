@@ -5,8 +5,10 @@ import { useVehicleStore } from '@/stores/vehicle'
 import { useUnits } from '@/composables/useUnits'
 import { useRelativeTime } from '@/composables/useRelativeTime'
 import { activityApi, type ActivityTimeline } from '@/services/activityApi'
-import { formatNumber, formatTimeOfDay } from '@/utils/format'
+import { formatNumber } from '@/utils/format'
 import { formatDurationMs } from '@/utils/tripRows'
+import { chargeSecondsLeft, formatChargeTimeLeft } from '@/utils/chargeTime'
+import { runLabel } from '@/utils/climateSchedule'
 import OverviewChart from './OverviewChart.vue'
 import type { ChartSeries } from './chart'
 
@@ -200,10 +202,8 @@ const chargeKind = computed(() => {
   return powerKw.value > 22 ? 'dc' : 'ac'
 })
 
-const remainingMin = computed(() => {
-  const m = s.value?.remainingChargingTime ?? null
-  return m !== null && m > 0 ? m : null
-})
+// The car's own estimate (the one the MG app shows), which the gateway gives in seconds.
+const remainingSec = computed(() => chargeSecondsLeft(s.value?.remainingChargingTime))
 
 const live = computed(() => {
   const x = s.value
@@ -223,8 +223,12 @@ const live = computed(() => {
       key: 'fullBy',
       label: t('overview.live.fullBy'),
       value:
-        remainingMin.value !== null
-          ? formatTimeOfDay(new Date(now.value + remainingMin.value * 60_000).toISOString())
+        remainingSec.value !== null
+          ? runLabel(
+              new Date(now.value + remainingSec.value * 1000).toISOString(),
+              new Date(now.value),
+              t,
+            )
           : null,
     },
     {
@@ -258,7 +262,7 @@ const live = computed(() => {
     power: powerKw.value !== null ? formatNumber(powerKw.value, 1) : null,
     voltage: x.hvVoltage != null ? `${formatNumber(x.hvVoltage, 0)} V` : null,
     current: x.hvCurrent != null ? `${formatNumber(Math.abs(x.hvCurrent), 0)} A` : null,
-    timeLeft: remainingMin.value !== null ? formatDurationMs(remainingMin.value * 60_000, t) : null,
+    timeLeft: formatChargeTimeLeft(remainingSec.value, t),
     startSoc: start.soc,
     rows,
   }

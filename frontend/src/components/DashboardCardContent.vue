@@ -29,6 +29,7 @@ import { energyUnit, hvBatteryReading, litres, litresPer100Km, whPerKm } from '@
 import { evLevelVariant, fuelLevelVariant } from '@/utils/levels'
 import { plugsIn } from '@/utils/vehicleType'
 import { ODOMETER_FORMAT, type Measure, type MeasureOptions, type Quantity } from '@/utils/units'
+import { chargeSecondsLeft } from '@/utils/chargeTime'
 import { useUnits } from '@/composables/useUnits'
 
 const props = defineProps<{ cardId: CardId }>()
@@ -57,6 +58,11 @@ const cardData = useCardData()
 const vehicleType = computed(() => store.effectiveVehicleType)
 const latestTrip = computed(() => store.latestTrip)
 const topSpeedKmh = computed(() => latestTrip.value?.maxSpeedKmh ?? null)
+
+function minutesLeft(seconds: number | null): number | null {
+  const left = chargeSecondsLeft(seconds)
+  return left === null ? null : Math.round(left / 60)
+}
 
 // A card's value and unit, from a metric reading in the browser's units.
 function measured(
@@ -217,7 +223,8 @@ const simpleCards = computed((): SimpleCardConfig[] => {
     {
       id: 'remainingCharge',
       label: t('vehicle.remainingCharge'),
-      value: s.remainingChargingTime,
+      // The gateway gives seconds; the card counts minutes.
+      value: minutesLeft(s.remainingChargingTime),
       unit: t('common.min'),
       variant: 'info',
     },

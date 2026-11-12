@@ -9,6 +9,7 @@ import ChargingScheduleForm from './ChargingScheduleForm.vue'
 import { useVehicleCommand } from '@/composables/useVehicleCommand'
 import { formatDateTime, formatNumber, formatTimeOfDay } from '@/utils/format'
 import { gatewayLabel } from '@/utils/gatewayLabel'
+import { formatChargeTimeLeft } from '@/utils/chargeTime'
 import StatusBadge from '@/components/StatusBadge.vue'
 
 const i18n = useI18n()
@@ -52,8 +53,8 @@ function setCableLock(lock: boolean) {
 const summaryValue = computed((): string | null => {
   const parts: string[] = []
   if (obcPower.value !== null) parts.push(`${formatNumber(obcPower.value)} kW`)
-  if (props.remainingChargingTime !== null)
-    parts.push(`${props.remainingChargingTime} ${t('common.min')}`)
+  const left = formatChargeTimeLeft(props.remainingChargingTime, t)
+  if (left) parts.push(left)
   if (parts.length) return parts.join(' · ')
   if (props.chargingType) return props.chargingType
   if (props.chargingCableLock !== null)
@@ -191,7 +192,7 @@ const scheduleModeLabel = computed(() =>
       <DetailListItem
         v-if="remainingChargingTime !== null"
         icon="clock"
-        :value="`${remainingChargingTime} ${t('common.min')}`"
+        :value="formatChargeTimeLeft(remainingChargingTime, t) ?? ''"
         :label="t('vehicle.remainingCharge')"
       />
       <DetailListItem
