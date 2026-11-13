@@ -241,4 +241,17 @@ describe('TripRouteMap', () => {
 
     expect(lines(wrapper).some((l) => l.props('className') === 'trip-route-map__ahead')).toBe(false)
   })
+
+  it('keeps the centre it opened on when the panel hands it the start again', async () => {
+    // The parent makes a new [lat, lng] pair on every render; vue-leaflet pans to each new centre
+    // it is given, which pulled the framed route off to one side.
+    const wrapper = mountMap({ points: [fix(52.5, 20), fix(52.2, 60)] })
+    const map = wrapper.findComponent({ name: 'LMap' })
+    expect(map.props('center')).toEqual([52.5, 6])
+
+    await wrapper.setProps({ start: [52.5, 6] as [number, number] })
+    await wrapper.setProps({ start: [52.1, 5.9] as [number, number] })
+
+    expect(map.props('center')).toEqual([52.5, 6])
+  })
 })
