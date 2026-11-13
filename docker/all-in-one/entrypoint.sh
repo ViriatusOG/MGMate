@@ -95,6 +95,12 @@ MQTT_BROKER_USERNAME="${MQTT_BROKER_USERNAME}" MQTT_BROKER_PASSWORD="${MQTT_BROK
 chown mosquitto:mosquitto /data/db/mosquitto
 chmod 700 /data/db/mosquitto
 
+# PostgreSQL keeps its socket and lock file in /run/postgresql. The postgresql-common package
+# used to create that directory when it was installed; images built from 13 November 2026
+# (postgresql 18.7-1.pgdg13+2) came without it and the server refused to start. Created on every
+# start, so a /run on tmpfs is covered as well.
+install -d -o postgres -g postgres -m 2775 /run/postgresql
+
 # ── PostgreSQL initialisation ──────────────────────────────────────────────────
 # Guard on a dedicated marker file rather than PG_VERSION so we can recover
 # from a partial initialisation: a container that crashed after initdb wrote

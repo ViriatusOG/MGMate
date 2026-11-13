@@ -208,17 +208,38 @@ public class TripRecorderTests
     [Fact]
     public async Task SegmentThatNeverEnds_IsCutAtTheWeekInsteadOfStallingTheLine()
     {
-        // A fix every ten minutes, always moving, for eight days: never parked, never quiet.
+        // A fix every ten minutes, always moving, for eight days: never parked, never quiet. Each
+        // one 2.2 km on from the last, about the speed it reports, so no gap reads as a quiet stop.
         var ct = TestContext.Current.CancellationToken;
         await using var s = new Setup();
         var fixes = Enumerable.Range(0, 8 * 24 * 6)
-            .Select(i => (T0.AddMinutes(10 * i), 51.0 + i * 0.001, (double?)20))
+            .Select(i => (T0.AddMinutes(10 * i), 51.0 + i * 0.02, (double?)20))
             .ToArray();
         await s.AddFixesAsync(fixes, ct);
 
         Assert.Equal(1, await s.Recorder.RecordAsync(s.Vehicle.Id, T0.AddDays(8), ct));
 
         Assert.Equal(T0 + TripRecorder.Chunk, await s.Trips.GetRecordedUntilAsync(s.Vehicle.Id, ct));
+    }
+
+    [Fact]
+    public async Task StopWithoutReadings_SavesTheDriveThereAndTheDriveBackAsTwoTrips()
+    {
+        // Switched off at a shop for 25 minutes: the car reported nothing until it drove off again.
+        var ct = TestContext.Current.CancellationToken;
+        await using var s = new Setup();
+        await s.AddFixesAsync(
+        [
+            (T0, 51.50, 50), (T0.AddMinutes(5), 51.55, 50), (T0.AddMinutes(10), 51.60, 50),
+            (T0.AddMinutes(35), 51.6005, 50), (T0.AddMinutes(40), 51.55, 50), (T0.AddMinutes(45), 51.50, 50),
+            (T0.AddMinutes(46), 51.50, 0),
+        ], ct);
+
+        Assert.Equal(2, await s.Recorder.RecordAsync(s.Vehicle.Id, T0.AddHours(2), ct));
+
+        var saved = await s.SavedAsync(ct);
+        Assert.Equal((T0, T0.AddMinutes(10)), (saved[0].StartedAt, saved[0].EndedAt));
+        Assert.Equal((T0.AddMinutes(35), T0.AddMinutes(45)), (saved[1].StartedAt, saved[1].EndedAt));
     }
 
     // ── Starting a trip where the car was parked ─────────────────────────────
