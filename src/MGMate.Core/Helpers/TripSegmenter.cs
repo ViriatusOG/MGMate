@@ -33,6 +33,14 @@ public static class TripSegmenter
     /// <summary>Standing still for this long ends a trip; a shorter stop is traffic.</summary>
     public static readonly TimeSpan ParkThreshold = TimeSpan.FromMinutes(5);
 
+    /// <summary>
+    /// A silence of at least <see cref="ParkThreshold"/> between two fixes this close in speed
+    /// terms is a stop, not a dead zone. Once the car is switched off it stops reporting, so a
+    /// short visit leaves no standing-still fixes at all, only a hole in the readings; a car that
+    /// went on driving through the hole turns up much further away than this implies.
+    /// </summary>
+    public const double SilentStopMaxKmh = 10;
+
     /// <summary>Consecutive fixes implying more than this speed are a positioning glitch, not a real trip.</summary>
     public const double MaxPlausibleSpeedKmh = 250;
 
@@ -52,6 +60,8 @@ public static class TripSegmenter
     {
         var segments = new Segments();
         DateTime? lastSeen = null;
+        // The fix before this one, to tell a silent stop from a stretch driven without readings.
+        TripPoint? previous = null;
         // The first fix of the stop the car is in, or null while it moves.
         TripPoint? stoppedAt = null;
         // The latest fix the car reported standing still since it last moved. Unlike the rest, it
@@ -80,7 +90,17 @@ public static class TripSegmenter
                 prevLon = null;
             }
 
+            // Silent stop: the car went quiet for long enough to count as parked and turned up
+            // about where it went quiet. Switched off, it reports nothing, so it stood there from
+            // its last fix: the same as a stop seen fix by fix, which ends the trip there.
+            else if (stoppedAt is null && previous is { } quietFrom && IsSilentStop(quietFrom, p))
+            {
+                stoppedAt = quietFrom with { Speed = 0 };
+                lastParked = stoppedAt;
+            }
+
             lastSeen = p.RecordedAt;
+            previous = p;
 
             if (isParked)
             {
@@ -118,6 +138,19 @@ public static class TripSegmenter
         // An open segment has not stopped for good yet, so it ends at its last moving fix.
         segments.Close(openSince is null ? stoppedAt : null);
         return new TripSegmentation(segments.Trips, openSince, segments.ParkedBefore);
+    }
+
+    /// <summary>
+    /// Whether the readings went quiet between <paramref name="from"/> and <paramref name="to"/>
+    /// because the car was parked: quiet for at least <see cref="ParkThreshold"/> but not so long
+    /// that it is a hard gap anyway, and moved no further than <see cref="SilentStopMaxKmh"/> would
+    /// take it in that time.
+    /// </summary>
+    public static bool IsSilentStop(TripPoint from, TripPoint to)
+    {
+        var quiet = to.RecordedAt - from.RecordedAt;
+        return quiet >= ParkThreshold && quiet <= GapThreshold &&
+               GeoHelper.Haversine(from.Latitude, from.Longitude, to.Latitude, to.Longitude) / quiet.TotalHours <= SilentStopMaxKmh;
     }
 
     /// <summary>

@@ -83,6 +83,79 @@ public class TripSegmenterTests
         Assert.Equal(2, TripSegmenter.Segment(fixes, LongAfter).Trips.Count);
     }
 
+    // ── A stop the car reported nothing during ───────────────────────────────
+
+    [Fact]
+    public void QuietWhileParkedAtAShop_SplitsIntoTwoTrips()
+    {
+        TripPoint[] fixes =
+        [
+            Fix(0, 51.50, 50), Fix(5, 51.55, 50), Fix(10, 51.60, 50),
+            // Switched off at the shop: nothing for 25 minutes, then off again from the same spot.
+            Fix(35, 51.6005, 50), Fix(40, 51.55, 50), Fix(45, 51.50, 50),
+        ];
+
+        var result = TripSegmenter.Segment(fixes, LongAfter);
+
+        Assert.Equal(2, result.Trips.Count);
+        Assert.Equal(T0.AddMinutes(10), result.Trips[0].EndedAt);
+        Assert.Equal(T0.AddMinutes(35), result.Trips[1].StartedAt);
+        // The second trip leaves from where the car went quiet.
+        Assert.Equal([null, Fix(10, 51.60, 0)], result.ParkedBefore);
+    }
+
+    [Fact]
+    public void QuietWhileParked_SplitsEvenWhenTheCarLeavesStraightAfterItsFirstFix()
+    {
+        TripPoint[] fixes =
+        [
+            Fix(0, 51.50, 50), Fix(5, 51.55, 50), Fix(10, 51.60, 50),
+            // Back after 20 minutes, a fix without a speed where it stood, then driving at once.
+            Fix(30, 51.6001, null), Fix(30.5, 51.602, 50), Fix(35, 51.55, 50),
+        ];
+
+        Assert.Equal(2, TripSegmenter.Segment(fixes, LongAfter).Trips.Count);
+    }
+
+    [Fact]
+    public void QuietWhileDrivingOn_DoesNotSplitTrip()
+    {
+        // Ten minutes without readings, but the car turned up 8 km on: it drove through a dead zone.
+        TripPoint[] fixes = [Fix(0, 51.50, 50), Fix(5, 51.55, 50), Fix(15, 51.62, 50), Fix(20, 51.65, 50)];
+
+        Assert.Single(TripSegmenter.Segment(fixes, LongAfter).Trips);
+    }
+
+    [Fact]
+    public void QuietForLessThanFiveMinutes_DoesNotSplitTrip()
+    {
+        TripPoint[] fixes = [Fix(0, 51.50, 50), Fix(5, 51.55, 50), Fix(9, 51.5502, 50), Fix(14, 51.60, 50)];
+
+        Assert.Single(TripSegmenter.Segment(fixes, LongAfter).Trips);
+    }
+
+    [Fact]
+    public void QuietWhileParked_StillOpenUntilTheCarIsSeenAgain()
+    {
+        // Gone quiet 10 minutes ago: it may be parked, or driving where nothing reaches the car.
+        TripPoint[] fixes = [Fix(0, 51.50, 50), Fix(5, 51.55, 50), Fix(10, 51.60, 50)];
+
+        var result = TripSegmenter.Segment(fixes, T0.AddMinutes(20));
+
+        Assert.Equal(T0, result.OpenSince);
+    }
+
+    [Fact]
+    public void QuietWhileParked_ThenStandingStill_IsClosed()
+    {
+        TripPoint[] fixes = [Fix(0, 51.50, 50), Fix(5, 51.55, 50), Fix(10, 51.60, 50), Fix(25, 51.6001, 0)];
+
+        var result = TripSegmenter.Segment(fixes, T0.AddMinutes(26));
+
+        Assert.Null(result.OpenSince);
+        Assert.Single(result.Closed);
+    }
+
     [Fact]
     public void ImplausibleJump_DiscardsTheTrip()
     {
