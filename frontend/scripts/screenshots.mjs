@@ -32,6 +32,7 @@ const PAGES = [
   { file: 'map-trip', path: '/map', prepare: selectTrip },
   { file: 'statistics', path: '/statistics' },
   { file: 'trips', path: '/trip-log' },
+  { file: 'trip-detail', path: '/trip-log', prepare: scrubTrip, keepScroll: true },
   { file: 'charges', path: '/charges' },
   { file: 'reports', path: '/reports' },
   { file: 'battery-health', path: '/battery-health' },
@@ -109,8 +110,10 @@ async function shoot(device, theme, pages) {
     await page.goto(base + shot.path)
     await settled(page)
     if (shot.prepare) await shot.prepare(page)
-    // A focused control scrolls the page a little on its way in; the gallery shows it from the top.
-    await page.evaluate(() => document.querySelector('.main-content')?.scrollTo({ top: 0 }))
+    // A focused control scrolls the page a little on its way in; the gallery shows it from the top,
+    // unless the shot is of something further down.
+    if (!shot.keepScroll)
+      await page.evaluate(() => document.querySelector('.main-content')?.scrollTo({ top: 0 }))
     const file = `${name}-${shot.file}.webp`
     await writeFile(new URL(file, docs), await webp(page, await page.screenshot()))
     console.log(`screenshots: ${file}`)
@@ -150,6 +153,24 @@ async function settled(page) {
     .waitForFunction(() => !document.querySelector('.skeleton'), null, { timeout: 20_000 })
     .catch(() => {})
   await page.waitForTimeout(3000)
+}
+
+// One trip opened on the Trips page, its chart scrolled into view and pointed at part-way, so the
+// car shows on the map above it where it was at that moment.
+async function scrubTrip(page) {
+  const trips = page.locator('.trip-log-item:not(.trip-log-item--no-route) .trip-log-item__select')
+  await trips.nth(1).click()
+  await settled(page)
+  const canvas = page.locator('.trip-detail__chart canvas').first()
+  await canvas.evaluate((c) => c.scrollIntoView({ block: 'end' }))
+  await page.waitForTimeout(500)
+  const box = await canvas.boundingBox()
+  const x = box.x + box.width * 0.8
+  const y = box.y + box.height * 0.45
+  const touch = await page.evaluate(() => matchMedia('(pointer: coarse)').matches)
+  if (touch) await page.touchscreen.tap(x, y)
+  else await page.mouse.move(x, y)
+  await page.waitForTimeout(500)
 }
 
 // One trip, snapped to the roads and coloured against the speed limits, as the gallery shows it.

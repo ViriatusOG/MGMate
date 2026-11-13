@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { LCircleMarker, LMap, LPolyline } from '@vue-leaflet/vue-leaflet'
+import type { Marker } from 'leaflet'
 import type { TripPoint } from '@/services/vehicleApi'
 import { useLeafletMap } from '@/composables/useLeafletMap'
 import { useBasemap } from '@/composables/useBasemap'
-import { fitToPoints, type FitPadding, type LeafletMap } from '@/utils/leaflet'
+import { fitToPoints, L, type FitPadding, type LeafletMap } from '@/utils/leaflet'
 import { latLngsOf, type LatLng } from '@/utils/geo'
 import { speedSegments, speedToColor } from '@/utils/speedColors'
+import { positionAt } from '@/utils/routePosition'
 
 const props = defineProps<{
   /** The route's fixes; null while they load or when they could not be. */
@@ -30,6 +32,11 @@ const props = defineProps<{
    * car reported is drawn dashed, as the straight line it is, and the rest as the route.
    */
   partRoute?: boolean
+  /**
+   * The moment picked on the trip's chart, with what to say about it: the car is shown where it
+   * was then, the route still to come greyed out. Null when the chart is not pointed at.
+   */
+  cursor?: { time: number; label: string } | null
 }>()
 
 const { t } = useI18n()
@@ -89,8 +96,9 @@ const framed = computed<LatLng[]>(() =>
 )
 
 // Both ends stay in view and out from under what lies over the map: the full map button in the
-// top right corner (0.5rem in, 2.1rem tall) and the attribution along the bottom.
-const ROUTE_PADDING: FitPadding = { topLeft: [28, 56], bottomRight: [28, 32] }
+// top right corner (0.5rem in, 2.1rem tall) and the attribution along the bottom, with room for
+// the whole of the car's marker when it is at either end.
+const ROUTE_PADDING: FitPadding = { topLeft: [36, 56], bottomRight: [36, 48] }
 
 function frame(map: LeafletMap) {
   fitToPoints(map, framed.value, ROUTE_PADDING)
@@ -108,6 +116,62 @@ function onMapReady(map: LeafletMap) {
 
 watch(framed, () => {
   if (mapInstance.value) frame(mapInstance.value)
+})
+
+// Where the car was at the chart's moment, read off the fixes; a trip without a route has none.
+const position = computed(() =>
+  props.cursor && !props.noRoute && props.points
+    ? positionAt(props.points, props.cursor.time)
+    : null,
+)
+
+// The car is one marker moved about, not one made anew for each step of the pointer.
+let car: Marker | null = null
+const CAR_HTML =
+  '<span class="trip-route-map__car-dot"><svg viewBox="-12 -12 24 24" aria-hidden="true">' +
+  '<path d="M0 -6.5 L5.5 5.5 L0 2.5 L-5.5 5.5 Z" /></svg></span>' +
+  '<span class="trip-route-map__car-label"></span>'
+// Room the label takes beside the marker, to put it on the other side near an edge.
+const LABEL_ROOM = { x: 150, y: 44 }
+
+watch(
+  [mapInstance, position, () => props.cursor?.label],
+  ([map, pos, label]) => {
+    if (!map || !pos) {
+      car?.remove()
+      car = null
+      return
+    }
+    if (!car) {
+      car = L.marker(pos.at, {
+        icon: L.divIcon({ className: 'trip-route-map__car', html: CAR_HTML, iconSize: [0, 0] }),
+        interactive: false,
+        keyboard: false,
+        zIndexOffset: 1000,
+      }).addTo(map)
+    } else {
+      car.setLatLng(pos.at)
+    }
+    const el = car.getElement()
+    if (!el) return
+    const dot = el.querySelector<HTMLElement>('.trip-route-map__car-dot')
+    if (dot) {
+      dot.style.setProperty('--heading', `${pos.heading ?? 0}deg`)
+      dot.classList.toggle('trip-route-map__car-dot--still', pos.heading === null)
+    }
+    const text = el.querySelector<HTMLElement>('.trip-route-map__car-label')
+    if (text) text.textContent = label ?? ''
+    const point = map.latLngToContainerPoint(pos.at)
+    const size = map.getSize()
+    el.classList.toggle('trip-route-map__car--left', point.x > size.x - LABEL_ROOM.x)
+    el.classList.toggle('trip-route-map__car--below', point.y < LABEL_ROOM.y)
+  },
+  { flush: 'post' },
+)
+
+onUnmounted(() => {
+  car?.remove()
+  car = null
 })
 </script>
 
@@ -139,6 +203,15 @@ watch(framed, () => {
         "
         :weight="3"
         dash-array="6 8"
+        :interactive="false"
+      />
+      <!-- The route still to come from where the car is on the chart's moment. -->
+      <LPolyline
+        v-if="position && position.ahead.length > 1"
+        :lat-lngs="position.ahead"
+        class-name="trip-route-map__ahead"
+        :weight="5"
+        :opacity="1"
         :interactive="false"
       />
       <template v-if="unfollowed">

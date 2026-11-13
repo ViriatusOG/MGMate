@@ -6,7 +6,7 @@ export type StatsChartType = 'line' | 'bar' | 'scatter'
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { Chart } from 'vue-chartjs'
-import type { ChartData, ChartOptions } from 'chart.js'
+import type { ChartData, ChartOptions, Plugin } from 'chart.js'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -46,6 +46,8 @@ defineProps<{
   data: ChartData<StatsChartType>
   options: ChartOptions<StatsChartType>
   showInfo: boolean
+  /** Plugins for this chart alone, read once when it is made. */
+  plugins?: Plugin<StatsChartType>[]
 }>()
 
 defineEmits<{ info: [] }>()
@@ -67,6 +69,6 @@ const { t } = useI18n()
       <font-awesome-icon :icon="icon" />
       {{ title }}
     </h2>
-    <Chart :type="type" :data="data" :options="options" />
+    <Chart :type="type" :data="data" :options="options" :plugins="plugins ?? []" />
   </div>
 </template>
