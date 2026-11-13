@@ -42,7 +42,7 @@ public sealed class DemoGatewayCatalog(GatewayVehicleCatalog catalog) : IGateway
                 ["name"] = name,
                 ["unique_id"] = id,
                 ["device"] = device.DeepClone(),
-                ["o"] = new JsonObject { ["name"] = "SAIC Python MQTT Gateway", ["sw"] = "0.14.0-rc2" },
+                ["o"] = new JsonObject { ["name"] = "SAIC Python MQTT Gateway", ["sw"] = "0.14.0-rc4" },
                 ["state_topic"] = root + topic,
             };
             if (command) config["command_topic"] = root + topic + "/set";

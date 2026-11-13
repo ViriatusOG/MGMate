@@ -60,7 +60,7 @@ RUN dotnet publish MGMate.Api/MGMate.Api.csproj -c Release -o /publish/api /p:Mi
 # ── Stage 3: Pull SAIC MQTT Gateway (source of truth for the gateway app) ────
 # The gateway is not on PyPI. We copy its pre-built venv + source directly from
 # the official image so we always match the tested Python/dependency versions.
-FROM saicismartapi/saic-python-mqtt-gateway:0.14.0-rc2@sha256:32377f806457696e41d00a6c54cddf2b27c9a1eda7069072286b48e4763abf35 AS saic-source
+FROM saicismartapi/saic-python-mqtt-gateway:0.14.0-rc4@sha256:d6d1388e6cfa5f681a1ed466cd1ce4532b885b1b114e12329c9cd768fbfa1ede AS saic-source
 # The gateway reports its version from RELEASE_VERSION, an ENV of this image that copying its
 # files leaves behind, so keep it in a file for supervisord to pass on (see supervisord.conf).
 # The image runs as an unprivileged user, hence /tmp. Without the variable the gateway says

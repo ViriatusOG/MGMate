@@ -86,7 +86,7 @@ services:
   saic-mqtt-gateway:
     # Pinned by digest as well as tag: a release-candidate tag can be pushed again, and this image
     # holds the MG account password. Keep it in step with docker/all-in-one/Dockerfile.
-    image: saicismartapi/saic-python-mqtt-gateway:0.14.0-rc2@sha256:32377f806457696e41d00a6c54cddf2b27c9a1eda7069072286b48e4763abf35
+    image: saicismartapi/saic-python-mqtt-gateway:0.14.0-rc4@sha256:d6d1388e6cfa5f681a1ed466cd1ce4532b885b1b114e12329c9cd768fbfa1ede
     container_name: saic-mqtt
     restart: unless-stopped
     mem_limit: 256m
