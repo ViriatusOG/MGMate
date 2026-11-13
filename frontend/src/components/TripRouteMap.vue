@@ -53,6 +53,11 @@ const mapOptions = {
   attributionControl: true,
 }
 
+// Where the map opens, until the route is framed. Read once: the parent hands a new [lat, lng]
+// pair on every render, and vue-leaflet pans to each new centre it is given, which pulled the
+// framed route off to one side whenever the trip panel redrew (as when the chart is scrubbed).
+const initialCenter: LatLng = [props.start[0], props.start[1]]
+
 const wrapper = ref<HTMLElement | null>(null)
 const { mapInstance, bindMapReady } = useLeafletMap(wrapper)
 // Raster tiles: the same streets without pulling the vector renderer into the trip log.
@@ -179,7 +184,7 @@ onUnmounted(() => {
   <div ref="wrapper" class="trip-route-map" :aria-label="t('tripLog.detail.routePreview')">
     <LMap
       :zoom="13"
-      :center="start"
+      :center="initialCenter"
       :options="mapOptions"
       class="trip-route-map__canvas"
       @ready="onMapReady"
