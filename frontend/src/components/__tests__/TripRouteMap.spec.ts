@@ -28,6 +28,8 @@ vi.mock('@vue-leaflet/vue-leaflet', () => {
       handlers[event] = handler
     },
     fire: (event: string) => handlers[event]?.(),
+    latLngToContainerPoint: () => ({ x: 100, y: 100 }),
+    getSize: () => ({ x: 600, y: 260 }),
   }
   const LMap = defineComponent({
     name: 'LMap',
@@ -54,7 +56,31 @@ vi.mock('@vue-leaflet/vue-leaflet', () => {
   }
 })
 vi.mock('@/composables/useBasemap', () => ({ useBasemap: () => undefined }))
-vi.mock('@/utils/leaflet', () => ({ fitToPoints: vi.fn<typeof fitToPoints>() }))
+// The car's marker: a real element to look in, its place kept where the test can read it.
+const carMarker = vi.hoisted(() => ({ at: null as unknown, removed: false }))
+vi.mock('@/utils/leaflet', () => ({
+  fitToPoints: vi.fn<typeof fitToPoints>(),
+  L: {
+    divIcon: (options: { html: string }) => options,
+    marker: (at: unknown, options: { icon: { html: string } }) => {
+      const element = document.createElement('div')
+      element.innerHTML = options.icon.html
+      carMarker.at = at
+      carMarker.removed = false
+      const marker = {
+        addTo: () => marker,
+        setLatLng: (next: unknown) => {
+          carMarker.at = next
+        },
+        getElement: () => element,
+        remove: () => {
+          carMarker.removed = true
+        },
+      }
+      return marker
+    },
+  },
+}))
 
 // jsdom has no layout, so neither ResizeObserver nor a frame to wait for.
 vi.stubGlobal(
@@ -168,10 +194,51 @@ describe('TripRouteMap', () => {
       [52.5, 6],
       [52.2, 6],
     ])
-    expect(padding).toEqual({ topLeft: [28, 56], bottomRight: [28, 32] })
+    expect(padding).toEqual({ topLeft: [36, 56], bottomRight: [36, 48] })
 
     fakeMap.fire('resize')
 
     expect(fitToPoints).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the car where it was at the moment picked on the chart, the route ahead greyed', async () => {
+    const timed = (time: string, latitude: number, speed: number): TripPoint => ({
+      recordedAt: `2026-09-24T12:${time}:00.000Z`,
+      latitude,
+      longitude: 6,
+      speed,
+    })
+    const points = [timed('40', 52.5, 20), timed('42', 52.4, 60), timed('44', 52.3, 60)]
+    const wrapper = mountMap({ points })
+    await flushPromises()
+    expect(wrapper.findAll('.trip-route-map__ahead')).toHaveLength(0)
+
+    await wrapper.setProps({
+      cursor: { time: Date.parse('2026-09-24T12:41:00.000Z'), label: '13:41 · 37 mph' },
+    })
+    await flushPromises()
+
+    const ahead = lines(wrapper).find((l) => l.props('className') === 'trip-route-map__ahead')!
+    expect(ahead.props('latLngs')).toEqual([
+      [52.45, 6],
+      [52.4, 6],
+      [52.3, 6],
+    ])
+    expect(carMarker.at).toEqual([52.45, 6])
+    expect(carMarker.removed).toBe(false)
+
+    await wrapper.setProps({ cursor: null })
+    await flushPromises()
+    expect(carMarker.removed).toBe(true)
+  })
+
+  it('has no car to show on a trip saved without a route', async () => {
+    const wrapper = mountMap({
+      noRoute: true,
+      cursor: { time: Date.parse('2026-09-24T12:41:00.000Z'), label: '13:41' },
+    })
+    await flushPromises()
+
+    expect(lines(wrapper).some((l) => l.props('className') === 'trip-route-map__ahead')).toBe(false)
   })
 })

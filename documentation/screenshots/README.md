@@ -28,6 +28,10 @@ The main pages of MGMate, on a desktop and on a phone. They were taken in [demo 
 
 ![Trips: totals for the month, a calendar with the days driven, and each trip with its places, times, battery used and mi/kWh](desktop-trips.webp)
 
+### A trip opened, its chart scrubbed
+
+![A trip opened on the Trips page with its chart pointed at 12:27, and the car shown on the route map above it where it was then, with the time and speed](desktop-trip-detail.webp)
+
 ### Charges
 
 ![Charges: energy added, average duration and cost, a calendar with the charging days, and each charge with its times, battery before and after and kWh added](desktop-charges.webp)
@@ -75,8 +79,8 @@ The main pages of MGMate, on a desktop and on a phone. They were taken in [demo 
 | <img src="mobile-trips.webp" alt="Trips on a phone" width="180"> | <img src="mobile-charges.webp" alt="Charges on a phone" width="180"> | <img src="mobile-reports.webp" alt="Reports on a phone" width="180"> | <img src="mobile-battery-health.webp" alt="Battery health on a phone" width="180"> |
 | **Statistics** | **Maintenance** | **Climate schedules** | **Charging** |
 | <img src="mobile-statistics.webp" alt="The statistics on a phone" width="180"> | <img src="mobile-maintenance.webp" alt="The maintenance list on a phone" width="180"> | <img src="mobile-climate-schedules.webp" alt="The climate schedules on a phone" width="180"> | <img src="mobile-dashboard-charging.webp" alt="The live charging card on a phone" width="180"> |
-| **Settings** | **Debug** | **Notifications** | |
-| <img src="mobile-settings.webp" alt="Settings on a phone" width="180"> | <img src="mobile-debug.webp" alt="The Debug page on a phone" width="180"> | <img src="mobile-notifications.webp" alt="The notifications, full screen on a phone" width="180"> | |
+| **Settings** | **Debug** | **Notifications** | **Trip chart scrubbed** |
+| <img src="mobile-settings.webp" alt="Settings on a phone" width="180"> | <img src="mobile-debug.webp" alt="The Debug page on a phone" width="180"> | <img src="mobile-notifications.webp" alt="The notifications, full screen on a phone" width="180"> | <img src="mobile-trip-detail.webp" alt="A trip's chart scrubbed on a phone, the map pinned above it with the car at that moment" width="180"> |
 
 <!-- markdownlint-enable MD033 -->
 

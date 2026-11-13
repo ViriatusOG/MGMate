@@ -39,6 +39,10 @@ Every trip of the month, grouped by day, with a calendar to jump around, search,
 
 ![The Trips page: totals for distance, trips, consumption, energy and cost, a month calendar with the days driven, and each trip with its places, times, battery used and mi/kWh](documentation/screenshots/desktop-trips.webp)
 
+Open a trip for its figures, its route on a map and a chart of its speed, power, range, battery and elevation. Point at the chart, or drag a finger along it on a phone, and an arrow on the map shows where the car was at that moment and which way it was heading, with the time and speed beside it; the route still to come turns grey. The map stays at the top of the screen while you scroll down to the chart, so it is in view while you scrub:
+
+![A trip opened on the Trips page: its summary and figures, and the chart pointed at 12:27, with the car shown on the route map above it at that moment, heading south at 50 mph, the rest of the route greyed](documentation/screenshots/desktop-trip-detail.webp)
+
 ### Charges
 
 Every charge, with the energy added, how long it took, AC or DC, and where:
@@ -99,7 +103,7 @@ MGMate is based on [GarageStack](https://github.com/joszz/GarageStack) by Jos Ni
 - **Battery health** from your charges, against the pack when new
 - **Activity**, a 24-hour strip and timeline of driving, charging and parking
 - **Statistics** for the 12V battery, distance, range and temperatures, and consumption against outside temperature
-- **Trip detail** with energy, driving and stopped time, median speed, the battery range used and a GPX download
+- **Trip detail** with energy, driving and stopped time, median speed, the battery range used, a GPX download, and the car shown on the route map at the moment you point at on the trip's chart
 - **A car photo** on the overview, and **battery-friendly polling** that only wakes the car when you ask it to
 - **A redesigned overview** with a live charging card, a car status drawing traced from an MG4 seen from above, and small charge level and charging power charts
 - **Warranty tracking** on the Maintenance page, counted from the first registration

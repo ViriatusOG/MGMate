@@ -38,6 +38,7 @@ import type { ChipOption } from '@/utils/chips'
 import { useUnits } from '@/composables/useUnits'
 import { useTripEnds } from '@/composables/useTripEnds'
 import { useTripSpeedChart } from '@/composables/useTripSpeedChart'
+import { useChartScrub } from '@/composables/useChartScrub'
 import ChipGroup from './ChipGroup.vue'
 import StatsChartCard from './StatsChartCard.vue'
 import TripRouteMap from './TripRouteMap.vue'
@@ -453,7 +454,12 @@ const telemetryChart = computed(() => {
     plugins: { legend: { labels: { color: text, boxWidth: 10, boxHeight: 10 } } },
     scales,
   }
-  return { data, options }
+  // The time and speed at each point, for the car on the map to follow as the chart is scrubbed.
+  const times = shown.map((p) => p.recordedAt)
+  const speeds = shown.map((p) =>
+    p.speed === null ? null : Math.round(units.value.convert('speed', p.speed)),
+  )
+  return { data, options, times, speeds }
 })
 
 // The figures the panel lists under the summary, like a trip computer would: only those known.
@@ -575,6 +581,24 @@ function downloadGpx() {
 }
 
 const speedChart = useTripSpeedChart(toRef(props, 'routePoints'))
+
+// Pointing at a moment on the chart, by mouse or finger, shows the car on the map where it was
+// then, with the time and speed beside it.
+const scrub = useChartScrub(() => chartTheme.value.text)
+const scrubPlugins = [scrub.plugin]
+const mapCursor = computed(() => {
+  const index = scrub.index.value
+  const chart = telemetryChart.value ?? speedChart.value
+  if (index === null || !chart) return null
+  const at = chart.times[index]
+  if (!at) return null
+  const time = formatTime(at)
+  const speed = chart.speeds[index]
+  return {
+    time: Date.parse(at),
+    label: speed == null ? time : `${time} · ${speed} ${units.value.symbol('speed')}`,
+  }
+})
 
 // The field is edited locally and sent when it loses focus, rather than on every keystroke.
 const notesDraft = ref(props.entry.notes ?? '')
@@ -744,71 +768,80 @@ const notesId = computed(() => `trip-log-notes-${props.entry.id}`)
       </div>
 
       <div class="trip-detail__col">
-        <TripRouteMap
-          :key="entry.id"
-          :points="routePoints"
-          :loading="routeLoading"
-          :start="[entry.startLatitude, entry.startLongitude]"
-          :end="[entry.endLatitude, entry.endLongitude]"
-          :trip-id="entry.id"
-          :started-at="entry.startedAt"
-          :link-to-map="!entry.isHidden"
-          :no-route="noRoute"
-          :part-route="partRoute"
-        />
-        <p v-if="noRoute" class="trip-log-detail__no-route" role="note">
-          {{ t('tripLog.noRouteNote') }}
-        </p>
-        <div v-if="partRouteSplit" class="trip-log-detail__no-route" role="note">
-          <p>
-            <b>{{ t('tripLog.partRouteNoteLead', { distance: partRouteSplit.unfollowed }) }}</b>
-            {{
-              partRouteSplit.since
-                ? t('tripLog.partRouteNoteSince', { time: partRouteSplit.since })
-                : t('tripLog.partRouteNote')
-            }}
+        <!-- The map and the chart under it, so on a phone the map can stay in view while the
+             chart is scrolled to and scrubbed, and let go once the chart is scrolled past. -->
+        <div class="trip-log-detail__route">
+          <TripRouteMap
+            :key="entry.id"
+            :points="routePoints"
+            :loading="routeLoading"
+            :start="[entry.startLatitude, entry.startLongitude]"
+            :end="[entry.endLatitude, entry.endLongitude]"
+            :trip-id="entry.id"
+            :started-at="entry.startedAt"
+            :link-to-map="!entry.isHidden"
+            :no-route="noRoute"
+            :part-route="partRoute"
+            :cursor="mapCursor"
+          />
+          <p v-if="noRoute" class="trip-log-detail__no-route" role="note">
+            {{ t('tripLog.noRouteNote') }}
           </p>
-          <div class="trip-log-detail__split" aria-hidden="true">
-            <i
-              class="trip-log-detail__split-unfollowed"
-              :style="{ width: `${partRouteSplit.unfollowedShare}%` }"
-            />
-            <i class="trip-log-detail__split-followed" />
+          <div v-if="partRouteSplit" class="trip-log-detail__no-route" role="note">
+            <p>
+              <b>{{ t('tripLog.partRouteNoteLead', { distance: partRouteSplit.unfollowed }) }}</b>
+              {{
+                partRouteSplit.since
+                  ? t('tripLog.partRouteNoteSince', { time: partRouteSplit.since })
+                  : t('tripLog.partRouteNote')
+              }}
+            </p>
+            <div class="trip-log-detail__split" aria-hidden="true">
+              <i
+                class="trip-log-detail__split-unfollowed"
+                :style="{ width: `${partRouteSplit.unfollowedShare}%` }"
+              />
+              <i class="trip-log-detail__split-followed" />
+            </div>
+            <p class="trip-log-detail__split-legend">
+              <span>{{
+                t('tripLog.partRouteUnfollowed', { distance: partRouteSplit.unfollowed })
+              }}</span>
+              <span>{{
+                t('tripLog.partRouteFollowed', { distance: partRouteSplit.followed })
+              }}</span>
+            </p>
           </div>
-          <p class="trip-log-detail__split-legend">
-            <span>{{
-              t('tripLog.partRouteUnfollowed', { distance: partRouteSplit.unfollowed })
-            }}</span>
-            <span>{{ t('tripLog.partRouteFollowed', { distance: partRouteSplit.followed }) }}</span>
+          <p v-if="routeError" class="text-xs text-muted" role="status">
+            {{ t('tripLog.detail.routeUnavailable') }}
           </p>
-        </div>
-        <p v-if="routeError" class="text-xs text-muted" role="status">
-          {{ t('tripLog.detail.routeUnavailable') }}
-        </p>
 
-        <section v-if="telemetryChart" class="trip-detail__card trip-detail__chart">
-          <h3 class="trip-detail__card-title">{{ t('tripLog.detail.tripData') }}</h3>
-          <div class="trip-detail__chart-canvas ll-chart">
-            <StatsChartCard
-              :title="''"
-              icon="chart-line"
-              type="line"
-              :data="telemetryChart.data"
-              :options="telemetryChart.options"
-              :show-info="false"
-            />
-          </div>
-        </section>
-        <StatsChartCard
-          v-else-if="speedChart"
-          class="trip-log-detail__chart"
-          :title="t('tripLog.detail.speedChart')"
-          icon="chart-line"
-          type="line"
-          :data="speedChart.data"
-          :options="speedChart.options"
-          :show-info="false"
-        />
+          <section v-if="telemetryChart" class="trip-detail__card trip-detail__chart">
+            <h3 class="trip-detail__card-title">{{ t('tripLog.detail.tripData') }}</h3>
+            <div class="trip-detail__chart-canvas ll-chart">
+              <StatsChartCard
+                :title="''"
+                icon="chart-line"
+                type="line"
+                :data="telemetryChart.data"
+                :options="telemetryChart.options"
+                :show-info="false"
+                :plugins="scrubPlugins"
+              />
+            </div>
+          </section>
+          <StatsChartCard
+            v-else-if="speedChart"
+            class="trip-log-detail__chart"
+            :title="t('tripLog.detail.speedChart')"
+            icon="chart-line"
+            type="line"
+            :data="speedChart.data"
+            :options="speedChart.options"
+            :show-info="false"
+            :plugins="scrubPlugins"
+          />
+        </div>
 
         <div class="trip-log-detail__actions">
           <!-- A hidden trip is left off the map, so there is nothing there to show it on. -->

@@ -62,6 +62,12 @@ export function useTripSpeedChart(points: Ref<readonly TripPoint[] | null>) {
       },
     }
 
-    return { data, options }
+    // The time and speed at each point, for what follows the chart as it is scrubbed.
+    const times = shown.map((p) => p.recordedAt)
+    const speeds = shown.map((p) =>
+      p.speed === null ? null : Math.round(units.value.convert('speed', p.speed)),
+    )
+
+    return { data, options, times, speeds }
   })
 }
