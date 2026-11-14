@@ -44,4 +44,19 @@ describe('MaintenanceDueCard', () => {
 
     expect(wrapper.text()).toContain('Last done 20 Jul 2027')
   })
+
+  it('as a row, keeps to the name, the status and one line', async () => {
+    const wrapper = mount(MaintenanceDueCard, {
+      props: { item: maintenanceItem({ name: 'Brake fluid', dueStatus: 'ok' }), compact: true },
+      global: { plugins: [i18n, createPinia()], stubs: { FontAwesomeIcon: true } },
+    })
+
+    expect(wrapper.find('.due-card').exists()).toBe(false)
+    expect(wrapper.find('.due-row .due-card__name').text()).toBe('Brake fluid')
+    expect(wrapper.find('.due-row .due-card__badge').text()).toBe(en.maintenance.status.ok)
+    expect(wrapper.find('.due-card__bar').exists()).toBe(false)
+
+    await wrapper.find('.due-row').trigger('click')
+    expect(wrapper.emitted('open')).toHaveLength(1)
+  })
 })

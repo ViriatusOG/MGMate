@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
@@ -30,8 +30,8 @@ async function mountView() {
         MaintenanceItemDetailModal: true,
         WarrantySection: true,
         MaintenanceDueCard: {
-          props: ['item'],
-          template: '<div class="item">{{ item.name }}</div>',
+          props: { item: Object, compact: Boolean },
+          template: "<div :class=\"compact ? 'row' : 'item'\">{{ item.name }}</div>",
         },
       },
     },
@@ -82,5 +82,53 @@ describe('MaintenanceView', () => {
     const wrapper = await mountView()
 
     expect(wrapper.get('.view-header__actions button').attributes('disabled')).toBeDefined()
+  })
+
+  describe('on a phone', () => {
+    beforeEach(() => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query === '(width <= 767px)',
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }))
+      vi.mocked(maintenanceApi.list).mockResolvedValue([
+        maintenanceItem({ id: 1, name: 'Tyres', dueStatus: 'ok' }),
+        maintenanceItem({ id: 2, name: 'Oil', dueStatus: 'overdue' }),
+        maintenanceItem({ id: 3, name: 'Brakes', dueStatus: 'dueSoon' }),
+      ])
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('lists what needs attention first, and gives only those a full card', async () => {
+      const wrapper = await mountView()
+
+      const sections = wrapper.findAll('.maint-phone')
+      expect(sections[0]!.text()).toContain(en.maintenance.needsAttention)
+      expect(sections[0]!.findAll('.row').map((r) => r.text())).toEqual(['Oil', 'Brakes'])
+      expect(sections[1]!.findAll('.item').map((r) => r.text())).toEqual(['Oil', 'Brakes'])
+      expect(sections[1]!.findAll('.row').map((r) => r.text())).toEqual(['Tyres'])
+    })
+
+    it('offers to log a service and to edit on each full card', async () => {
+      const wrapper = await mountView()
+
+      const actions = wrapper.findAll('.maint-phone__actions')
+      expect(actions).toHaveLength(2)
+      expect(actions[0]!.text()).toContain(en.maintenance.logService)
+      expect(actions[0]!.text()).toContain(en.maintenance.editItem)
+    })
+
+    it('leaves out the attention list when nothing is due', async () => {
+      vi.mocked(maintenanceApi.list).mockResolvedValue([
+        maintenanceItem({ id: 1, name: 'Tyres', dueStatus: 'ok' }),
+      ])
+      const wrapper = await mountView()
+
+      expect(wrapper.text()).not.toContain(en.maintenance.needsAttention)
+      expect(wrapper.findAll('.row').map((r) => r.text())).toEqual(['Tyres'])
+    })
   })
 })

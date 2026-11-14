@@ -1034,6 +1034,8 @@
     "deleteConfirm": "Delete this maintenance item and its service history?",
     "empty": "No maintenance items yet. Add one to start tracking service intervals.",
     "logService": "Log a service",
+    "needsAttention": "Needs attention",
+    "serviceItems": "Service items",
     "history": "Service history",
     "noHistory": "No service history recorded yet",
     "deleteLogEntry": "Delete entry",
