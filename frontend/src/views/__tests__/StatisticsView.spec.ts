@@ -286,4 +286,48 @@ describe('StatisticsView', () => {
 
     expect(wrapper.find('.empty-state[role="alert"]').exists()).toBe(true)
   })
+
+  describe('on a phone', () => {
+    beforeEach(() => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query === '(width <= 767px)',
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }))
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('leads with the distance and the number of trips, in place of the cards', async () => {
+      const wrapper = await mountView()
+
+      expect(wrapper.find('.status-card').exists()).toBe(false)
+      expect(wrapper.find('.stats-phone__hero').text()).toBe('60.0km')
+      expect(wrapper.find('.stats-phone__note').text()).toBe('3 trips')
+      expect(wrapper.find('.stats-phone__tiles').text()).toContain(
+        en.statistics.phone.avgTripLength,
+      )
+    })
+
+    it('lists the other figures, and opens the parking map from its row', async () => {
+      const wrapper = await mountView()
+
+      const rows = wrapper.findAll('.stats-phone__row').map((row) => row.text())
+      expect(rows.some((row) => row.includes(insights.batteryVoltageTrend))).toBe(true)
+      await wrapper.find('button.stats-phone__row').trigger('click')
+      expect(document.body.querySelectorAll('.marker')).toHaveLength(2)
+    })
+
+    it('leaves out a figure the layout has switched off', async () => {
+      useDashboardSettingsStore(pinia).statsInsights.find(
+        (i) => i.id === 'periodDistance',
+      )!.visible = false
+      const wrapper = await mountView()
+
+      expect(wrapper.find('.stats-phone__hero').exists()).toBe(false)
+      expect(wrapper.find('.stats-phone__tiles').exists()).toBe(true)
+    })
+  })
 })
