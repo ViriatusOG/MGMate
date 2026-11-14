@@ -359,19 +359,8 @@
   }
 }
 
-.charge-socket {
-  fill: none;
-  stroke: var(--charge-color);
-  stroke-width: 1.5;
-  opacity: 0.65;
-}
-
-.charge-group--active .charge-socket {
-  opacity: 1;
-}
-
-/* Path goes from y=480 (charger, off-screen) to y=370 (car port).
-   dashoffset 14→0 moves the pattern forward along that direction = upward into car. */
+/* The path goes from the charger, off-screen below, to the port on the rear left.
+   dashoffset 14→0 moves the pattern forward along that direction = into the car. */
 .charge-cable {
   fill: none;
   stroke: var(--charge-color);
@@ -696,4 +685,15 @@
   stroke: #1a1d27;
   stroke-width: 2.2;
   stroke-dasharray: 5 3;
+}
+
+/* The charging glow, the cable's flow, the level's pulse and the light beams are decoration. */
+@media (prefers-reduced-motion: reduce) {
+  .charge-group--active .charge-entry-glow,
+  .charge-group--active .charge-cable,
+  .diagram-level--charging,
+  .car-light-beam,
+  .car-light-beam--side-r {
+    animation: none;
+  }
 }

@@ -88,7 +88,10 @@ watch(
     </ViewHeader>
 
     <div v-if="store.itemsError" class="empty-state text-danger" role="alert">
-      {{ errorMessage(store.itemsError) }}
+      <p>{{ errorMessage(store.itemsError) }}</p>
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click="load">
+        {{ t('common.retry') }}
+      </button>
     </div>
     <div v-else-if="!store.loading && sortedItems.length === 0" class="empty-state">
       {{ t('maintenance.empty') }}

@@ -57,6 +57,8 @@ const month = ref(monthStart(new Date()))
 const charges = ref<ChargeSession[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+// Only a failed load can be tried again; a failed save says so in the same line.
+const loadFailed = ref(false)
 const selectedId = ref<number | null>(null)
 const chart = ref<ChargeChartPoint[] | null>(null)
 const notesDraft = ref('')
@@ -73,6 +75,7 @@ async function load() {
   if (!vin.value) return
   loading.value = true
   error.value = null
+  loadFailed.value = false
   // Home charges are told apart by the home place; without it every charge is priced as public.
   if (placesStore.places.length === 0) placesStore.fetchPlaces(vin.value)
   const range = search.value ? searchRange(search.value) : null
@@ -82,6 +85,7 @@ async function load() {
     charges.value = await chargesApi.log(vin.value, from.toISOString(), to.toISOString())
   } catch (e) {
     error.value = errorMessage(e)
+    loadFailed.value = true
   } finally {
     loading.value = false
   }
@@ -615,7 +619,17 @@ const monthStats = computed(() => {
       </template>
     </ViewHeader>
 
-    <p v-if="error" class="charges__error" role="alert">{{ error }}</p>
+    <p v-if="error" class="charges__error" role="alert">
+      <span>{{ error }}</span>
+      <button
+        v-if="loadFailed"
+        type="button"
+        class="btn btn-sm btn-outline-secondary"
+        @click="load"
+      >
+        {{ t('common.retry') }}
+      </button>
+    </p>
 
     <section class="stat-tiles" :aria-label="t('charges.totalsLabel')">
       <StatTile

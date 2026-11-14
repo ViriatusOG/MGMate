@@ -292,6 +292,9 @@ onUnmounted(() => {
       <div v-else-if="store.statusError && !status" class="error-state">
         <font-awesome-icon icon="triangle-exclamation" />
         {{ t('common.error') }}
+        <button type="button" class="btn btn-sm btn-outline-secondary" @click="refresh">
+          {{ t('common.retry') }}
+        </button>
       </div>
 
       <div v-else-if="!status" class="empty-state">

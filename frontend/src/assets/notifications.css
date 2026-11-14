@@ -7,8 +7,8 @@
   color: var(--color-text-muted);
   font-size: 1.15rem;
   cursor: pointer;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -164,7 +164,7 @@
 
 .notif-panel__tab {
   flex: 1;
-  min-height: 40px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -414,8 +414,8 @@
   border: none;
   cursor: pointer;
   color: var(--color-text-muted);
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -504,7 +504,7 @@
 }
 
 .notif-panel__undo-btn {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 0.9rem;
   background: none;
   border: none;

@@ -60,6 +60,8 @@ const calibratingDashes = `${'4 14 '.repeat(Math.floor(gaugeLength / 18))}4 1000
 const charges = ref<ChargeSession[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+// Only a failed load can be tried again; a failed save says so in the same line.
+const loadFailed = ref(false)
 
 // A year of charges: as far back as the API serves in one request.
 async function load() {
@@ -67,12 +69,14 @@ async function load() {
   if (!vin.value) return
   loading.value = true
   error.value = null
+  loadFailed.value = false
   try {
     const to = new Date()
     const from = new Date(to.getTime() - 365 * 86_400_000)
     charges.value = await chargesApi.log(vin.value, from.toISOString(), to.toISOString())
   } catch (e) {
     error.value = errorMessage(e)
+    loadFailed.value = true
   } finally {
     loading.value = false
   }
@@ -205,7 +209,17 @@ const chart = computed(() => {
   <div class="view-container charges">
     <ViewHeader :title="t('batteryHealth.title')" :subtitle="t('batteryHealth.subtitle')" />
 
-    <p v-if="error" class="charges__error" role="alert">{{ error }}</p>
+    <p v-if="error" class="charges__error" role="alert">
+      <span>{{ error }}</span>
+      <button
+        v-if="loadFailed"
+        type="button"
+        class="btn btn-sm btn-outline-secondary"
+        @click="load"
+      >
+        {{ t('common.retry') }}
+      </button>
+    </p>
 
     <section class="bh-hero">
       <svg
