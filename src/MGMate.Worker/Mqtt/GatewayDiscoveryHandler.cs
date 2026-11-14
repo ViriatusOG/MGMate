@@ -42,6 +42,8 @@ public sealed class GatewayDiscoveryHandler(ILogger logger, VehicleResolver vehi
 
             device.TryGetProperty("model", out var modelEl);
             var model = modelEl.ValueKind == JsonValueKind.String ? modelEl.GetString() : null;
+            // The announced model ends in MG's colour name, which need not be the car's real one.
+            if (!string.IsNullOrWhiteSpace(model)) model = VehicleModelName.WithoutColour(model);
 
             // VIN is the first string in the identifiers array
             string? vin = null;
