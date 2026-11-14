@@ -147,7 +147,7 @@ onMounted(async () => {
             <h3 class="settings-card__subtitle">{{ t('settings.vehicleType.title') }}</h3>
             <VehicleTypeSetting />
           </div>
-          <div v-if="rdw.available" class="settings-card__group">
+          <div class="settings-card__group">
             <h3 class="settings-card__subtitle">{{ t('settings.licensePlate.title') }}</h3>
             <LicensePlateSetting />
           </div>

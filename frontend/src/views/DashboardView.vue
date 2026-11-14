@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useRdwStore } from '@/stores/rdw'
 import { cardsHiddenByType, useDashboardSettingsStore } from '@/stores/settingsDashboard'
+import { useUiSettingsStore } from '@/stores/settingsUi'
 import type { CardId } from '@/cards/registry'
 import { cardHasData, cardIcon } from '@/cards/registry'
 import { useCardData } from '@/cards/useCardData'
@@ -29,6 +30,8 @@ import CarStatusCard from '@/components/overview/CarStatusCard.vue'
 import OverviewPhoneCar from '@/components/overview/OverviewPhoneCar.vue'
 import OverviewPhoneRange from '@/components/overview/OverviewPhoneRange.vue'
 import { useMediaQuery } from '@/composables/useMediaQuery'
+import LicensePlateBadge from '@/components/LicensePlateBadge.vue'
+import { plateStyle } from '@/utils/licensePlate'
 
 // Only edit mode drags cards around, and the drag-and-drop library is the size of every card on
 // this page together, so it loads when the layout editor opens rather than with the dashboard.
@@ -58,6 +61,13 @@ const tyrePressures = computed(() => ({
 }))
 
 const vehicleType = computed(() => store.effectiveVehicleType)
+
+// Which car this is, under the page's title: the name MG gives it, and its plate once the owner
+// has entered one under Settings.
+const carModel = computed(() => store.activeVehicle?.model ?? null)
+const carPlate = computed(() => store.activeVehicle?.licensePlate ?? null)
+const uiSettings = useUiSettingsStore()
+const carPlateStyle = computed(() => plateStyle(uiSettings.effectiveRegion))
 const cardData = useCardData()
 
 // Shared prop set for the two <CarDiagram> invocations (edit mode + normal mode), which
@@ -69,12 +79,6 @@ const carDiagramProps = computed(() => {
     frontRight: s?.tyrePressureFrontRight ?? null,
     rearLeft: s?.tyrePressureRearLeft ?? null,
     rearRight: s?.tyrePressureRearRight ?? null,
-    driverDoorOpen: s?.driverDoorOpen ?? null,
-    passengerDoorOpen: s?.passengerDoorOpen ?? null,
-    rearLeftDoorOpen: s?.rearLeftDoorOpen ?? null,
-    rearRightDoorOpen: s?.rearRightDoorOpen ?? null,
-    trunkOpen: s?.trunkOpen ?? null,
-    bonnetOpen: s?.bonnetOpen ?? null,
     lightsMainBeam: s?.lightsMainBeam ?? null,
     lightsDippedBeam: s?.lightsDippedBeam ?? null,
     lightsSide: s?.lightsSide ?? null,
@@ -216,6 +220,15 @@ onUnmounted(() => {
 <template>
   <div class="view-container">
     <ViewHeader :title="t('dashboard.title')">
+      <template v-if="carModel || carPlate" #meta>
+        <span v-if="carModel">{{ carModel }}</span>
+        <LicensePlateBadge
+          v-if="carPlate"
+          :plate="carPlate"
+          :plate-style="carPlateStyle"
+          :electric="vehicleType === 'bev'"
+        />
+      </template>
       <template #actions>
         <span v-if="store.loading && status" class="text-muted">
           <font-awesome-icon icon="spinner" spin />

@@ -510,6 +510,17 @@ body,
   margin: 0.15rem 0 0;
 }
 
+/* What a page puts under its heading inside the title row: the Overview's car name and plate. */
+.view-header__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.1rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 /* A line about the page, tucked under its title rather than spaced like a section of its own. */
 .view-subtitle {
   margin-top: -1rem;

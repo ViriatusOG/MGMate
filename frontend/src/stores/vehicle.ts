@@ -212,8 +212,14 @@ export const useVehicleStore = defineStore('vehicle', () => {
     (): number | null => activeVehicle.value?.hvBatteryCapacityKwh ?? null,
   )
 
+  /** The plate just saved for a car, so every page shows it without asking for the list again. */
+  function setLicensePlate(vin: string, licensePlate: string | null) {
+    vehicles.value = vehicles.value.map((v) => (v.vin === vin ? { ...v, licensePlate } : v))
+  }
+
   return {
     vehicles,
+    setLicensePlate,
     activeVehicle,
     activeVin,
     currentStatus,

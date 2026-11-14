@@ -4,7 +4,8 @@ import { ApiError } from '@/services/apiCore'
 import { RDW_DISABLED_CODE, rdwApi, type RdwStatus } from '@/services/rdwApi'
 
 /**
- * The car's Dutch registration and what the RDW says about it. Whether the deployment looks
+ * What the RDW says about the car's Dutch registration, and saving the plate, which the vehicle
+ * itself keeps for any country. Whether the deployment looks
  * plates up at all is only known from the API's answer: switched off, it says so with
  * rdw.disabled, and then the plate field, the card and the notification type all stay out of
  * sight, the way the map leaves out a speed camera layer the deployment does not serve.
@@ -46,8 +47,10 @@ export const useRdwStore = defineStore('rdw', () => {
 
   /** Saves the plate as typed (blank removes it); the API normalises it and looks it up. Throws when refused. */
   async function setLicensePlate(vin: string, plate: string) {
-    status.value = await rdwApi.setLicensePlate(vin, plate.trim() || null)
-    available.value = true
+    const saved = await rdwApi.setLicensePlate(vin, plate.trim() || null)
+    // The plate is kept for any car; only a deployment that looks plates up has more to say.
+    if (available.value !== false) status.value = saved
+    return saved.licensePlate
   }
 
   /** Whether the RDW card has anything to show: the feature is on and a plate is set. */

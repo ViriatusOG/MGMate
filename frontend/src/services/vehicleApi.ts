@@ -20,6 +20,8 @@ export interface Vehicle {
   hvBatteryCapacityKwh: number | null
   /** Whether the car takes a charge target, by the gateway's own test; it drops one on any other. */
   supportsTargetSoc: boolean
+  /** The licence plate the owner entered, letters and digits only; null when none is set. */
+  licensePlate: string | null
 }
 
 /**

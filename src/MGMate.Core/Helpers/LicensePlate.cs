@@ -3,12 +3,12 @@ using System.Text;
 namespace MGMate.Core.Helpers;
 
 /// <summary>
-/// A Dutch registration as the RDW keys it: upper case, without the dashes and spaces it is
+/// A registration as it is stored, and as the RDW keys a Dutch one: upper case, without the dashes and spaces it is
 /// written with. "ab-123-c" and "AB 123 C" are the same car, AB123C.
 /// </summary>
 public static class LicensePlate
 {
-    // Dutch plates are six characters; a few older and special series run a little longer.
+    // Dutch plates are six characters and British ones seven; a few special series run a little longer.
     public const int MaxLength = 8;
 
     /// <summary>

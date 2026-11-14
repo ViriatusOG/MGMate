@@ -45,8 +45,6 @@ public static class RdwEndpoints
             RdwRefresher refresher,
             CancellationToken ct) =>
         {
-            if (!options.Enabled) return Disabled();
-
             var vehicle = httpContext.ResolvedVehicle();
             var plate = LicensePlate.Normalize(req.LicensePlate);
             if (plate is not null && !LicensePlate.IsValid(plate))
@@ -61,11 +59,13 @@ public static class RdwEndpoints
                 vehicle.LicensePlate = plate;
             }
 
-            // Asked straight away, so the card has something to show before the Worker's next round.
-            var info = plate is null ? null : await refresher.RefreshAsync(vehicle, ct);
+            // The plate is kept for any car, to show beside its name. Only a deployment that looks
+            // plates up asks the RDW, and then straight away, so the card has something to show
+            // before the Worker's next round.
+            var info = plate is null || !options.Enabled ? null : await refresher.RefreshAsync(vehicle, ct);
             return Results.Ok(ToDto(plate, info, time.GetUtcNow().UtcDateTime));
         })
-        .WithSummary("Set or clear the vehicle's Dutch plate, and look it up at the RDW right away");
+        .WithSummary("Set or clear the vehicle's licence plate; with RDW lookups on, look it up at the RDW right away");
 
         return app;
     }

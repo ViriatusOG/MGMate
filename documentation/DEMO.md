@@ -110,4 +110,4 @@ No PostgreSQL, Mosquitto, Worker, or SAIC gateway containers are started.
 | `FRONTEND_PORT` | `8080` | Host port for the frontend container |
 | `API_PORT` | `5001` | Host port for the API container |
 | `CORS_ORIGIN` | `http://localhost:8080` | Allowed CORS origin |
-| `RDW_ENABLED` | `true` in demo mode | `false` leaves out the RDW card, the licence plate field and the seeded RDW notifications. Unlike a real deployment, where it is off unless set, the demo shows it: its stand-in RDW sends nothing anywhere. |
+| `RDW_ENABLED` | `true` in demo mode | `false` leaves out the RDW card and the seeded RDW notifications. Unlike a real deployment, where it is off unless set, the demo shows it: its stand-in RDW sends nothing anywhere. |

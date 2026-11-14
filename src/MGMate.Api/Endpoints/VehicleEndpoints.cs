@@ -27,7 +27,7 @@ public static class VehicleEndpoints
             var all = await vehicles.GetAllAsync(ct);
             return Results.Ok(all.Select(v => new VehicleListItemDto(
                 v.Id, v.Vin, v.Model, v.Series, v.CreatedAt, VehicleTypeHelper.GetVehicleType(v),
-                hvBatteryCapacity.Kwh, VehicleTypeHelper.SupportsTargetSoc(v))));
+                hvBatteryCapacity.Kwh, VehicleTypeHelper.SupportsTargetSoc(v), v.LicensePlate)));
         })
         .WithSummary("List all vehicles");
 
@@ -190,7 +190,9 @@ public record VehicleListItemDto(
     DateTime CreatedAt,
     string VehicleType,
     double? HvBatteryCapacityKwh,
-    bool SupportsTargetSoc);
+    bool SupportsTargetSoc,
+    // As the owner entered it under Settings, without dashes or spaces; null when none is set.
+    string? LicensePlate);
 
 /// <summary>
 /// A month of daily statistics (the same rows as /stats/daily, for the same chart) and, when there

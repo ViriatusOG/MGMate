@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { caretAfter, countPlateCharacters, formatPlate, normalizePlate } from '@/utils/licensePlate'
+import {
+  caretAfter,
+  countPlateCharacters,
+  formatPlate,
+  formatPlateAs,
+  normalizePlate,
+  plateStyle,
+} from '@/utils/licensePlate'
 
 describe('formatPlate', () => {
   // Every Dutch side code in use, one plate each.
@@ -59,5 +66,24 @@ describe('caretAfter', () => {
 
   it('pairs with countPlateCharacters', () => {
     expect(countPlateCharacters('ab-1')).toBe(3)
+  })
+})
+
+describe('plateStyle and formatPlateAs', () => {
+  it('draws Dutch and British plates their own way and any other plainly', () => {
+    expect(plateStyle('NL')).toBe('nl')
+    expect(plateStyle('gb')).toBe('gb')
+    expect(plateStyle('DE')).toBe('plain')
+  })
+
+  it('writes a British plate of the current series with its space', () => {
+    expect(formatPlateAs('gb', 'ab26cde')).toBe('AB26 CDE')
+    expect(formatPlateAs('gb', 'AB26 C')).toBe('AB26C')
+    expect(formatPlateAs('gb', 'A1')).toBe('A1')
+  })
+
+  it('keeps the Dutch dashes and leaves other plates as letters and digits', () => {
+    expect(formatPlateAs('nl', 'ab123c')).toBe('AB-123-C')
+    expect(formatPlateAs('plain', 'm-ab 1234')).toBe('MAB1234')
   })
 })

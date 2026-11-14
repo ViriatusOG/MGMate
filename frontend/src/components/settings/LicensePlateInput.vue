@@ -2,15 +2,24 @@
 import {
   caretAfter,
   countPlateCharacters,
-  formatPlate,
+  formatPlateAs,
   LICENSE_PLATE_MAX_CHARACTERS,
   normalizePlate,
+  type PlateStyle,
 } from '@/utils/licensePlate'
 
-// A Dutch licence plate to type on: yellow, with the blue EU band and NL on the left, and the
-// dashes placed as the plate has them while typing (see formatPlate). The model is the plate as
-// shown, dashes included; the API keeps it without them.
-defineProps<{ label: string; placeholder?: string }>()
+// A licence plate to type on, drawn the way the region's plates are. Dutch: yellow, with the blue
+// EU band and NL on the left, and the dashes placed as the plate has them while typing (see
+// formatPlate). British: white, with the green flash of a zero-emission plate on an electric car,
+// and the space of the current series. Anywhere else: a plain white plate. The model is the plate
+// as shown, separators included; the API keeps it without them.
+const props = defineProps<{
+  label: string
+  placeholder?: string
+  plateStyle: PlateStyle
+  /** A fully electric car, which in Britain carries the green flash. */
+  electric?: boolean
+}>()
 const model = defineModel<string>({ required: true })
 
 // The EU band's ring of twelve upright stars, in a 24-unit box around its centre.
@@ -44,7 +53,7 @@ function onInput(event: Event) {
     }
   }
 
-  const formatted = formatPlate(typed)
+  const formatted = formatPlateAs(props.plateStyle, typed)
   model.value = formatted
   // Written back straight away: when formatting undoes the keystroke (a ninth character, a
   // stray symbol), the model does not change and Vue would leave the field as typed.
@@ -55,8 +64,9 @@ function onInput(event: Event) {
 </script>
 
 <template>
-  <span class="nl-plate">
-    <span class="nl-plate__band" aria-hidden="true">
+  <span class="nl-plate" :class="`nl-plate--${plateStyle}`">
+    <span v-if="plateStyle === 'gb' && electric" class="nl-plate__flash" aria-hidden="true" />
+    <span v-if="plateStyle === 'nl'" class="nl-plate__band" aria-hidden="true">
       <svg class="nl-plate__stars" viewBox="-12 -12 24 24" focusable="false">
         <polygon
           v-for="position in STAR_POSITIONS"
@@ -83,8 +93,8 @@ function onInput(event: Event) {
 </template>
 
 <style scoped>
-/* The colours of the plate itself, the same in either theme: reflective yellow with black
-   characters, and the EU's blue and yellow on the band. */
+/* The colours of the plate itself, the same in either theme: the Dutch one reflective yellow with
+   black characters and the EU's blue and yellow on the band, the others white. */
 .nl-plate {
   display: flex;
   flex: 1 1 auto;
@@ -99,6 +109,16 @@ function onInput(event: Event) {
   box-shadow:
     inset 0 0 0 1px rgb(255 255 255 / 40%),
     0 1px 3px rgb(0 0 0 / 30%);
+}
+
+.nl-plate--gb,
+.nl-plate--plain {
+  background: #fff;
+}
+
+.nl-plate__flash {
+  flex: 0 0 1.1rem;
+  background: #3bb54a;
 }
 
 .nl-plate:focus-within {
