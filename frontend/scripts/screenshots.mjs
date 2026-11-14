@@ -185,7 +185,11 @@ async function scrubTrip(page) {
 
 // The Parking locations card opened: the period's parking spots on a map.
 async function openParking(page) {
-  await page.locator('.status-card--clickable').filter({ hasText: 'Parking locations' }).first().click()
+  await page
+    .locator('.status-card--clickable')
+    .filter({ hasText: 'Parking locations' })
+    .first()
+    .click()
   await settled(page)
 }
 
