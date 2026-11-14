@@ -26,6 +26,9 @@ import LastChargeCard from '@/components/overview/LastChargeCard.vue'
 import RecentTripsCard from '@/components/overview/RecentTripsCard.vue'
 import NeedsAttention from '@/components/overview/NeedsAttention.vue'
 import CarStatusCard from '@/components/overview/CarStatusCard.vue'
+import OverviewPhoneCar from '@/components/overview/OverviewPhoneCar.vue'
+import OverviewPhoneRange from '@/components/overview/OverviewPhoneRange.vue'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 
 // Only edit mode drags cards around, and the drag-and-drop library is the size of every card on
 // this page together, so it loads when the layout editor opens rather than with the dashboard.
@@ -42,6 +45,17 @@ const settings = useDashboardSettingsStore()
 const vin = computed(() => store.activeVin)
 const status = computed(() => store.currentStatus)
 const editMode = ref(false)
+
+// A phone gets its own top of the page: the car small with its status beside it, the range, then
+// the controls, so all three are on the first screen. The same breakpoint as the tab bar.
+const isPhone = useMediaQuery('(width <= 767px)')
+
+const tyrePressures = computed(() => ({
+  frontLeft: status.value?.tyrePressureFrontLeft ?? null,
+  frontRight: status.value?.tyrePressureFrontRight ?? null,
+  rearLeft: status.value?.tyrePressureRearLeft ?? null,
+  rearRight: status.value?.tyrePressureRearRight ?? null,
+}))
 
 const vehicleType = computed(() => store.effectiveVehicleType)
 const cardData = useCardData()
@@ -301,13 +315,19 @@ onUnmounted(() => {
         {{ t('dashboard.noData') }}
       </div>
 
-      <template v-else>
-        <NeedsAttention />
+      <div v-else class="ov-page" :class="{ 'ov-page--phone': isPhone }">
+        <NeedsAttention :collapsed="isPhone" />
+
+        <!-- Phone: the car, how far it goes, and (ordered up here by the stylesheet) the controls. -->
+        <div v-if="isPhone" class="ov-phone">
+          <OverviewPhoneCar v-if="settings.showTyreDiagram" :pressures="tyrePressures" />
+          <OverviewPhoneRange />
+        </div>
 
         <div class="ov-hero">
           <BatteryOverviewCard class="ov-hero__battery" />
           <CarDiagram
-            v-if="settings.showTyreDiagram"
+            v-if="settings.showTyreDiagram && !isPhone"
             v-bind="carDiagramProps"
             class="ov-hero__car"
             :has-controls="hasControlsRow"
@@ -359,7 +379,7 @@ onUnmounted(() => {
             </template>
           </template>
         </div>
-      </template>
+      </div>
     </template>
   </div>
 </template>

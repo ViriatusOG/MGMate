@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { useVehicleStore } from '@/stores/vehicle'
@@ -33,6 +33,11 @@ interface Item {
   detail: string | null
   to: string
 }
+
+// On a phone only the most pressing item shows until the rest is asked for, so the car, its
+// range and its controls stay on the first screen.
+const props = defineProps<{ collapsed?: boolean }>()
+const expanded = ref(false)
 
 const items = computed<Item[]>(() => {
   const out: Item[] = []
@@ -102,6 +107,11 @@ const items = computed<Item[]>(() => {
   }
   return out
 })
+
+const shown = computed(() =>
+  props.collapsed && !expanded.value ? items.value.slice(0, 1) : items.value,
+)
+const hidden = computed(() => items.value.length - shown.value.length)
 </script>
 
 <template>
@@ -112,7 +122,7 @@ const items = computed<Item[]>(() => {
     :aria-label="t('overview.attention.title')"
   >
     <RouterLink
-      v-for="item in items"
+      v-for="item in shown"
       :key="item.key"
       :to="item.to"
       class="ov-attention__item"
@@ -126,5 +136,8 @@ const items = computed<Item[]>(() => {
       </span>
       <font-awesome-icon icon="chevron-right" class="ov-attention__chev" />
     </RouterLink>
+    <button v-if="hidden > 0" type="button" class="ov-attention__more" @click="expanded = true">
+      {{ t('overview.attention.more', { n: hidden }, hidden) }}
+    </button>
   </div>
 </template>

@@ -1606,6 +1606,7 @@
     },
     "attention": {
       "title": "Needs attention",
+      "more": "{n} more needs attention | {n} more need attention",
       "overdue": "{name} is overdue",
       "dueSoon": "{name} is due soon",
       "dueOn": "due {date}",
@@ -1616,6 +1617,14 @@
     },
     "controls": "Controls",
     "socDay": "Charge level, last 24 h",
+    "phone": {
+      "door": "{corner} door",
+      "window": "{corner} window",
+      "lids": "Boot and bonnet",
+      "tyres": "Tyres",
+      "tyresOpen": "Tyre pressures. Show tyre history",
+      "timeLeft": "{time} left"
+    },
     "chart": {
       "now": "Now",
       "soc": "Charge level (SOC %)",

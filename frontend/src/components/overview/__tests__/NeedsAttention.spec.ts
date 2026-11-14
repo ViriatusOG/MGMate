@@ -21,13 +21,18 @@ vi.mock('@/composables/useTyrePressureThresholds', async (importOriginal) => {
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en } })
 
-function mountWith(items: MaintenanceItem[], status: Partial<TelemetrySnapshot> | null = null) {
+function mountWith(
+  items: MaintenanceItem[],
+  status: Partial<TelemetrySnapshot> | null = null,
+  collapsed = false,
+) {
   const maintenance = useMaintenanceStore()
   maintenance.items = items
   // The component asks for the items itself; here they are already in the store.
   maintenance.fetchItems = vi.fn<typeof maintenance.fetchItems>()
   useVehicleStore().currentStatus = status as TelemetrySnapshot | null
   return mount(NeedsAttention, {
+    props: { collapsed },
     global: {
       plugins: [i18n],
       stubs: { FontAwesomeIcon: true, RouterLink: { template: '<a><slot /></a>' } },
@@ -73,5 +78,24 @@ describe('NeedsAttention', () => {
     expect(text).toContain('12V battery is low')
     expect(text).toContain('A tyre is low')
     expect(text).toContain('Front right')
+  })
+
+  it('shows the first only when collapsed, and the rest on request', async () => {
+    const wrapper = mountWith(
+      [
+        maintenanceItem({ id: 1, name: 'Annual service', dueStatus: 'overdue' }),
+        maintenanceItem({ id: 2, name: 'Tyre rotation', dueStatus: 'dueSoon' }),
+        maintenanceItem({ id: 3, name: 'Brake fluid', dueStatus: 'dueSoon' }),
+      ],
+      null,
+      true,
+    )
+
+    expect(wrapper.findAll('.ov-attention__item')).toHaveLength(1)
+    expect(wrapper.find('.ov-attention__more').text()).toBe('2 more need attention')
+
+    await wrapper.find('.ov-attention__more').trigger('click')
+    expect(wrapper.findAll('.ov-attention__item')).toHaveLength(3)
+    expect(wrapper.find('.ov-attention__more').exists()).toBe(false)
   })
 })
