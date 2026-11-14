@@ -176,6 +176,11 @@
       "lowPressure": "Warning"
     },
     "consumptionTempChart": "Consumption vs Outside Temperature",
+    "phone": {
+      "avgTripLength": "Avg trip",
+      "avgSpeed": "Avg speed",
+      "commutePattern": "Peak drive"
+    },
     "sections": {
       "driving": "Driving",
       "energy": "Energy and battery",

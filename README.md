@@ -213,7 +213,7 @@ The overview above is what you see by default. The classic status cards below ar
 
 ### Statistics insights
 
-The Statistics view shows insight cards and charts for a period of its own: the last 24 hours, the last 7, 30 or 90 days, this or last month, this or last year, or custom dates. Charts show a point per day up to about three months, per week up to a year, and per month beyond that. A period longer than a month also gets a table of trips, distance and energy per month. Cards are draggable and individually toggleable.
+The Statistics view shows insight cards and charts for a period of its own: the last 24 hours, the last 7, 30 or 90 days, this or last month, this or last year, or custom dates. Charts show a point per day up to about three months, per week up to a year, and per month beyond that. A period longer than a month also gets a table of trips, distance and energy per month. Cards are draggable and individually toggleable. **On a phone** the cards give way to a summary: the distance for the period as one big number with the number of trips, the average trip, average speed and peak drive time under it, and the other figures you have switched on (the 12V trend, parking locations and so on) as a short list. Edit layout still decides which of them show.
 
 | Insight | Description |
 | ------- | ----------- |

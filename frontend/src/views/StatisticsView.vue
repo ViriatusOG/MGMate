@@ -46,6 +46,8 @@ import {
 import { useUnits } from '@/composables/useUnits'
 import { useErrorMessage } from '@/composables/useErrorMessage'
 import { useStatisticsCharts } from '@/composables/useStatisticsCharts'
+import StatsPhoneSummary from '@/components/StatsPhoneSummary.vue'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 import ViewHeader from '@/components/ViewHeader.vue'
 
 // Only edit mode rearranges the cards; the drag-and-drop library loads when it opens. The cast
@@ -353,6 +355,35 @@ const insightRows = computed(() =>
   settings.statsInsights.map((item) => ({ item, def: insightDefMap.value.get(item.id)! })),
 )
 
+// On a phone the distance leads as one big number, the figures about the driving stand under it,
+// and whatever else the user has switched on follows as a list, in their order.
+const isPhone = useMediaQuery('(width <= 767px)')
+const PHONE_TILE_IDS: readonly StatsInsightId[] = ['avgTripLength', 'avgSpeed', 'commutePattern']
+
+const phoneSummary = computed(() => {
+  const shown = insightRows.value
+    .filter(({ item, def }) => item.visible && def.applicable)
+    .map(({ item, def }) => ({
+      id: item.id,
+      icon: def.icon,
+      label: def.title,
+      value: def.value,
+      unit: def.unit,
+      clickable: def.clickable === true,
+    }))
+  const trips = store.tripSummaries.length
+  return {
+    hero: shown.find((f) => f.id === 'periodDistance') ?? null,
+    note: trips > 0 ? t('tripLog.tripCount', { n: trips }, trips) : null,
+    // Three across leaves room for a short name only.
+    tiles: PHONE_TILE_IDS.flatMap((id) => shown.filter((f) => f.id === id)).map((f) => ({
+      ...f,
+      label: t(`statistics.phone.${f.id}`),
+    })),
+    rows: shown.filter((f) => f.id !== 'periodDistance' && !PHONE_TILE_IDS.includes(f.id)),
+  }
+})
+
 // ── Charts ────────────────────────────────────────────────
 
 const chartDefs = useStatisticsCharts(
@@ -479,6 +510,16 @@ const skeletonChartCount = computed(
               </div>
             </template>
           </EditableCardGrid>
+
+          <!-- A phone: the distance as the headline, the rest as a short list -->
+          <StatsPhoneSummary
+            v-else-if="isPhone"
+            :hero="phoneSummary.hero"
+            :note="phoneSummary.note"
+            :tiles="phoneSummary.tiles"
+            :rows="phoneSummary.rows"
+            @select="(id) => onInsightClick(id as StatsInsightId)"
+          />
 
           <!-- Normal mode: visible + applicable insights -->
           <div v-else class="status-grid">
