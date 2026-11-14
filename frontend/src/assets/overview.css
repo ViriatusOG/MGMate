@@ -946,3 +946,371 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
+/* ── The phone's first screen ─────────────────────────────── */
+
+/* On a phone the page opens with the car, how far it goes and the controls, all above the tab
+   bar: the order of need rather than the order of the wide layout. */
+.ov-page--phone {
+  display: flex;
+  flex-direction: column;
+}
+
+.ov-page--phone > * {
+  order: 5;
+}
+
+.ov-page--phone > .ov-attention {
+  order: 1;
+  margin-bottom: 0.75rem;
+}
+
+.ov-page--phone > .ov-phone {
+  order: 2;
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.ov-page--phone > .ov-controls {
+  order: 3;
+  margin: 0 0 1rem;
+}
+
+.ov-attention__more {
+  position: relative;
+  flex: 1 1 100%;
+  margin-top: -0.35rem;
+  padding: 0 0.25rem;
+  border: none;
+  background: none;
+  color: var(--color-primary-light);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* One line to look at, 44px to hit. */
+.ov-attention__more::after {
+  content: '';
+  position: absolute;
+  inset: -12px 0;
+}
+
+/* The range card above says the level and the range, so the battery card under it starts at its
+   readings. */
+.ov-page--phone .ov-battery > .ov-battery__figures,
+.ov-page--phone .ov-battery > .ov-battery__bar,
+.ov-page--phone .ov-battery > .ov-battery__ranges {
+  display: none;
+}
+
+/* The car, small, with what it reports beside it. */
+.ov-pcar {
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+}
+
+.ov-pcar__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ov-pill--plain {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.ov-pcar__lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ov-pcar__body {
+  display: grid;
+  grid-template-columns: 5.25rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+}
+
+.ov-pcar__car {
+  position: relative;
+}
+
+.ov-pcar__car > .ov-topview {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The MG4 takes the car colour chosen in Settings, as on the wide card. */
+.ov-pcar .ov-topview__shade-edge {
+  stop-color: color-mix(in srgb, var(--car-secondary, #f39200) 80%, #000);
+}
+
+.ov-pcar .ov-topview__shade-mid {
+  stop-color: var(--car-primary, #f9b233);
+}
+
+.ov-pcar .ov-topview__door:not(.is-open) {
+  fill: color-mix(in srgb, var(--car-primary, #f9b233) 88%, #000);
+}
+
+.ov-pcar .ov-topview__body {
+  stroke: color-mix(in srgb, var(--car-secondary, #f39200) 65%, #000);
+}
+
+/* A number on the part, and the same number on its row. */
+.ov-pcar__mark,
+.ov-pcar__n {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--tone, var(--color-text-muted));
+  color: #10131a;
+  font-size: 0.7rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.ov-pcar__mark {
+  position: absolute;
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 2px solid var(--color-surface);
+  transform: translate(-50%, -50%);
+}
+
+.ov-pcar__n {
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-right: 0.45rem;
+}
+
+.ov-pcar__mark.is-warn,
+.ov-pcar__n.is-warn {
+  --tone: var(--color-warning);
+}
+
+.ov-pcar__mark.is-ok,
+.ov-pcar__n.is-ok {
+  --tone: var(--color-success);
+}
+
+.ov-pcar__mark.is-info,
+.ov-pcar__n.is-info {
+  --tone: var(--color-info);
+}
+
+.ov-pcar__list {
+  display: grid;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.ov-pcar__list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ov-pcar__list > div:last-child {
+  border-bottom: none;
+}
+
+.ov-pcar__list dt {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  color: var(--color-text-muted);
+}
+
+.ov-pcar__list dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ov-pcar .is-ok {
+  color: var(--color-success-text);
+}
+
+.ov-pcar .is-warn {
+  color: var(--color-warning-text);
+}
+
+.ov-pcar .is-info {
+  color: var(--color-info-text);
+}
+
+.ov-pcar .is-muted {
+  color: var(--color-text-muted);
+}
+
+.ov-pcar__mark.is-warn,
+.ov-pcar__mark.is-ok,
+.ov-pcar__mark.is-info,
+.ov-pcar__n.is-warn,
+.ov-pcar__n.is-ok,
+.ov-pcar__n.is-info {
+  color: #10131a;
+}
+
+/* The four tyres in a strip; the whole strip opens their history. */
+.ov-pcar__tyres {
+  display: grid;
+  grid-template-columns: auto repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0.3rem 0 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  cursor: pointer;
+}
+
+.ov-pcar__tyres-label {
+  padding-right: 0.25rem;
+  color: var(--color-text-muted);
+}
+
+.ov-pcar__tyre {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ov-pcar__tyre small {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.ov-pcar__tyre.is-warning {
+  color: var(--color-warning-text);
+}
+
+.ov-pcar__tyre.is-danger {
+  color: var(--color-danger-text);
+}
+
+/* How far it goes: the range first, the level as its scale. */
+.ov-prange {
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.ov-prange__figures {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.ov-prange__range {
+  font-size: 2.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.ov-prange__range small {
+  margin-left: 0.15em;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.ov-prange__label {
+  margin-right: auto;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.ov-prange__soc {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-success-text);
+}
+
+.ov-prange__soc small {
+  font-size: 0.8em;
+}
+
+.ov-prange__soc.is-mid {
+  color: var(--color-warning-text);
+}
+
+.ov-prange__soc.is-low {
+  color: var(--color-danger-text);
+}
+
+.ov-prange__line {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* The controls as a row of four at thumb height: icon, name and what it is set to. */
+.ov-page--phone .ov-controls__title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ov-page--phone .ov-controls .status-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.ov-page--phone .ov-controls .status-card {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 4.75rem;
+  padding: 0.5rem 0.25rem;
+  text-align: center;
+}
+
+.ov-page--phone .ov-controls .status-card__body {
+  flex: none;
+  align-items: center;
+  gap: 0.1rem;
+  width: 100%;
+}
+
+.ov-page--phone .ov-controls .status-card__label {
+  font-size: 0.7rem;
+}
+
+.ov-page--phone .ov-controls .status-card__value {
+  font-size: 0.8rem;
+}
+
+.ov-page--phone .ov-controls .status-card__chevron,
+.ov-page--phone .ov-controls .card-info-btn {
+  display: none;
+}
