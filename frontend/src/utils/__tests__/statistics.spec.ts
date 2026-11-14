@@ -47,7 +47,12 @@ describe('trip statistics', () => {
 
   it('counts a spot visited again once and skips trips without an end', () => {
     const spots = parkingSpots([
-      tripSummary({ endLatitude: 52.10001, endLongitude: 5.10001 }),
+      tripSummary({
+        startLatitude: null,
+        startLongitude: null,
+        endLatitude: 52.10001,
+        endLongitude: 5.10001,
+      }),
       tripSummary({ endLatitude: 52.10002, endLongitude: 5.10004 }),
       tripSummary({ endLatitude: 52.2, endLongitude: 5.3 }),
       tripSummary({ endLatitude: null, endLongitude: null }),
@@ -57,6 +62,35 @@ describe('trip statistics', () => {
       { lat: 52.10001, lng: 5.10001 },
       { lat: 52.2, lng: 5.3 },
     ])
+  })
+
+  it('counts where the first trip set off from, where the car stood as the period began', () => {
+    const spots = parkingSpots([
+      tripSummary({
+        startLatitude: 51.45,
+        startLongitude: -0.97,
+        endLatitude: 51.41,
+        endLongitude: -0.95,
+      }),
+      tripSummary({
+        startLatitude: 51.41,
+        startLongitude: -0.95,
+        endLatitude: 51.45,
+        endLongitude: -0.97,
+      }),
+    ])
+
+    expect(spots).toEqual([
+      { lat: 51.45, lng: -0.97 },
+      { lat: 51.41, lng: -0.95 },
+    ])
+  })
+
+  it('without trips, counts the one place the car stood when it is known', () => {
+    const home = { lat: 51.45, lng: -0.97 }
+
+    expect(parkingSpots([], home)).toEqual([home])
+    expect(parkingSpots([])).toEqual([])
   })
 
   it('weighs each trip by the readings behind its average speed', () => {

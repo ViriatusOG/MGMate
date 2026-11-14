@@ -56,7 +56,8 @@ public class TripRepository(
             // -1 samples marks a trip saved before its figures were stored.
             .Select(t => new TripSummaryDto(
                 0, t.Id, t.StartedAt, t.EndedAt, t.DistanceKm, t.PointCount, t.EndLatitude, t.EndLongitude,
-                t.MaxSpeedKmh, t.AvgMovingSpeedKmh, t.MovingSpeedSamples ?? -1))
+                t.MaxSpeedKmh, t.AvgMovingSpeedKmh, t.MovingSpeedSamples ?? -1,
+                t.StartLatitude, t.StartLongitude))
             .ToListAsync(ct);
 
         // A trip saved before the figures were stored, which housekeeping has not reached yet:

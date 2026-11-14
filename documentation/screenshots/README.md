@@ -24,6 +24,10 @@ The main pages of MGMate, on a desktop and on a phone. They were taken in [demo 
 
 ![The statistics: insight cards for the month's distance, average trip length, peak drive time, 12V trend, parking spots and average speed, above charts of the EV battery and the tyre pressures](desktop-statistics.webp)
 
+Click **Parking locations** for a map of every place the car stood in the period:
+
+![The Parking locations dialog: a map with a pin on each place the car stood in the period, and a line under it saying the pins are where the car set off from and every place a trip ended](desktop-statistics-parking.webp)
+
 ### Trips
 
 ![Trips: totals for the month, a calendar with the days driven, and each trip with its places, times, battery used and mi/kWh](desktop-trips.webp)
@@ -81,6 +85,8 @@ The main pages of MGMate, on a desktop and on a phone. They were taken in [demo 
 | <img src="mobile-statistics.webp" alt="The statistics on a phone" width="180"> | <img src="mobile-maintenance.webp" alt="The maintenance list on a phone" width="180"> | <img src="mobile-climate-schedules.webp" alt="The climate schedules on a phone" width="180"> | <img src="mobile-dashboard-charging.webp" alt="The live charging card on a phone" width="180"> |
 | **Settings** | **Debug** | **Notifications** | **Trip chart scrubbed** |
 | <img src="mobile-settings.webp" alt="Settings on a phone" width="180"> | <img src="mobile-debug.webp" alt="The Debug page on a phone" width="180"> | <img src="mobile-notifications.webp" alt="The notifications, full screen on a phone" width="180"> | <img src="mobile-trip-detail.webp" alt="A trip's chart scrubbed on a phone, the map pinned above it with the car at that moment" width="180"> |
+| **Parking locations** | | | |
+| <img src="mobile-statistics-parking.webp" alt="The parking locations map on a phone" width="180"> | | | |
 
 <!-- markdownlint-enable MD033 -->
 

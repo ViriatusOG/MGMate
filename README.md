@@ -222,7 +222,7 @@ The Statistics view shows insight cards and charts for a period of its own: the 
 | Remote preconditioning | Percentage of snapshots with remote climate active |
 | Peak drive time | Hour of day with the most trip starts |
 | 12V trend | Change in average 12V battery voltage over the period |
-| Parking locations | Number of distinct parking spots (rounded GPS) |
+| Parking locations | How many places the car stood in the period: where it set off from, and where every trip ended (spots within about 100 m count once). Click it for a map of them. With no trips, it is the car's current spot for a period that runs to today; with nothing to show, the dialog says "No parking locations in this period" instead of opening an empty map |
 | Electric share today | Estimated share of today's driving on electric power (PHEV only) |
 | Avg speed | Average moving speed across all GPS points in the period, excluding stopped moments |
 

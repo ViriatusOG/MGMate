@@ -31,6 +31,7 @@ const PAGES = [
   { file: 'map', path: '/map' },
   { file: 'map-trip', path: '/map', prepare: selectTrip },
   { file: 'statistics', path: '/statistics' },
+  { file: 'statistics-parking', path: '/statistics', prepare: openParking },
   { file: 'trips', path: '/trip-log' },
   { file: 'trip-detail', path: '/trip-log', prepare: scrubTrip, keepScroll: true },
   { file: 'charges', path: '/charges' },
@@ -180,6 +181,16 @@ async function scrubTrip(page) {
   if (touch) await page.touchscreen.tap(x, y)
   else await page.mouse.move(x, y)
   await page.waitForTimeout(500)
+}
+
+// The Parking locations card opened: the period's parking spots on a map.
+async function openParking(page) {
+  await page
+    .locator('.status-card--clickable')
+    .filter({ hasText: 'Parking locations' })
+    .first()
+    .click()
+  await settled(page)
 }
 
 // One trip, snapped to the roads and coloured against the speed limits, as the gallery shows it.

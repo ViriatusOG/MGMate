@@ -60,6 +60,7 @@ public class TripDtoTests
         Assert.Equal(40, root.GetProperty("avgMovingSpeedKmh").GetDouble());
         Assert.Equal(2, root.GetProperty("movingSpeedSamples").GetInt32());
         Assert.Equal(52.01, root.GetProperty("endLatitude").GetDouble());
+        Assert.Equal(trip.Points[0].Latitude, root.GetProperty("startLatitude").GetDouble());
     }
 
     [Fact]
@@ -99,7 +100,8 @@ public class TripDtoTests
         Assert.Equal([2000L, 40500L, 44500L], compact.IntervalsMs);
         Assert.Equal(trip.ToSummary(), new TripSummaryDto(
             compact.Index, compact.Id, compact.StartedAt, compact.EndedAt, compact.DistanceKm, compact.PointCount,
-            compact.EndLatitude, compact.EndLongitude, compact.MaxSpeedKmh, compact.AvgMovingSpeedKmh, compact.MovingSpeedSamples));
+            compact.EndLatitude, compact.EndLongitude, compact.MaxSpeedKmh, compact.AvgMovingSpeedKmh, compact.MovingSpeedSamples,
+            compact.StartLatitude, compact.StartLongitude));
     }
 
     [Fact]
