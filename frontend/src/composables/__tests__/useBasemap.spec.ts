@@ -169,6 +169,10 @@ describe('useBasemap', () => {
   })
 
   afterEach(() => {
+    // A settings change saves 300 ms later. Left pending, a test's save (colourful maps on, say)
+    // can land after the next test has cleared localStorage and before its fresh store reads it,
+    // on a slow runner. Flushing the saves now lets the next beforeEach wipe them.
+    window.dispatchEvent(new Event('pagehide'))
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
