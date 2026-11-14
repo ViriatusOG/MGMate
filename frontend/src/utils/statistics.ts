@@ -48,16 +48,25 @@ export function peakDriveHour(trips: readonly TripSummary[]): number | null {
 }
 
 /**
- * Where the trips ended, one entry per spot: ends that agree to three decimals (about 100 m) are
- * the same place visited again.
+ * Where the car stood during a period, one entry per spot: where the first trip set off from
+ * (the car stood there when the period began), then where every trip ended. Places that agree to
+ * three decimals (about 100 m) are the same spot visited again. With no trips at all the car stood
+ * in one place the whole time: `standing`, when the caller knows it (the car's position now, for a
+ * period that reaches today).
  */
-export function parkingSpots(trips: readonly TripSummary[]): MapSpot[] {
+export function parkingSpots(
+  trips: readonly TripSummary[],
+  standing: MapSpot | null = null,
+): MapSpot[] {
+  if (trips.length === 0) return standing ? [standing] : []
   const spots = new Map<string, MapSpot>()
-  for (const trip of trips) {
-    if (trip.endLatitude === null || trip.endLongitude === null) continue
-    const key = `${trip.endLatitude.toFixed(3)},${trip.endLongitude.toFixed(3)}`
-    if (!spots.has(key)) spots.set(key, { lat: trip.endLatitude, lng: trip.endLongitude })
+  const add = (lat: number | null, lng: number | null) => {
+    if (lat === null || lng === null) return
+    const key = `${lat.toFixed(3)},${lng.toFixed(3)}`
+    if (!spots.has(key)) spots.set(key, { lat, lng })
   }
+  add(trips[0]!.startLatitude, trips[0]!.startLongitude)
+  for (const trip of trips) add(trip.endLatitude, trip.endLongitude)
   return [...spots.values()]
 }
 

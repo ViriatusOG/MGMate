@@ -174,6 +174,9 @@ export interface TripSummary {
   endedAt: string
   distanceKm: number
   pointCount: number
+  /** Where the trip started, null for a trip without fixes. */
+  startLatitude: number | null
+  startLongitude: number | null
   /** Where the trip ended. */
   endLatitude: number | null
   endLongitude: number | null

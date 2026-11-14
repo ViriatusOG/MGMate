@@ -67,6 +67,12 @@ public sealed class TripPointSourceJsonConverter()
 /// </summary>
 public record TripDto(int Index, DateTime StartedAt, DateTime EndedAt, double DistanceKm, int PointCount, IReadOnlyList<TripPoint> Points, long? Id = null)
 {
+    /// <summary>Where the trip started, or null for a trip without fixes.</summary>
+    public double? StartLatitude => Points.Count > 0 ? Points[0].Latitude : null;
+
+    /// <inheritdoc cref="StartLatitude"/>
+    public double? StartLongitude => Points.Count > 0 ? Points[0].Longitude : null;
+
     /// <summary>Where the trip ended, or null for a trip without fixes.</summary>
     public double? EndLatitude => Points.Count > 0 ? Points[^1].Latitude : null;
 
@@ -90,7 +96,8 @@ public record TripDto(int Index, DateTime StartedAt, DateTime EndedAt, double Di
     /// <summary>The same trip without its fixes.</summary>
     public TripSummaryDto ToSummary() => new(
         Index, Id, StartedAt, EndedAt, DistanceKm, PointCount,
-        EndLatitude, EndLongitude, MaxSpeedKmh, AvgMovingSpeedKmh, MovingSpeedSamples);
+        EndLatitude, EndLongitude, MaxSpeedKmh, AvgMovingSpeedKmh, MovingSpeedSamples,
+        StartLatitude, StartLongitude);
 
     /// <summary>The same trip with its fixes packed into three arrays; see <see cref="CompactTripDto"/>.</summary>
     public CompactTripDto ToCompact()
@@ -109,6 +116,7 @@ public record TripDto(int Index, DateTime StartedAt, DateTime EndedAt, double Di
         return new(
             Index, Id, StartedAt, EndedAt, DistanceKm, PointCount,
             EndLatitude, EndLongitude, MaxSpeedKmh, AvgMovingSpeedKmh, MovingSpeedSamples,
+            StartLatitude, StartLongitude,
             PolylineCodec.Encode([.. Points.Select(p => new GeoCoordinate(p.Latitude, p.Longitude))]),
             intervals,
             [.. Points.Select(p => p.Speed)],
@@ -131,7 +139,9 @@ public record TripSummaryDto(
     double? EndLongitude,
     double? MaxSpeedKmh,
     double? AvgMovingSpeedKmh,
-    int MovingSpeedSamples);
+    int MovingSpeedSamples,
+    double? StartLatitude,
+    double? StartLongitude);
 
 /// <summary>
 /// A trip as <see cref="TripDto"/> serves it, with its fixes as three arrays instead of an object
@@ -158,6 +168,8 @@ public record CompactTripDto(
     double? MaxSpeedKmh,
     double? AvgMovingSpeedKmh,
     int MovingSpeedSamples,
+    double? StartLatitude,
+    double? StartLongitude,
     string Line,
     IReadOnlyList<long> IntervalsMs,
     IReadOnlyList<double?> Speeds,

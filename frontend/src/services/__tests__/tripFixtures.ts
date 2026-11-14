@@ -14,6 +14,8 @@ export function tripSummary(overrides: Partial<TripSummary> = {}): TripSummary {
     endedAt: '2026-09-24T15:06:00.000Z',
     distanceKm: 42,
     pointCount: 2,
+    startLatitude: 52.5123,
+    startLongitude: 6.0921,
     endLatitude: 52.2554,
     endLongitude: 6.1639,
     maxSpeedKmh: null,

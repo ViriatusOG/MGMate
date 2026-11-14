@@ -67,6 +67,8 @@ function trip(overrides: Partial<TripSummary>): TripSummary {
     endedAt: '2026-10-10T07:30:00Z',
     distanceKm: 10,
     pointCount: 50,
+    startLatitude: 52.09,
+    startLongitude: 5.12,
     endLatitude: 52.09,
     endLongitude: 5.12,
     maxSpeedKmh: null,
@@ -76,7 +78,7 @@ function trip(overrides: Partial<TripSummary>): TripSummary {
   }
 }
 
-// Three trips, two of them ending at the same place.
+// Three trips from home, two of them ending back home.
 const trips = [
   trip({ index: 0, id: 1, distanceKm: 12 }),
   trip({ index: 1, id: 2, distanceKm: 30, endLatitude: 52.37, endLongitude: 4.9 }),
@@ -196,6 +198,49 @@ describe('StatisticsView', () => {
 
     // The modal is teleported to the page's body.
     expect(document.body.querySelectorAll('.marker')).toHaveLength(2)
+    expect(document.body.textContent).toContain(en.statistics.parking.hint)
+  })
+
+  it('counts where the first trip set off from as a parking location', async () => {
+    vi.mocked(vehicleApi.tripSummaries).mockResolvedValue([
+      trip({ startLatitude: 51.45, startLongitude: -0.97 }),
+    ])
+
+    const wrapper = await mountView()
+
+    expect(shownInsights(wrapper)[insights.parkingLocations]).toBe('2')
+  })
+
+  it('without trips, shows the one place the car has stood all period', async () => {
+    vi.mocked(vehicleApi.tripSummaries).mockResolvedValue([])
+    vi.mocked(vehicleApi.status).mockResolvedValue({
+      ...parked,
+      latitude: 51.45,
+      longitude: -0.97,
+    } as TelemetrySnapshot)
+
+    const wrapper = await mountView()
+    expect(shownInsights(wrapper)[insights.parkingLocations]).toBe('1')
+    await wrapper.find('.status-card--clickable').trigger('click')
+
+    expect(document.body.querySelectorAll('.marker')).toHaveLength(1)
+    expect(document.body.textContent).toContain(en.statistics.parking.standing)
+  })
+
+  it('says so, rather than opening an empty map, when there is no parking location', async () => {
+    vi.mocked(vehicleApi.tripSummaries).mockResolvedValue([])
+    // Readings from the car, but no trips and no position.
+    vi.mocked(vehicleApi.dailyStats).mockResolvedValue([
+      { date: '2026-10-19', batteryVoltage: 12.6 },
+    ] as Awaited<ReturnType<typeof vehicleApi.dailyStats>>)
+
+    const wrapper = await mountView()
+    expect(shownInsights(wrapper)[insights.parkingLocations]).toBe('0')
+    await wrapper.find('.status-card--clickable').trigger('click')
+
+    expect(document.body.querySelectorAll('.marker')).toHaveLength(0)
+    expect(document.body.querySelector('.parking-modal-map')).toBeNull()
+    expect(document.body.textContent).toContain(en.statistics.parking.none)
   })
 
   it('loads the new days when the period changes, with a month table for a long one', async () => {

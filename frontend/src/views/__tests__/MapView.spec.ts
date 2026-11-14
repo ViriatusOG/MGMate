@@ -104,6 +104,8 @@ function trip(index: number): Trip {
     endedAt: at(30),
     distanceKm: 10 + index,
     pointCount: 2,
+    startLatitude: 52.08,
+    startLongitude: 5.11,
     endLatitude: 52.1,
     endLongitude: 5.1,
     maxSpeedKmh: null,

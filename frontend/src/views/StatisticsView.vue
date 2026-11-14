@@ -12,7 +12,7 @@ import { vehicleApi } from '@/services/vehicleApi'
 import type { VehicleAggregateStats } from '@/services/vehicleApi'
 import { tripLogApi, type TripLogEntry } from '@/services/tripLogApi'
 import { LMap, LMarker } from '@vue-leaflet/vue-leaflet'
-import { DEFAULT_MAP_CENTER, fitToPoints, type LeafletMap } from '@/utils/leaflet'
+import { fitToPoints, type LeafletMap } from '@/utils/leaflet'
 import { useLeafletMap } from '@/composables/useLeafletMap'
 import { useBasemap } from '@/composables/useBasemap'
 import CardInfoWrap from '@/components/CardInfoWrap.vue'
@@ -27,6 +27,7 @@ import StatusCard from '@/components/StatusCard.vue'
 import StatsChartCard from '@/components/StatsChartCard.vue'
 import type EditableCardGridComponent from '@/components/EditableCardGrid.vue'
 import { DAY_MONTH, formatDate, formatDateTime, formatHour, formatNumber } from '@/utils/format'
+import { startOfLocalDay } from '@/utils/dates'
 import { resolveStatsPeriod, statsQuery } from '@/utils/statsPeriod'
 import { energyUnit } from '@/utils/energy'
 import { burnsFuel, plugsIn } from '@/utils/vehicleType'
@@ -177,12 +178,22 @@ const peakDriveHour = computed(() => {
   return hour === null ? null : formatHour(hour)
 })
 
-// Shared with the parking-locations modal below - parkingLocations is just this list's count.
-const parkingCoordinates = computed(() => parkingSpots(store.tripSummaries))
+// Where the car is now: the one place it stood in a period without trips, if that period runs
+// up to today. A period that ended earlier says nothing about where the car is now.
+const standingSpot = computed(() => {
+  const s = status.value
+  if (s?.latitude == null || s.longitude == null) return null
+  if (period.value.last.getTime() < startOfLocalDay(new Date()).getTime()) return null
+  return { lat: s.latitude, lng: s.longitude }
+})
 
-const parkingLocations = computed(() =>
-  store.tripSummaries.length ? parkingCoordinates.value.length : null,
+// Shared with the parking-locations modal below - parkingLocations is just this list's count.
+const parkingCoordinates = computed(() => parkingSpots(store.tripSummaries, standingSpot.value))
+const parkedAllPeriod = computed(
+  () => store.tripSummaries.length === 0 && parkingCoordinates.value.length > 0,
 )
+
+const parkingLocations = computed(() => parkingCoordinates.value.length)
 
 const batteryVoltageTrend = computed(() => {
   const delta = batteryVoltageChange(store.dailyStats)
@@ -211,11 +222,11 @@ const parkingModalOpen = ref(false)
 const { mapInstance: parkingMapInstance, bindMapReady: bindParkingMapReady } = useLeafletMap()
 useBasemap(parkingMapInstance)
 
-const parkingMapCenter = computed<[number, number]>(() =>
-  parkingCoordinates.value.length
-    ? [parkingCoordinates.value[0]!.lat, parkingCoordinates.value[0]!.lng]
-    : DEFAULT_MAP_CENTER,
-)
+// The map is only drawn when there is a spot to show, so it never opens on a place of its own.
+const parkingMapCenter = computed<[number, number]>(() => {
+  const first = parkingCoordinates.value[0]
+  return first ? [first.lat, first.lng] : [0, 0]
+})
 
 function onParkingMapReady(map: LeafletMap) {
   bindParkingMapReady(map, () => {
@@ -309,9 +320,9 @@ const insightDefs = computed((): InsightDef[] => [
     icon: INSIGHT_ICONS.parkingLocations,
     title: t('statistics.insights.parkingLocations'),
     description: t('statistics.cardDesc.parkingLocations'),
-    value: parkingLocations.value !== null ? String(parkingLocations.value) : null,
+    value: String(parkingLocations.value),
     vehicleApplicable: true,
-    applicable: hasPeriodData.value,
+    applicable: hasPeriodData.value || parkingLocations.value > 0,
     clickable: true,
   },
   {
@@ -578,15 +589,27 @@ const skeletonChartCount = computed(
           wide
           @close="parkingModalOpen = false"
         >
-          <div class="parking-modal-map">
-            <LMap :zoom="13" :center="parkingMapCenter" @ready="onParkingMapReady">
-              <LMarker
-                v-for="(spot, i) in parkingCoordinates"
-                :key="i"
-                :lat-lng="[spot.lat, spot.lng]"
-              />
-            </LMap>
+          <div v-if="parkingCoordinates.length === 0" class="empty-state parking-modal-empty">
+            <font-awesome-icon icon="location-dot" class="parking-modal-empty__icon" />
+            <p class="parking-modal-empty__title">{{ t('statistics.parking.none') }}</p>
+            <p class="text-sm text-muted">{{ t('statistics.parking.noneHint') }}</p>
           </div>
+          <template v-else>
+            <div class="parking-modal-map">
+              <LMap :zoom="15" :center="parkingMapCenter" @ready="onParkingMapReady">
+                <LMarker
+                  v-for="(spot, i) in parkingCoordinates"
+                  :key="i"
+                  :lat-lng="[spot.lat, spot.lng]"
+                />
+              </LMap>
+            </div>
+            <p class="parking-modal-hint text-sm text-muted">
+              {{
+                parkedAllPeriod ? t('statistics.parking.standing') : t('statistics.parking.hint')
+              }}
+            </p>
+          </template>
         </DetailModal>
       </template>
     </template>
@@ -594,6 +617,29 @@ const skeletonChartCount = computed(
 </template>
 
 <style scoped>
+.parking-modal-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
+.parking-modal-empty__icon {
+  font-size: 1.6rem;
+  opacity: 0.5;
+}
+
+.parking-modal-empty__title {
+  font-weight: 600;
+  margin: 0;
+}
+
+.parking-modal-hint {
+  margin: 0.6rem 0 0;
+}
+
 .parking-modal-map {
   height: 280px;
   width: 100%;
