@@ -300,4 +300,29 @@ describe('TripLogView', () => {
     await pickTrip(wrapper, 1)
     expect(wrapper.find('.trip-log-detail').exists()).toBe(false)
   })
+
+  it('shows five totals in a row on a wide screen, with the cost as its own', async () => {
+    const wrapper = await mountView()
+
+    const labels = wrapper.findAll('.stat-tiles .stat-tile').map((tile) => tile.text())
+    expect(labels).toHaveLength(5)
+    expect(wrapper.find('.stat-tiles').text()).toContain('Cost')
+    expect(wrapper.find('.stat-tiles').text()).not.toContain('longest')
+  })
+
+  it('shows four totals on a phone, each with a note of its own', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(width <= 767px)',
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }))
+    const wrapper = await mountView()
+
+    const tiles = wrapper.findAll('.stat-tiles .stat-tile')
+    expect(tiles).toHaveLength(4)
+    const text = wrapper.find('.stat-tiles').text()
+    expect(text).toContain('longest')
+    expect(text).toContain('avg')
+    expect(text).not.toContain('Cost')
+  })
 })

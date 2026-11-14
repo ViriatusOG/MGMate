@@ -970,7 +970,11 @@
       "efficiency": "Avg consumption",
       "energy": "Energy used",
       "cost": "Cost",
-      "noPrice": "No price set"
+      "noPrice": "No price set",
+      "longest": "longest {distance}",
+      "average": "avg {distance}",
+      "best": "best {value}",
+      "costNote": "≈ {cost} at the home rate"
     },
     "tripCount": "{n} trip | {n} trips",
     "showWholeYear": "Whole of {year}",

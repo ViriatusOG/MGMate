@@ -190,6 +190,13 @@ const purposeTitle = computed(() => {
       <span class="ll-row__soc">
         <SocBar :start="entry.socStartPercent ?? null" :end="entry.socEndPercent ?? null" />
         <span v-if="socLabel">{{ socLabel }}</span>
+        <!-- On a phone the first line has no room for it beside the times. -->
+        <span
+          v-if="noRoute || partRoute"
+          class="ll-pill ll-pill--warn trip-log-item__flag"
+          :title="noRoute ? t('tripLog.noRouteHint') : t('tripLog.partRouteHint')"
+          >{{ noRoute ? t('tripLog.noRoute') : t('tripLog.partRoute') }}</span
+        >
       </span>
 
       <span class="ll-row__figures">

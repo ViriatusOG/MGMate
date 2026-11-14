@@ -253,6 +253,11 @@
   font-size: 0.72rem;
 }
 
+/* The same label on the battery line, where a phone shows it. */
+.ll-pill.trip-log-item__flag {
+  display: none;
+}
+
 /* Edited route and notes, as icons only: the detail names them. */
 .trip-log-item__mark {
   flex: none;
@@ -709,4 +714,119 @@
   top: 0;
   z-index: 2;
   flex-shrink: 0;
+}
+
+/* ── Phone: the week, four totals, then a card per day ────── */
+
+@media (width <= 767px) {
+  .trips-page {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .trips-page > .view-header,
+  .trips-page > .view-subtitle {
+    order: -2;
+  }
+
+  .trips-page > .week-strip {
+    order: -1;
+  }
+
+  /* The totals stand as a block of four in place of a strip to swipe. */
+  .trips-page > .stat-tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow: visible;
+  }
+
+  .trips-page > .stat-tiles .stat-tile {
+    flex: none;
+  }
+
+  /* A day is one card and its trips are rows in it. */
+  .trips-page .trip-log-list {
+    gap: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+
+  .trips-page .trip-log-item {
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .trips-page .trip-log-item + .trip-log-item {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .trips-page .trip-log-item--no-route + .trip-log-item,
+  .trips-page .trip-log-item + .trip-log-item--no-route {
+    border-top-style: dashed;
+  }
+
+  /* The battery the trip used, on a line of its own under the places. */
+  .trips-page .trip-log-item .ll-row {
+    grid-template:
+      'lead main figures' auto
+      '.    soc  soc' auto / auto minmax(0, 1fr) auto;
+    gap: 0.35rem 0.75rem;
+  }
+
+  .trips-page .trip-log-item .ll-row__lead {
+    grid-area: lead;
+  }
+
+  .trips-page .trip-log-item .ll-row__main {
+    grid-area: main;
+  }
+
+  .trips-page .trip-log-item .ll-row__figures {
+    grid-area: figures;
+    min-width: 0;
+  }
+
+  .trips-page .trip-log-item .ll-row__soc {
+    grid-area: soc;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .trips-page .trip-log-item .ll-row__soc .soc-bar {
+    flex: 0 0 5rem;
+  }
+
+  .trips-page .trip-log-item__no-route {
+    display: none;
+  }
+
+  .trips-page .ll-pill.trip-log-item__flag {
+    display: inline-flex;
+    margin-left: auto;
+    font-size: 0.72rem;
+  }
+
+  /* The distance and what it cost per mile say it; the kWh is in the detail. */
+  .trips-page .trip-log-item .ll-row__figures .ll-row__small {
+    display: none;
+  }
+}
+
+@media (width <= 767px) {
+  @container (width < 26rem) {
+    .trips-page .trip-log-item__end-time {
+      display: inline;
+    }
+  }
 }
