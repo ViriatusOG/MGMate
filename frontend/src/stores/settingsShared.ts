@@ -32,6 +32,8 @@ export const CAR_COLOR_SCHEMES: CarColorScheme[] = [
   { id: 'silver', primary: '#cfd8dc', secondary: '#90a4ae' },
   { id: 'white', primary: '#eceff1', secondary: '#b0bec5' },
   { id: 'anthracite', primary: '#455a64', secondary: '#263238' },
+  // MG's Camden Grey: a dark slate grey with a hint of blue (MG4, 2026).
+  { id: 'camdenGrey', primary: '#5d656e', secondary: '#383e46' },
   { id: 'green', primary: '#43a047', secondary: '#2e7d32' },
   { id: 'purple', primary: '#8e24aa', secondary: '#6a1b9a' },
 ]
