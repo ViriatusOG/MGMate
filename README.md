@@ -546,6 +546,7 @@ Commands sent by hand at the same moment as a scheduled run share the car's one 
 - **When it is due.** From the last service you logged and the car's odometer, an item is *OK*, *due soon* once 90 % of its interval has passed, or *overdue*. One without a service logged yet counts from the car's first registration date at 0 miles, the way MG counts the first service of a new car; until that date is set it shows *No start point*, and its dialog asks for the date (**Count from: Registration**) or for a past service. The date is the same one the [Warranty](#warranty) uses.
 - **Logging a service.** Record the date, the odometer reading (the current one is filled in) and notes. The item's interval starts again from there, and its history is kept.
 - **Where it shows.** The dashboard's maintenance card shows the most urgent item, and so does the [Homepage widget](#homepage-dashboard-widget). A notification comes when an item becomes due soon or overdue (checked every 6 hours, at most once a week per item).
+- **On a phone.** The page opens with a **Needs attention** list of the items that are overdue or due soon. Under **Service items** those keep their full card, with **Log a service** and **Edit item** on it, and every item that is fine takes one row with what is left; tap a row for its detail.
 
 ### Warranty
 

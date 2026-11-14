@@ -9,7 +9,11 @@ import { formatTimeSpan, utcDay } from '@/utils/timeSpan'
 import { todayUtc } from '@/utils/warranty'
 import { useUnits } from '@/composables/useUnits'
 
-const props = defineProps<{ item: MaintenanceItem }>()
+const props = defineProps<{
+  item: MaintenanceItem
+  /** One row in a list: the name, what is left and the status, for a phone. */
+  compact?: boolean
+}>()
 defineEmits<{ (e: 'open'): void }>()
 
 const { t } = useI18n()
@@ -56,6 +60,13 @@ const bars = computed(() => {
   return out
 })
 
+// A row has one line for it: what is left on each count, or failing that how often it comes round.
+const compactLine = computed(() =>
+  bars.value.length > 0
+    ? bars.value.map((bar) => bar.text).join(' · ')
+    : formatIntervalSummary(props.item, t, units.value),
+)
+
 const dueLine = computed(() => {
   const parts: string[] = []
   if (props.item.nextDueDate)
@@ -83,7 +94,27 @@ const lastLine = computed(() => {
 </script>
 
 <template>
-  <button type="button" class="due-card" :class="`due-card--${variant}`" @click="$emit('open')">
+  <button
+    v-if="compact"
+    type="button"
+    class="due-row"
+    :class="`due-card--${variant}`"
+    @click="$emit('open')"
+  >
+    <span class="due-row__dot" aria-hidden="true" />
+    <span class="due-row__main">
+      <span class="due-card__name">{{ item.name }}</span>
+      <span class="due-card__interval">{{ compactLine }}</span>
+    </span>
+    <span class="due-card__badge">{{ t(`maintenance.status.${item.dueStatus}`) }}</span>
+  </button>
+  <button
+    v-else
+    type="button"
+    class="due-card"
+    :class="`due-card--${variant}`"
+    @click="$emit('open')"
+  >
     <span class="due-card__head">
       <span class="due-card__name">{{ item.name }}</span>
       <span class="due-card__badge">{{ t(`maintenance.status.${item.dueStatus}`) }}</span>
@@ -122,6 +153,39 @@ const lastLine = computed(() => {
   border: 1px solid var(--color-border);
   border-left: 4px solid var(--tone);
   border-radius: var(--radius);
+}
+
+.due-row {
+  --tone: var(--color-success, #22c55e);
+
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 0.55rem 0.9rem;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+.due-row__dot {
+  flex: none;
+  width: 0.6rem;
+  height: 0.6rem;
+  background: var(--tone);
+  border-radius: 50%;
+}
+
+.due-row__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
 }
 
 .due-card:hover {
