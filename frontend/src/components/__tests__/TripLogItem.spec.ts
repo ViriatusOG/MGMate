@@ -88,6 +88,8 @@ describe('TripLogItem', () => {
 
     expect(wrapper.find('.trip-log-item--no-route').exists()).toBe(true)
     expect(wrapper.find('.trip-log-item__no-route').text()).toBe('Part route')
+    // The same label again on the battery line, which is where a phone shows it.
+    expect(wrapper.find('.trip-log-item__flag').text()).toBe('Part route')
     expect(wrapper.find('.trip-log-item__duration').text()).toBe('≈34 min')
     expect(wrapper.find('.trip-log-item__when').text()).toMatch(/^≈\d/)
   })

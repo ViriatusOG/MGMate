@@ -26,6 +26,7 @@ import { formatDurationMs } from '@/utils/tripRows'
 import type { Measure } from '@/utils/units'
 import { useUnits } from '@/composables/useUnits'
 import { useErrorMessage } from '@/composables/useErrorMessage'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 import { useTripRoute } from '@/composables/useTripRoute'
 import ViewHeader from '@/components/ViewHeader.vue'
 import StatTile from '@/components/StatTile.vue'
@@ -288,48 +289,81 @@ function efficiencyOf(totals: Totals) {
 
 const monthTotals = computed(() => totalsOf(listed.value))
 
+// On a phone the totals stand as a block of four, so each says a little more and the cost sits
+// under the energy it prices.
+const isPhone = useMediaQuery('(width <= 767px)')
+
+const tripExtremes = computed(() => {
+  let longestKm = 0
+  let bestWhPerKm: number | null = null
+  for (const e of listed.value) {
+    if (e.isHidden) continue
+    const km = loggedDistanceKm(e) ?? 0
+    longestKm = Math.max(longestKm, km)
+    const energy = energyOf(e)
+    // A hop round the corner says nothing about how the car does.
+    const wh = energy?.whPerKm ?? null
+    if (wh !== null && wh > 0 && km >= 2 && (bestWhPerKm === null || wh < bestWhPerKm))
+      bestWhPerKm = wh
+  }
+  return { longestKm, bestWhPerKm }
+})
+
 const tiles = computed(() => {
   const m = monthTotals.value
   const distance = units.value.measure('distance', m.km, { decimals: 1 })
   const efficiency = efficiencyOf(m)
   const rate = homeRate.value
-  return [
+  const phone = isPhone.value
+  const { longestKm, bestWhPerKm } = tripExtremes.value
+  const cost = rate !== null && m.kwh > 0 ? money(m.kwh * rate) : null
+  const all = [
     {
       key: 'distance',
       value: distance?.value ?? '-',
       unit: distance?.unit,
       label: t('tripLog.tiles.distance'),
-      note: null,
+      note:
+        phone && m.trips > 1 && longestKm > 0
+          ? t('tripLog.tiles.longest', { distance: units.value.format('distance', longestKm) })
+          : null,
     },
     {
       key: 'trips',
       value: String(m.trips),
       unit: undefined,
       label: t('tripLog.tiles.trips'),
-      note: null,
+      note:
+        phone && m.trips > 1
+          ? t('tripLog.tiles.average', { distance: units.value.format('distance', m.km / m.trips) })
+          : null,
     },
     {
       key: 'efficiency',
       value: efficiency?.value ?? '-',
       unit: efficiency?.unit,
       label: t('tripLog.tiles.efficiency'),
-      note: null,
+      note:
+        phone && bestWhPerKm !== null
+          ? t('tripLog.tiles.best', { value: units.value.format('energyPerDistance', bestWhPerKm) })
+          : null,
     },
     {
       key: 'energy',
       value: m.kwh > 0 ? formatNumber(m.kwh, 1) : '-',
       unit: m.kwh > 0 ? t('common.kwh') : undefined,
       label: t('tripLog.tiles.energy'),
-      note: null,
+      note: phone && cost !== null ? t('tripLog.tiles.costNote', { cost }) : null,
     },
     {
       key: 'cost',
-      value: rate !== null && m.kwh > 0 ? money(m.kwh * rate) : '-',
+      value: cost ?? '-',
       unit: undefined,
       label: t('tripLog.tiles.cost'),
       note: rate === null ? t('tripLog.tiles.noPrice') : null,
     },
   ]
+  return phone ? all.filter((tile) => tile.key !== 'cost') : all
 })
 
 const days = computed(() => groupByDay(newestFirst.value, (e) => e.startedAt))
@@ -515,7 +549,7 @@ function exportCsv() {
 </script>
 
 <template>
-  <div class="view-container">
+  <div class="view-container trips-page">
     <ViewHeader :title="t('tripLog.title')" :subtitle="t('tripLog.subtitle')">
       <template #actions>
         <button type="button" class="btn btn-outline-secondary btn-sm" @click="openPlaces()">
