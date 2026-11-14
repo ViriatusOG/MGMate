@@ -80,11 +80,16 @@ function timeLeft(c: WarrantyCover): string | null {
   return formatTimeSpan(t, todayUtc(), utcDay(c.endsOn))
 }
 
-function left(c: WarrantyCover, withDistance = true): string {
-  if (c.status === 'expired' || c.status === 'notCovered') return '-'
+// What is left of a cover: the time, and the distance where the cover has a mileage limit.
+function leftParts(c: WarrantyCover): string[] {
+  if (c.status === 'expired' || c.status === 'notCovered') return []
   const parts = [timeLeft(c)]
-  if (withDistance && c.kmRemaining != null) parts.push(distance(c.kmRemaining))
-  return parts.filter(Boolean).join(' · ') || '-'
+  if (c.kmRemaining != null) parts.push(distance(c.kmRemaining))
+  return parts.filter((part): part is string => !!part)
+}
+
+function left(c: WarrantyCover): string {
+  return leftParts(c).join(' · ') || '-'
 }
 
 function expiredNote(c: WarrantyCover): string | null {
@@ -263,8 +268,9 @@ async function startTracking() {
           </span>
           <span class="warranty-list__side">
             <span class="warranty-badge">{{ t(`warranty.status.${c.status}`) }}</span>
-            <span v-if="left(c, false) !== '-'" class="warranty-row__note">{{
-              left(c, false)
+            <!-- One line each, so the cover's name keeps its room on a narrow screen. -->
+            <span v-for="part in leftParts(c)" :key="part" class="warranty-row__note">{{
+              part
             }}</span>
           </span>
         </li>

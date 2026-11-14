@@ -181,7 +181,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="wrapper" class="trip-route-map" :aria-label="t('tripLog.detail.routePreview')">
+  <div
+    ref="wrapper"
+    class="trip-route-map"
+    role="region"
+    :aria-label="t('tripLog.detail.routePreview')"
+  >
     <LMap
       :zoom="13"
       :center="initialCenter"

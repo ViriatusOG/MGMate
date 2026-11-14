@@ -205,10 +205,14 @@ body,
 
 /* ── App shell ────────────────────────────────────────────── */
 
+/* The page reaches the screen's edges (viewport-fit=cover), so a phone held sideways keeps the
+   content clear of its notch; upright these are zero. */
 .app-layout {
   display: flex;
   flex-direction: column;
   height: 100%;
+  padding-right: env(safe-area-inset-right, 0);
+  padding-left: env(safe-area-inset-left, 0);
 }
 
 /* Fills the window, less the top bar and tab bar on a phone */
@@ -231,7 +235,8 @@ body,
   border-bottom: 1px solid var(--color-border);
   align-items: center;
   gap: 0.75rem;
-  padding: 0 0.75rem;
+  padding: 0 max(0.75rem, env(safe-area-inset-right, 0)) 0
+    max(0.75rem, env(safe-area-inset-left, 0));
   z-index: var(--z-topbar);
 }
 
@@ -452,8 +457,8 @@ body,
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 6px;
   background: none;
@@ -1607,13 +1612,20 @@ textarea.form-control {
   cursor: pointer;
   border-radius: 50%;
   font-size: 0.7rem;
-  opacity: 0.55;
+  opacity: 0.8;
   transition:
     opacity 0.15s,
     color 0.15s,
     background 0.15s,
     border-color 0.15s;
   z-index: 2;
+}
+
+/* The button stays small to look at; the area a finger can hit is 44px. */
+.card-info-btn::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
 }
 
 .card-info-btn:hover,
@@ -2031,7 +2043,7 @@ textarea.form-control {
 
 .availability-toast {
   position: fixed;
-  bottom: 5rem;
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -2100,4 +2112,14 @@ textarea.form-control {
   margin-top: 0.25rem;
   color: var(--color-text-muted);
   font-size: 0.8rem;
+}
+
+/* ── Reduced motion ───────────────────────────────────────── */
+
+/* Loops that only decorate stand still for people who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .btn--pending,
+  .skeleton::after {
+    animation: none;
+  }
 }

@@ -562,4 +562,11 @@ onMounted(async () => {
     transform: skewY(3deg) scaleX(0.97);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .trip-marker--start,
+  .trip-flag-flag {
+    animation: none;
+  }
+}
 </style>

@@ -478,8 +478,10 @@ const motionBlurAmount = computed(() => {
               </g>
             </g>
 
-            <!-- Charging cable: rear bumper → charger off-screen below.
-                 Path direction is bottom→top so dashoffset animation flows toward the car. -->
+            <!-- Charging cable: from the charger off-screen below to the car's one charge port,
+                 on the rear left, which the traced drawing lights up itself (the port is at
+                 x 26.8, y 308.75 on its canvas, so 112, 320 here). The path runs from the charger
+                 to the car so the dashes flow toward the car. -->
             <g
               v-if="chargerConnected || isCharging"
               class="charge-group"
@@ -488,10 +490,8 @@ const motionBlurAmount = computed(() => {
               <title>
                 {{ isCharging ? t('vehicle.chargingYes') : t('vehicle.hvBattery.pluggedIn') }}
               </title>
-              <circle cx="170" cy="380" r="16" class="charge-entry-glow" />
-              <rect x="162" y="376" width="16" height="8" rx="2" class="charge-socket" />
-              <!-- Cable enters the battery badge from below; endpoint inside badge so nothing shows under it -->
-              <path d="M 170,440 L 170,384" class="charge-cable" />
+              <circle cx="112" cy="320" r="11" class="charge-entry-glow" />
+              <path d="M 62,480 C 62,400 70,330 108,321" class="charge-cable" />
             </g>
 
             <TyreIndicators :pressures="tyrePressures" />

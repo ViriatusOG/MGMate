@@ -76,7 +76,10 @@ function variant(schedule: ClimateSchedule): 'info' | 'warning' | undefined {
     </ViewHeader>
 
     <div v-if="store.itemsError" class="empty-state text-danger" role="alert">
-      {{ errorMessage(store.itemsError) }}
+      <p>{{ errorMessage(store.itemsError) }}</p>
+      <button type="button" class="btn btn-sm btn-outline-secondary" @click="load">
+        {{ t('common.retry') }}
+      </button>
     </div>
     <div v-else-if="!store.loading && store.schedules.length === 0" class="empty-state">
       {{ t('climateSchedules.empty') }}

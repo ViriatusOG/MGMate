@@ -69,6 +69,13 @@ const { t } = useI18n()
       <font-awesome-icon :icon="icon" />
       {{ title }}
     </h2>
-    <Chart :type="type" :data="data" :options="options" :plugins="plugins ?? []" />
+    <!-- Named after its card, so a screen reader says which chart this is instead of nothing. -->
+    <Chart
+      :type="type"
+      :data="data"
+      :options="options"
+      :plugins="plugins ?? []"
+      :aria-label="title"
+    />
   </div>
 </template>

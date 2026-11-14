@@ -40,6 +40,8 @@ const day = ref(startOfDay(new Date()))
 const timeline = ref<ActivityTimeline | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
+// Only a failed load can be tried again; a failed save says so in the same line.
+const loadFailed = ref(false)
 
 const dayEnd = computed(() => startOfDay(day.value, 1))
 const isToday = computed(() => day.value.getTime() >= startOfDay(new Date()).getTime())
@@ -52,6 +54,7 @@ async function load() {
   if (!vin.value) return
   loading.value = true
   error.value = null
+  loadFailed.value = false
   try {
     timeline.value = await activityApi.timeline(
       vin.value,
@@ -60,6 +63,7 @@ async function load() {
     )
   } catch (e) {
     error.value = errorMessage(e)
+    loadFailed.value = true
   } finally {
     loading.value = false
   }
@@ -174,7 +178,17 @@ function gapLength(from: string, to: string): string {
       </template>
     </ViewHeader>
 
-    <p v-if="error" class="charges__error" role="alert">{{ error }}</p>
+    <p v-if="error" class="charges__error" role="alert">
+      <span>{{ error }}</span>
+      <button
+        v-if="loadFailed"
+        type="button"
+        class="btn btn-sm btn-outline-secondary"
+        @click="load"
+      >
+        {{ t('common.retry') }}
+      </button>
+    </p>
 
     <section class="stat-tiles">
       <StatTile

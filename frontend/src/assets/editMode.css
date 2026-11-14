@@ -70,6 +70,13 @@
     color 0.15s;
 }
 
+/* The handle stays small to look at; the area a finger can grab is 44px. */
+.card-slot__handle::after {
+  content: '';
+  position: absolute;
+  inset: -11px;
+}
+
 .card-slot__handle:hover {
   background: var(--color-surface-2);
   color: var(--color-text);
