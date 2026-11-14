@@ -319,17 +319,7 @@
       "schedule": "Schedule",
       "startTime": "Start time"
     },
-    "windowsOpenCount": "{n} open",
-    "photo": {
-      "add": "Use a photo of your car",
-      "change": "Change the photo",
-      "remove": "Remove the photo and draw the car again",
-      "removeConfirm": "Remove the photo of your car? The card draws the car again.",
-      "alt": "Your car",
-      "lightsOn": "Lights on",
-      "tooLarge": "That photo is too large to upload. Try one under 3 MB.",
-      "unsupported": "That file is not a PNG, JPEG or WebP image."
-    }
+    "windowsOpenCount": "{n} open"
   },
   "control": {
     "climate": "Climate control",
@@ -363,6 +353,7 @@
     "charging": "Charging",
     "startCharging": "Start",
     "stopCharging": "Stop",
+    "stopChargingLong": "Stop charging",
     "plugInFirst": "Plug the car in to start charging.",
     "confirmUnlockCable": "Tap again to unlock",
     "openBoot": "Open",
@@ -636,12 +627,18 @@
     },
     "licensePlate": {
       "title": "Licence plate",
-      "desc": "The car's Dutch licence plate, for the APK date, recalls and insurance the RDW has on record. Only the plate is sent to the RDW.",
+      "desc": "Shown beside the car's name on the Overview.",
+      "descRdw": "A Dutch plate is also looked up at the RDW, for the APK date, recalls and insurance it has on record. Only the plate is sent to the RDW.",
       "label": "Licence plate",
-      "placeholder": "AB-123-C",
+      "placeholder": {
+        "nl": "AB-123-C",
+        "gb": "AB12 CDE",
+        "plain": "ABC1234"
+      },
       "save": "Save",
       "clear": "Remove",
-      "saved": "Saved and looked up at the RDW.",
+      "saved": "Saved.",
+      "savedRdw": "Saved and looked up at the RDW.",
       "cleared": "Removed."
     },
     "notificationTypes": {
@@ -1409,7 +1406,18 @@
     "searchPlaceholder": "Note, place, AC or DC",
     "searchResults": "No charges found | 1 charge found | {n} charges found",
     "peakNote": "peak {power}",
-    "totalsLabel": "Charging totals"
+    "totalsLabel": "Charging totals",
+    "perDayTile": "Per day",
+    "perDayNote": "across {n} day | across {n} days",
+    "live": {
+      "ofTarget": "of {percent}%",
+      "startedAt": "Started {time}",
+      "startedAtFrom": "Started {time} at {percent}%",
+      "targetBy": "at target by",
+      "forecast": "Forecast",
+      "thisCharge": "This charge",
+      "stopConfirm": "Tap again to stop charging"
+    }
   },
   "tariff": {
     "button": "Prices",

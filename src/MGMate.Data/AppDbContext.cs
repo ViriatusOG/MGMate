@@ -25,7 +25,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CommutePlace> CommutePlaces => Set<CommutePlace>();
     public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
     public DbSet<RdwVehicleInfo> RdwVehicleInfos => Set<RdwVehicleInfo>();
-    public DbSet<VehiclePhoto> VehiclePhotos => Set<VehiclePhoto>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,16 +35,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(v => v.Vin).HasMaxLength(17).IsRequired();
             e.Property(v => v.LastMessageId).HasMaxLength(VehicleLimits.MessageIdMaxLength);
             e.Property(v => v.LicensePlate).HasMaxLength(LicensePlate.MaxLength);
-        });
-
-        modelBuilder.Entity<VehiclePhoto>(e =>
-        {
-            e.HasKey(p => p.Id);
-            // One photo per vehicle, which is also how every read finds it.
-            e.HasIndex(p => p.VehicleId).IsUnique();
-            e.Property(p => p.ContentType).HasMaxLength(32).IsRequired();
-            e.Property(p => p.Data).IsRequired();
-            e.HasOne<Vehicle>().WithMany().HasForeignKey(p => p.VehicleId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<RdwVehicleInfo>(e =>

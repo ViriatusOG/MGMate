@@ -34,6 +34,7 @@ function vehicle(vehicleType: Vehicle['vehicleType']): Vehicle {
     vehicleType,
     hvBatteryCapacityKwh: null,
     supportsTargetSoc: false,
+    licensePlate: null,
   }
 }
 
@@ -138,6 +139,7 @@ describe('useVehicleStore - fetchVehicles', () => {
         vehicleType: 'bev',
         hvBatteryCapacityKwh: null,
         supportsTargetSoc: false,
+        licensePlate: null,
       },
     ])
     const store = useVehicleStore()

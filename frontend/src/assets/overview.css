@@ -30,11 +30,6 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* The car photo no longer sets the row's height: the cards beside it do. */
-.ov-hero__car .car-photo__img {
-  max-height: 13rem;
-}
-
 .ov-hero > *,
 .ov-row > * {
   min-width: 0;

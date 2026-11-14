@@ -99,11 +99,12 @@ until you switch it on. **The plate is the only thing that leaves your network**
 `opendata.rdw.nl`, together with the RDW's own reference codes for the recalls it lists. Nothing
 about your account, the car's position or its telemetry goes with it. The RDW's data is public,
 needs no key and is free to reuse. The plate itself is entered under Settings > Licence plate,
-which only appears once this is on.
+which every deployment has: the Overview shows the plate beside the car's name, and it is only
+sent to the RDW once this is on.
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `RDW_ENABLED` | `false` | `true` looks the plate up at the RDW: once as soon as it is entered, then by the Worker every `RDW_REFRESH_HOURS`. The dashboard gets an RDW card, and notifications come for a new open recall, the APK a month and a week before it runs out and once it has, and a car with no WAM insurance on record. Off, nothing is sent, and the plate field, the card and the notification type are not shown. |
+| `RDW_ENABLED` | `false` | `true` looks the plate up at the RDW: once as soon as it is entered, then by the Worker every `RDW_REFRESH_HOURS`. The dashboard gets an RDW card, and notifications come for a new open recall, the APK a month and a week before it runs out and once it has, and a car with no WAM insurance on record. Off, nothing is sent, and the card and the notification type are not shown. |
 | `RDW_REFRESH_HOURS` | `24` | Hours a lookup is kept before the Worker asks again. One hour at the least. |
 | `RDW_APP_TOKEN` | none | A Socrata app token, sent as `X-App-Token`. Not needed: requests without one work, but share a lower rate limit with everyone else asking anonymously. Free to create with an account on the RDW's open data portal. |
 

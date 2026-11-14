@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
+import type { PlateStyle } from '@/utils/licensePlate'
 import LicensePlateInput from '../LicensePlateInput.vue'
 
-function mountInput(modelValue = '') {
+function mountInput(modelValue = '', plateStyle: PlateStyle = 'nl', electric = false) {
   const wrapper: VueWrapper = mount(LicensePlateInput, {
     props: {
       label: 'Licence plate',
+      plateStyle,
+      electric,
       modelValue,
       'onUpdate:modelValue': (value: string) => wrapper.setProps({ modelValue: value }),
     },
@@ -102,5 +105,20 @@ describe('LicensePlateInput', () => {
 
     expect(afterSymbol).toBe('AB-12-CD')
     expect(field(wrapper).value).toBe('AB-12-CD-EF')
+  })
+
+  it('writes a British plate with its space, and shows the green flash on an electric car', () => {
+    const wrapper = mountInput('AB26CD', 'gb', true)
+
+    edit(wrapper, 'AB26CDE', 7)
+
+    expect(field(wrapper).value).toBe('AB26 CDE')
+    expect(field(wrapper).selectionStart).toBe(8)
+    expect(wrapper.find('.nl-plate__flash').exists()).toBe(true)
+    expect(wrapper.find('.nl-plate__band').exists()).toBe(false)
+  })
+
+  it('has no flash on a British car that burns fuel', () => {
+    expect(mountInput('', 'gb').find('.nl-plate__flash').exists()).toBe(false)
   })
 })

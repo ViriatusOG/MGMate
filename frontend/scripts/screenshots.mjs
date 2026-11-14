@@ -42,6 +42,14 @@ const PAGES = [
   { file: 'debug', path: '/debug' },
   { file: 'notifications', path: '/', prepare: openNotifications },
   { file: 'dashboard-charging', path: '/', prepare: parkAndCharge, after: driveOn, tall: true },
+  // Only a phone shows the charge under way at the top of Charges.
+  {
+    file: 'charges-charging',
+    path: '/charges',
+    prepare: parkAndCharge,
+    after: driveOn,
+    phoneOnly: true,
+  },
 ]
 
 // The install screenshots in the manifest (vite.config.ts), copied from the gallery's.
@@ -60,7 +68,8 @@ const only = process.env.SCREENSHOTS_ONLY?.split(',').map((f) => f.trim())
 try {
   for (const device of [DESKTOP, PHONE]) {
     const light = [{ file: 'dashboard-light', path: '/' }]
-    await shoot(device, 'dark', only ? PAGES.filter((p) => only.includes(p.file)) : PAGES)
+    const pages = PAGES.filter((p) => !p.phoneOnly || device === PHONE)
+    await shoot(device, 'dark', only ? pages.filter((p) => only.includes(p.file)) : pages)
     await shoot(device, 'light', only ? light.filter((p) => only.includes(p.file)) : light)
   }
   for (const [page, name] of Object.entries(only ? {} : MANIFEST)) {

@@ -127,12 +127,17 @@ anything while the feature is off.
   cooldown gate. Nothing is pushed from a lookup older than two refresh intervals: an APK renewed
   while the RDW could not be reached must not be reported as running out.
 - **In the browser.** `stores/rdw.ts` reads the lookup with the rest of the dashboard and learns
-  from that first answer whether the deployment looks plates up at all. The plate field
-  (`LicensePlateInput`) writes a plate the way the car has it: `utils/licensePlate.ts` puts a dash
-  wherever letters change to digits and splits a group of four in two, which covers every Dutch
-  side code. The API stores it without the dashes (`LicensePlate.Normalize`), as the RDW keys it.
-- **Off.** Both endpoints answer 404 with `rdw.disabled`, which is how the browser learns to leave
-  out the plate field, the card and the notification type; the Worker job stops before its first
+  from that first answer whether the deployment looks plates up at all. The plate itself belongs
+  to the vehicle (`licensePlate` in `GET /api/vehicles`) and is kept for any car, so the Overview
+  can show it beside the car's name (`LicensePlateBadge`). The plate field (`LicensePlateInput`)
+  writes a plate the way the app's region has it (`plateStyle`, `formatPlateAs` in
+  `utils/licensePlate.ts`): for a Dutch one a dash wherever letters change to digits and a group
+  of four split in two, which covers every Dutch side code; for a British one of the current
+  series the space before its last three letters; anything else as letters and digits. The API
+  stores it without separators (`LicensePlate.Normalize`), as the RDW keys it.
+- **Off.** `GET .../rdw` answers 404 with `rdw.disabled`, which is how the browser learns to leave
+  out the card and the notification type; `PUT .../license-plate` still saves the plate and asks
+  the RDW nothing; the Worker job stops before its first
   pass. Demo mode switches it on with a stand-in client (`DemoRdwClient`), so no plate leaves there
   either.
 

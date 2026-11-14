@@ -1220,37 +1220,6 @@ namespace MGMate.Data.Migrations
                     b.ToTable("Vehicles");
                 });
 
-            modelBuilder.Entity("MGMate.Core.Models.VehiclePhoto", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<byte[]>("Data")
-                        .IsRequired()
-                        .HasColumnType("bytea");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("VehicleId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VehicleId")
-                        .IsUnique();
-
-                    b.ToTable("VehiclePhotos");
-                });
-
             modelBuilder.Entity("MGMate.Core.Models.WarrantyCover", b =>
                 {
                     b.Property<int>("Id")
@@ -1379,15 +1348,6 @@ namespace MGMate.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Vehicle");
-                });
-
-            modelBuilder.Entity("MGMate.Core.Models.VehiclePhoto", b =>
-                {
-                    b.HasOne("MGMate.Core.Models.Vehicle", null)
-                        .WithMany()
-                        .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("MGMate.Core.Models.WarrantyCover", b =>

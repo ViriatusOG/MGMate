@@ -511,141 +511,22 @@
   transform: translate(-50%, -50%);
 }
 
-/* ── The owner's photo in place of the drawing ────────────── */
+/* ── The card's title row ─────────────────────────────────── */
 
-.car-photo__title-row {
+.tyre-diagram__title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
 }
 
-/* Level with the title, whose bottom margin would otherwise push the buttons down. */
-.car-photo__actions {
+/* Level with the title, whose bottom margin would otherwise push the link down. */
+.tyre-diagram__actions {
   display: flex;
   align-self: flex-start;
   align-items: center;
   gap: 0.6rem;
   margin-top: -0.2rem;
-}
-
-.car-photo__button {
-  padding: 0.2rem 0.45rem;
-  opacity: 0.7;
-}
-
-.car-photo__button:hover,
-.car-photo__button:focus-visible {
-  opacity: 1;
-}
-
-.car-photo__input {
-  display: none;
-}
-
-.car-photo {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 0.75rem;
-  min-height: 0;
-}
-
-.car-photo__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  min-height: 1.5rem;
-}
-
-.car-photo__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.1rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.car-photo__chip--good {
-  background: rgb(34 197 94 / 15%);
-  color: var(--color-success-text);
-}
-
-.car-photo__chip--info {
-  background: rgb(59 130 246 / 15%);
-  color: var(--color-info-text);
-}
-
-.car-photo__chip--warn {
-  background: rgb(245 158 11 / 15%);
-  color: var(--color-warning-text);
-}
-
-.car-photo__img {
-  display: block;
-  flex: 1 1 auto;
-  width: 100%;
-  min-height: 10rem;
-  max-height: 24rem;
-  object-fit: contain;
-}
-
-.car-photo__levels {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.diagram-level--inline {
-  position: static;
-  transform: none;
-}
-
-.car-photo__tyres {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.car-photo__tyre {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.45rem 0.65rem;
-  border: 1px solid var(--color-border);
-  border-left-width: 3px;
-  border-radius: 8px;
-  background: var(--color-surface-2);
-  color: var(--color-text);
-  font: inherit;
-  font-size: 0.85rem;
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-}
-
-.car-photo__tyre:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.car-photo__tyre-label {
-  color: var(--color-text-muted);
-  font-size: 0.78rem;
-}
-
-.car-photo__tyre--ok {
-  border-left-color: var(--color-success);
-}
-
-.car-photo__tyre--warning {
-  border-left-color: var(--color-warning);
-}
-
-.car-photo__tyre--danger {
-  border-left-color: var(--color-danger);
 }
 
 /* ── The MG4 drawing and the car's status ───────────────────── */

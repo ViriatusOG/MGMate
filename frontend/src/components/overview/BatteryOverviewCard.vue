@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useUnits } from '@/composables/useUnits'
 import { useRelativeTime } from '@/composables/useRelativeTime'
-import { activityApi, type ActivityTimeline } from '@/services/activityApi'
+import { useLiveCharge } from '@/composables/useLiveCharge'
 import { formatNumber } from '@/utils/format'
 import { formatDurationMs } from '@/utils/tripRows'
-import { chargeSecondsLeft, formatChargeTimeLeft } from '@/utils/chargeTime'
+import { formatChargeTimeLeft } from '@/utils/chargeTime'
 import { runLabel } from '@/utils/climateSchedule'
 import OverviewChart from './OverviewChart.vue'
 import type { ChartSeries } from './chart'
@@ -95,44 +95,8 @@ const facts = computed(() => {
 // ── The last 24 hours, for the level line and the start of a charge under way ──
 
 const DAY_MS = 86_400_000
-const timeline = ref<ActivityTimeline | null>(null)
-const now = ref(Date.now())
-
-async function loadDay() {
-  const vin = store.activeVin
-  if (!vin) return
-  now.value = Date.now()
-  try {
-    timeline.value = await activityApi.timeline(
-      vin,
-      new Date(now.value - DAY_MS).toISOString(),
-      new Date(now.value).toISOString(),
-    )
-  } catch {
-    timeline.value = null
-  }
-}
-
-// The line is read again every ten minutes and when charging starts or stops; in between the
-// live level is drawn on its end, and the clock ticks for "charging for" and the time left.
-let reload: ReturnType<typeof setInterval> | undefined
-let tick: ReturnType<typeof setInterval> | undefined
-onMounted(() => {
-  void loadDay()
-  reload = setInterval(loadDay, 10 * 60_000)
-  tick = setInterval(() => (now.value = Date.now()), 30_000)
-})
-onUnmounted(() => {
-  clearInterval(reload)
-  clearInterval(tick)
-})
-watch(() => store.activeVin, loadDay)
-watch(
-  () => s.value?.isCharging,
-  (a, b) => {
-    if (a !== b && b !== undefined) void loadDay()
-  },
-)
+const { timeline, now, charging, chargeStart, powerKw, chargeKind, remainingSec, addedKwh } =
+  useLiveCharge()
 
 const socSeries = computed((): ChartSeries[] => {
   const points: [number, number][] = (timeline.value?.soc ?? []).map((p) => [
@@ -161,58 +125,10 @@ const socDayFrom = computed(() => {
 
 // ── Charging, live ──
 
-const charging = computed(() => s.value?.isCharging === true)
-
-const capacityKwh = computed(
-  () => store.hvBatteryCapacityKwh ?? s.value?.hvTotalCapacityKwh ?? null,
-)
-
-// Where this charge began: the day's last "charging started", when no stop came after it (else it
-// belongs to an earlier charge), or failing that the car's own stamp, when it is newer than the
-// car's last end. A start level above the level now cannot be this charge's.
-const chargeStart = computed(() => {
-  const last = [...(timeline.value?.events ?? [])]
-    .reverse()
-    .find((e) => e.kind === 'chargingStarted' || e.kind === 'chargingStopped')
-  const started = last?.kind === 'chargingStarted' ? last : null
-  const stampStart = s.value?.chargingLastStartAt ? Date.parse(s.value.chargingLastStartAt) : null
-  const stampEnd = s.value?.chargingLastEndAt ? Date.parse(s.value.chargingLastEndAt) : null
-  const stamp =
-    stampStart !== null && (stampEnd === null || stampStart > stampEnd) ? stampStart : null
-  const startSoc = started?.socPercent ?? null
-  return {
-    at: started ? Date.parse(started.at) : stamp,
-    soc: startSoc !== null && soc.value !== null && startSoc <= soc.value ? startSoc : null,
-  }
-})
-
-const powerKw = computed(() => {
-  const x = s.value
-  const hv = x?.hvPower ?? null
-  if (hv !== null && hv !== 0) return Math.abs(hv)
-  return x?.obcPowerThreePhase ?? x?.obcPowerSinglePhase ?? null
-})
-
-// The MG reports DC rapid charging only by its power: no home or public AC point gives over 22 kW.
-const chargeKind = computed(() => {
-  const type = s.value?.chargingType?.toUpperCase() ?? ''
-  if (type.includes('DC')) return 'dc'
-  if (type.includes('AC')) return 'ac'
-  if (powerKw.value === null) return null
-  return powerKw.value > 22 ? 'dc' : 'ac'
-})
-
-// The car's own estimate (the one the MG app shows), which the gateway gives in seconds.
-const remainingSec = computed(() => chargeSecondsLeft(s.value?.remainingChargingTime))
-
 const live = computed(() => {
   const x = s.value
   if (!x || !charging.value) return null
   const start = chargeStart.value
-  const addedKwh =
-    start.soc !== null && soc.value !== null && capacityKwh.value
-      ? Math.max(0, ((soc.value - start.soc) / 100) * capacityKwh.value)
-      : null
   const rangeKm = x.electricRangeKm ?? null
   const rangeGain =
     rangeKm !== null && start.soc !== null && soc.value
@@ -234,7 +150,8 @@ const live = computed(() => {
     {
       key: 'added',
       label: t('overview.live.added'),
-      value: addedKwh !== null ? `+${formatNumber(addedKwh, 1)} ${t('common.kwh')}` : null,
+      value:
+        addedKwh.value !== null ? `+${formatNumber(addedKwh.value, 1)} ${t('common.kwh')}` : null,
     },
     {
       key: 'range',

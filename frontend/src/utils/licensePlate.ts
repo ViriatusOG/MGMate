@@ -46,3 +46,27 @@ export function countPlateCharacters(text: string): number {
 function isDigit(c: string): boolean {
   return c >= '0' && c <= '9'
 }
+
+/** How a plate is written and drawn: the Dutch way, the British way, or plainly. */
+export type PlateStyle = 'nl' | 'gb' | 'plain'
+
+/** The style for the region the app is set to; any other country gets the plain one. */
+export function plateStyle(region: string): PlateStyle {
+  const r = region.toUpperCase()
+  if (r === 'NL') return 'nl'
+  if (r === 'GB' || r === 'UK') return 'gb'
+  return 'plain'
+}
+
+/**
+ * A plate written the way it is on the car in the given style. A British plate of the current
+ * series reads "AB12 CDE", with the space before its last three letters; any other length is left
+ * as typed, as personal and older plates space themselves in too many ways to guess. Works on a
+ * plate still being typed.
+ */
+export function formatPlateAs(style: PlateStyle, text: string): string {
+  if (style === 'nl') return formatPlate(text)
+  const plate = normalizePlate(text)
+  if (style === 'gb' && plate.length === 7) return `${plate.slice(0, 4)} ${plate.slice(4)}`
+  return plate
+}
