@@ -110,3 +110,136 @@
   align-items: center;
   gap: 0.35rem;
 }
+
+/* ── A phone: the charge under way first, then the week, its totals and the history ────────── */
+
+.ch-live {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.ch-live__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ch-live__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ch-live__left {
+  margin-left: auto;
+}
+
+.ch-live__main {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+/* The level as a ring, filled as far as the battery is. */
+.ch-live__ring {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, var(--color-surface) 82%, transparent 83%),
+    conic-gradient(var(--color-success) calc(var(--p) * 1%), var(--color-surface-2) 0);
+}
+
+.ch-live__ring span {
+  display: grid;
+  justify-items: center;
+  line-height: 1.15;
+}
+
+.ch-live__ring b {
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ch-live__ring small,
+.ch-live__sub {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.ch-live__power {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.ch-live__line {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.ch-live__line strong {
+  color: var(--color-text);
+}
+
+.ch-live__stop {
+  width: 100%;
+  min-height: 2.75rem;
+  font-weight: 600;
+}
+
+.ch-live__chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+@media (width <= 767px) {
+  /* The week strip leads the week's figures, which stand as a block of four in place of a strip
+     to swipe. */
+  .charges {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .charges > .view-header,
+  .charges > .view-subtitle {
+    order: -4;
+  }
+
+  .charges > .charges__error {
+    order: -3;
+  }
+
+  .charges > .ch-live {
+    order: -2;
+  }
+
+  .charges > .week-strip {
+    order: -1;
+  }
+
+  .charges > .stat-tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow: visible;
+  }
+
+  .charges > .stat-tiles .stat-tile {
+    flex: none;
+  }
+
+  /* AC against DC and home against public belong with the totals, above the history. */
+  .charges .ll-side > .charges__splits {
+    order: 0;
+  }
+}

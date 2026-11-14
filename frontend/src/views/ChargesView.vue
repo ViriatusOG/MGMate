@@ -38,6 +38,8 @@ import ViewHeader from '@/components/ViewHeader.vue'
 import StatsChartCard from '@/components/StatsChartCard.vue'
 import LogSearch from '@/components/LogSearch.vue'
 import { matchesText, searchRange, type LogSearchQuery } from '@/utils/logSearch'
+import { useMediaQuery } from '@/composables/useMediaQuery'
+import ChargesLiveCard from '@/components/charges/ChargesLiveCard.vue'
 
 const { t } = useI18n()
 const vehicleStore = useVehicleStore()
@@ -47,6 +49,8 @@ const tariffOpen = ref(false)
 const units = useUnits()
 const chartTheme = useChartTheme()
 const errorMessage = useErrorMessage()
+// A phone opens on the charge under way and shows the totals as a block of four.
+const isPhone = useMediaQuery('(width <= 767px)')
 
 const vin = computed(() => vehicleStore.activeVin)
 const capacityKwh = computed(
@@ -78,6 +82,9 @@ async function load() {
   loadFailed.value = false
   // Home charges are told apart by the home place; without it every charge is priced as public.
   if (placesStore.places.length === 0) placesStore.fetchPlaces(vin.value)
+  // The charge under way is read from the stored status, which a page opened directly has not
+  // loaded yet. It reads the database only, so it never wakes the car.
+  if (!vehicleStore.currentStatus) void vehicleStore.fetchStatus(vin.value)
   const range = search.value ? searchRange(search.value) : null
   const from = range?.ok ? range.from : month.value
   const to = range?.ok ? range.to : monthStart(month.value, 1)
@@ -432,6 +439,23 @@ const peakPower = computed(() => {
   return peaks.length > 0 ? Math.max(...peaks) : null
 })
 
+// What a day adds on average, over the days listed: the month so far, or a search's own days.
+const perDayTile = computed(() => {
+  const range = search.value ? searchRange(search.value) : null
+  const from = range?.ok ? range.from : month.value
+  const end = range?.ok ? range.to : monthStart(month.value, 1)
+  const to = Math.min(end.getTime(), Date.now())
+  const dayCount = Math.max(1, Math.ceil((to - from.getTime()) / 86_400_000))
+  return {
+    key: 'perDay',
+    label: t('charges.perDayTile'),
+    value: formatNumber(totals.value.kwh / dayCount, 1),
+    unit: t('common.kwh'),
+    note: t('charges.perDayNote', dayCount),
+    askPrice: false,
+  }
+})
+
 const tiles = computed(() => {
   const n = totals.value.sessions
   const priced = uiSettings.tariff !== null || spend.value.amount > 0
@@ -466,6 +490,7 @@ const tiles = computed(() => {
       note: perKwh,
       askPrice: !priced,
     },
+    ...(isPhone.value ? [perDayTile.value] : []),
   ]
 })
 
@@ -630,6 +655,8 @@ const monthStats = computed(() => {
         {{ t('common.retry') }}
       </button>
     </p>
+
+    <ChargesLiveCard v-if="isPhone" />
 
     <section class="stat-tiles" :aria-label="t('charges.totalsLabel')">
       <StatTile
