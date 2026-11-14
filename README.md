@@ -368,6 +368,8 @@ docker stop mgmate && docker rm mgmate
 # Re-run your original docker run command
 ```
 
+Releases are numbered from `v1.0.0`, and the sidebar shows the version you run under Log out. `latest` follows `main`, so it carries every merged change before it is released and shows as the next version's preview, for example `v1.0.1-preview.0.3`. To stay on releases only, use the `1` tag (every 1.x release) or an exact one such as `1.0.0` instead of `latest`.
+
 When a newer release is out, the sidebar says so under the version and links to its release notes. MGMate asks GitHub once a day; set `UPDATE_CHECK_ENABLED=false` to stop it. A Compose build only knows its own version when you pass one, so build with `APP_VERSION=$(git describe --tags) docker compose up -d --build` to get the notice.
 
 ### Monitoring
