@@ -134,6 +134,6 @@ describe('ClimateDetailCard', () => {
     expect(link.text()).toContain('1 active')
 
     await link.trigger('click')
-    expect(push).toHaveBeenCalledWith({ name: 'climateSchedules' })
+    expect(push).toHaveBeenCalledWith({ name: 'schedules' })
   })
 })

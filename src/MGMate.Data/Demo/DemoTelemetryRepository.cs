@@ -407,6 +407,8 @@ public sealed class DemoTelemetryRepository : ITelemetryRepository
             ChargingScheduleMode = "UNTIL_CONFIGURED_TIME",
             ChargingScheduleStartTime = "00:00",
             ChargingScheduleEndTime = "07:00",
+            BatteryHeatingScheduleMode = "on",
+            BatteryHeatingScheduleStartTime = "06:30",
         };
     }
 

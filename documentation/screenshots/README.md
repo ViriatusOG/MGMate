@@ -52,9 +52,9 @@ Click **Parking locations** for a map of every place the car stood in the period
 
 ![The maintenance list: service items marked overdue, due soon or OK, one counting from the car's registration, and the warranty covers with the time and miles left on each](desktop-maintenance.webp)
 
-### Climate schedules
+### Schedules
 
-![The climate schedules: a weekday schedule at 07:30 with seat heating, and a one-off front defrost at 08:15, each with when it runs next](desktop-climate-schedules.webp)
+![The Schedules page: the car's own charging window (00:00 to 07:00, next start, charge target, charging current) and battery pre-heating time side by side, then the climate schedules, a weekday one at 07:30 with seat heating and a one-off front defrost at 08:15](desktop-schedules.webp)
 
 ### Settings
 
@@ -81,8 +81,8 @@ Click **Parking locations** for a map of every place the car stood in the period
 | <img src="mobile-dashboard.webp" alt="The dashboard on a phone" width="180"> | <img src="mobile-map.webp" alt="The map on a phone" width="180"> | <img src="mobile-map-trip.webp" alt="One trip against the speed limits on a phone" width="180"> | <img src="mobile-dashboard-light.webp" alt="The dashboard on a phone in the light theme" width="180"> |
 | **Trips** | **Charges** | **Reports** | **Battery health** |
 | <img src="mobile-trips.webp" alt="Trips on a phone" width="180"> | <img src="mobile-charges.webp" alt="Charges on a phone" width="180"> | <img src="mobile-reports.webp" alt="Reports on a phone" width="180"> | <img src="mobile-battery-health.webp" alt="Battery health on a phone" width="180"> |
-| **Statistics** | **Maintenance** | **Climate schedules** | **Charging** |
-| <img src="mobile-statistics.webp" alt="The statistics on a phone: the distance for the period as one big number, three figures under it, and the rest as a short list above the charts" width="180"> | <img src="mobile-maintenance.webp" alt="Maintenance on a phone: a Needs attention list, then a full card with Log a service and Edit item for each item that is due, and a row for each that is fine" width="180"> | <img src="mobile-climate-schedules.webp" alt="The climate schedules on a phone" width="180"> | <img src="mobile-dashboard-charging.webp" alt="The live charging card on a phone" width="180"> |
+| **Statistics** | **Maintenance** | **Schedules** | **Charging** |
+| <img src="mobile-statistics.webp" alt="The statistics on a phone: the distance for the period as one big number, three figures under it, and the rest as a short list above the charts" width="180"> | <img src="mobile-maintenance.webp" alt="Maintenance on a phone: a Needs attention list, then a full card with Log a service and Edit item for each item that is due, and a row for each that is fine" width="180"> | <img src="mobile-schedules.webp" alt="The Schedules page on a phone: the charging and battery pre-heating cards, then the climate schedules" width="180"> | <img src="mobile-dashboard-charging.webp" alt="The live charging card on a phone" width="180"> |
 | **Settings** | **Debug** | **Notifications** | **Trip chart scrubbed** |
 | <img src="mobile-settings.webp" alt="Settings on a phone" width="180"> | <img src="mobile-debug.webp" alt="The Debug page on a phone" width="180"> | <img src="mobile-notifications.webp" alt="The notifications, full screen on a phone" width="180"> | <img src="mobile-trip-detail.webp" alt="A trip's chart scrubbed on a phone, the map pinned above it with the car at that moment" width="180"> |
 | **Parking locations** | | | |

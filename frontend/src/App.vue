@@ -112,7 +112,7 @@ const navGroups = [
     items: [
       { to: '/', label: 'nav.dashboard', icon: 'gauge-high' },
       { to: '/map', label: 'nav.map', icon: 'map' },
-      { to: '/climate-schedules', label: 'nav.climateSchedules', icon: 'calendar-days' },
+      { to: '/schedules', label: 'nav.schedules', icon: 'calendar-days' },
     ],
   },
   {
