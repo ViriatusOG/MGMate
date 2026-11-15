@@ -7,7 +7,7 @@ public class ClimateScheduleValidationTests
 {
     private static ClimateScheduleRequest Valid() => new(
         Name: "Work", Enabled: true, StartTime: "07:30", Days: [1, 2, 3, 4, 5], TimeZoneId: "Europe/Amsterdam",
-        Mode: ClimateScheduleMode.On, TemperatureC: 21, RearDefroster: false, SeatLeftLevel: 2, SeatRightLevel: 0,
+        Mode: ClimateScheduleMode.On, TemperatureC: 21, RearDefroster: false, SteeringWheelHeat: false, SeatLeftLevel: 2, SeatRightLevel: 0,
         OnlyBelowC: 5, OnlyAboveC: 25);
 
     private static string? CodeFor(ClimateScheduleRequest request) =>

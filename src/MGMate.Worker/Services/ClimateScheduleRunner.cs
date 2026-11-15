@@ -167,6 +167,7 @@ public sealed class ClimateScheduleRunner(
     private static string CommandName(string command, IStringLocalizer<NotificationStrings> strings) => strings[command switch
     {
         "rear-defroster" => "ClimateScheduleCommandRearDefroster",
+        "steering-wheel-heat" => "ClimateScheduleCommandSteeringWheelHeat",
         "seat-left" => "ClimateScheduleCommandSeatLeft",
         "seat-right" => "ClimateScheduleCommandSeatRight",
         _ => "ClimateScheduleCommandTemperature",

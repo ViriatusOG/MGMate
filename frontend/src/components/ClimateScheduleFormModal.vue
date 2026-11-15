@@ -63,6 +63,7 @@ const enabled = ref(true)
 const mode = ref<ClimateOnMode>('on')
 const temperatureC = ref(DEFAULT_TEMPERATURE_C)
 const rearDefroster = ref<boolean | null>(false)
+const steeringWheelHeat = ref<boolean | null>(false)
 const seatLeft = ref(0)
 const seatRight = ref(0)
 const conditionOn = ref(false)
@@ -87,6 +88,12 @@ const offersRearDefroster = computed(
     status.value === null ||
     status.value.rearWindowDefroster !== null ||
     rearDefroster.value === true,
+)
+const offersSteeringWheelHeat = computed(
+  () =>
+    status.value === null ||
+    status.value.steeringWheelHeating != null ||
+    steeringWheelHeat.value === true,
 )
 const offersSeatHeating = computed(
   () =>
@@ -120,6 +127,7 @@ watch(
     mode.value = s?.mode ?? 'on'
     temperatureC.value = s?.temperatureC ?? startingTemperature()
     rearDefroster.value = s?.rearDefroster ?? false
+    steeringWheelHeat.value = s?.steeringWheelHeat ?? false
     seatLeft.value = s?.seatLeftLevel ?? 0
     seatRight.value = s?.seatRightLevel ?? 0
     conditionOn.value = s !== null && (s.onlyBelowC !== null || s.onlyAboveC !== null)
@@ -196,6 +204,7 @@ function buildRequest(): ClimateScheduleRequest {
     mode: mode.value,
     temperatureC: temperatureC.value,
     rearDefroster: offersRearDefroster.value && rearDefroster.value === true,
+    steeringWheelHeat: offersSteeringWheelHeat.value && steeringWheelHeat.value === true,
     seatLeftLevel: offersSeatHeating.value ? seatLeft.value : 0,
     seatRightLevel: offersSeatHeating.value ? seatRight.value : 0,
     onlyBelowC: conditionOn.value ? colderThan.metric() : null,
@@ -300,6 +309,12 @@ async function confirmDelete() {
             v-model="rearDefroster"
             icon="car-rear"
             :label="t('control.rearDefroster')"
+          />
+          <DetailListSwitch
+            v-if="offersSteeringWheelHeat"
+            v-model="steeringWheelHeat"
+            icon="steering-wheel"
+            :label="t('control.steeringWheelHeat')"
           />
           <template v-if="offersSeatHeating">
             <RangeControl

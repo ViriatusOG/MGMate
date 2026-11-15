@@ -25,6 +25,8 @@ public static class ClimateSchedulePlan
         commands.Add(new(ClimateCommand, schedule.Mode.ToGatewayValue()));
         if (schedule.RearDefroster)
             commands.Add(new("rear-defroster", "on"));
+        if (schedule.SteeringWheelHeat)
+            commands.Add(new("steering-wheel-heat", "on"));
         if (schedule.SeatLeftLevel > 0)
             commands.Add(new("seat-left", schedule.SeatLeftLevel.ToString(CultureInfo.InvariantCulture)));
         if (schedule.SeatRightLevel > 0)

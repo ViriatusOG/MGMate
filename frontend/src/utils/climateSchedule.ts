@@ -67,11 +67,16 @@ export function runParts(iso: string, now: Date): { time: string; day: string | 
   return { time: formatTime(at, { hour: 'numeric', minute: '2-digit' }), day }
 }
 
-/** What a run sets, in brief: "21 °C · Rear defroster · Seat heating", or the mode for fan only and front defrost. */
+/** What a run sets, in brief: "21 °C · Rear defroster · Heated steering wheel · Seat heating", or the mode for fan only and front defrost. */
 export function settingsSummary(
   schedule: Pick<
     ClimateSchedule,
-    'mode' | 'temperatureC' | 'rearDefroster' | 'seatLeftLevel' | 'seatRightLevel'
+    | 'mode'
+    | 'temperatureC'
+    | 'rearDefroster'
+    | 'steeringWheelHeat'
+    | 'seatLeftLevel'
+    | 'seatRightLevel'
   >,
   t: Translate,
   units: UnitFormatter,
@@ -82,6 +87,7 @@ export function settingsSummary(
       : t(`control.mode.${schedule.mode}`),
   ]
   if (schedule.rearDefroster) parts.push(t('control.rearDefroster'))
+  if (schedule.steeringWheelHeat) parts.push(t('control.steeringWheelHeat'))
   if (schedule.seatLeftLevel > 0 || schedule.seatRightLevel > 0)
     parts.push(t('climateSchedules.seatHeating'))
   return parts.join(' · ')
@@ -117,6 +123,7 @@ const COMMAND_LABEL_KEYS: Record<string, string> = {
   'climate-temperature': 'control.temperature',
   climate: 'control.climate',
   'rear-defroster': 'control.rearDefroster',
+  'steering-wheel-heat': 'control.steeringWheelHeat',
   'seat-left': 'vehicle.climateDetail.seatLeft',
   'seat-right': 'vehicle.climateDetail.seatRight',
 }

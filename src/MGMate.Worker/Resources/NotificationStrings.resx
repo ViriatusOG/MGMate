@@ -204,6 +204,9 @@
   <data name="ClimateScheduleCommandRearDefroster" xml:space="preserve">
     <value>the rear defroster</value>
   </data>
+  <data name="ClimateScheduleCommandSteeringWheelHeat" xml:space="preserve">
+    <value>the heated steering wheel</value>
+  </data>
   <data name="ClimateScheduleCommandSeatLeft" xml:space="preserve">
     <value>driver seat heating</value>
   </data>

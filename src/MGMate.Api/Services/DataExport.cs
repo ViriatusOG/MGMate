@@ -131,6 +131,7 @@ internal sealed class DataExport(
                 s.Mode,
                 s.TemperatureC,
                 s.RearDefroster,
+                s.SteeringWheelHeat,
                 s.SeatLeftLevel,
                 s.SeatRightLevel,
                 s.OnlyBelowC,

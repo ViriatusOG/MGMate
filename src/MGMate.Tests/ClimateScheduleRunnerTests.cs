@@ -262,6 +262,20 @@ public class ClimateScheduleRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task TheSteeringWheel_GoesOnAfterClimate_AndIsNamedWhenItFails()
+    {
+        _worker.Car.Answers["steering-wheel-heat"] = new CommandAnswer(true, false, "not supported");
+
+        var after = await RunAsync(s => s.SteeringWheelHeat = true);
+
+        Assert.Equal([("climate-temperature", "21"), ("climate", "on"), ("steering-wheel-heat", "on")], _worker.Car.Sent);
+        Assert.Equal(ClimateScheduleOutcome.Started, after.LastRunOutcome);
+        Assert.Equal("steering-wheel-heat", after.LastRunFailedCommand);
+        Assert.Equal("Started by your 07:30 schedule, but the heated steering wheel did not work.",
+            Assert.Single(_worker.Push.Sent).Body);
+    }
+
+    [Fact]
     public async Task ACarBeingDriven_IsSkipped_WithoutCommandsOrPush()
     {
         await _worker.AddTelemetryAsync(TimeSpan.FromMinutes(1), engineRunning: true);

@@ -94,8 +94,14 @@ describe('runParts', () => {
 
 describe('settingsSummary', () => {
   it('leads with the temperature for normal climate, then the extras', () => {
-    expect(settingsSummary(schedule({ rearDefroster: true, seatRightLevel: 1 }), t, celsius)).toBe(
-      '21 °C · control.rearDefroster · climateSchedules.seatHeating',
+    expect(
+      settingsSummary(
+        schedule({ rearDefroster: true, steeringWheelHeat: true, seatRightLevel: 1 }),
+        t,
+        celsius,
+      ),
+    ).toBe(
+      '21 °C · control.rearDefroster · control.steeringWheelHeat · climateSchedules.seatHeating',
     )
   })
 

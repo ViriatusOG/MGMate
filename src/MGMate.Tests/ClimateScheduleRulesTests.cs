@@ -56,6 +56,7 @@ public class ClimateSchedulePlanTests
             Mode = ClimateScheduleMode.On,
             TemperatureC = 22,
             RearDefroster = true,
+            SteeringWheelHeat = true,
             SeatLeftLevel = 3,
             SeatRightLevel = 1,
         };
@@ -65,6 +66,7 @@ public class ClimateSchedulePlanTests
                 new ScheduledCommand("climate-temperature", "22"),
                 new ScheduledCommand("climate", "on"),
                 new ScheduledCommand("rear-defroster", "on"),
+                new ScheduledCommand("steering-wheel-heat", "on"),
                 new ScheduledCommand("seat-left", "3"),
                 new ScheduledCommand("seat-right", "1"),
             ],
@@ -84,7 +86,14 @@ public class ClimateSchedulePlanTests
     [Fact]
     public void EveryPlannedCommand_IsOneTheGatewayTakes()
     {
-        var schedule = new ClimateSchedule { Mode = ClimateScheduleMode.On, RearDefroster = true, SeatLeftLevel = 2, SeatRightLevel = 2 };
+        var schedule = new ClimateSchedule
+        {
+            Mode = ClimateScheduleMode.On,
+            RearDefroster = true,
+            SteeringWheelHeat = true,
+            SeatLeftLevel = 2,
+            SeatRightLevel = 2,
+        };
 
         Assert.All(ClimateSchedulePlan.For(schedule), step => Assert.Null(VehicleCommands.Validate(step.Command, step.Value)));
     }

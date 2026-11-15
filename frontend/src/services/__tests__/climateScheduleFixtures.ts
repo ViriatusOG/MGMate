@@ -15,6 +15,7 @@ export function schedule(overrides: Partial<ClimateSchedule> = {}): ClimateSched
     mode: 'on',
     temperatureC: 21,
     rearDefroster: false,
+    steeringWheelHeat: false,
     seatLeftLevel: 0,
     seatRightLevel: 0,
     onlyBelowC: null,
