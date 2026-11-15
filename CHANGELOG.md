@@ -2,6 +2,8 @@
 
 ## MGMate
 
+MGMate releases start at `v1.0.0`. The notes for each one are on the [GitHub releases page](https://github.com/ViriatusOG/MGMate/releases), written by hand when the version is tagged (see [`documentation/RELEASING.md`](documentation/RELEASING.md)).
+
 MGMate starts from GarageStack's `main` (November 2026) and is renamed throughout: the app, the .NET projects (`MGMate.*`), the frontend package, the docs and the images (`ghcr.io/viriatusog/mgmate`). The database name and user stay `garagestack`, and so do the browser storage keys, the session cookie and the MQTT topics, so an existing install keeps its data, settings and sign-in.
 
 ## GarageStack (upstream)

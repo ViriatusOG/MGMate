@@ -86,7 +86,7 @@ A release is cut by hand: tag a commit on `main`, then publish a GitHub release 
 ### Before tagging
 
 - **CI is green on the commit you release.** `gh run list --branch main --limit 5` shows the latest runs.
-- **Pick the version.** A release that carries upgrade notes, new configuration options or database migrations is a minor bump (`0.x.0`), even when every commit in it is a fix or a refactor. A patch (`0.x.y`) is for fix-only releases that drop in without anyone doing anything. `1.0.0` is for the first public release.
+- **Pick the version.** MGMate follows [Semantic Versioning](https://semver.org/) from `v1.0.0`, its first release. A release that carries upgrade notes, new configuration options or database migrations is a minor bump (`1.x.0`), even when every commit in it is a fix or a refactor. A patch (`1.x.y`) is for fix-only releases that drop in without anyone doing anything. A major bump (`2.0.0`) is for a release that breaks an existing install unless its owner acts first, such as a removed variable or a renamed volume.
 
 ### Tag and publish
 
@@ -100,6 +100,10 @@ gh release create v1.2.3 --verify-tag --latest --notes-file release-notes.md
 ```
 
 Watch the image builds at `https://github.com/ViriatusOG/MGMate/actions`.
+
+### The version the app shows
+
+The version comes from the git tags, through [MinVer](https://github.com/adamralph/minver); no file in the repository holds it. A build of a tagged commit shows that version, `v1.0.0`. A build of `main` after it shows the next patch as a preview with the number of commits since the tag, `v1.0.1-preview.0.3`, so a `latest` image always says which release it builds on. Before the first tag every build counted from `0.0.0`, which is why early images showed `v0.0.0-preview.0.<n>`.
 
 The tag build publishes `X.Y.Z`, `X.Y`, `X` **and** `latest`. If the publish for the same commit on `main` failed earlier, do not re-run it after the tag build: it would overwrite `latest` with a build that reports a `-preview` version. Re-run the tag run's failed job instead.
 
