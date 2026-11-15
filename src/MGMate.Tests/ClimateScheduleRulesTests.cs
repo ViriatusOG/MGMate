@@ -88,7 +88,11 @@ public class ClimateSchedulePlanTests
     {
         var schedule = new ClimateSchedule
         {
-            Mode = ClimateScheduleMode.On, RearDefroster = true, SteeringWheelHeat = true, SeatLeftLevel = 2, SeatRightLevel = 2,
+            Mode = ClimateScheduleMode.On,
+            RearDefroster = true,
+            SteeringWheelHeat = true,
+            SeatLeftLevel = 2,
+            SeatRightLevel = 2,
         };
 
         Assert.All(ClimateSchedulePlan.For(schedule), step => Assert.Null(VehicleCommands.Validate(step.Command, step.Value)));
