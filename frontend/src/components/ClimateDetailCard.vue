@@ -71,7 +71,7 @@ watch(modalOpen, (open) => {
 
 function openSchedules() {
   modalOpen.value = false
-  router.push({ name: 'climateSchedules' })
+  router.push({ name: 'schedules' })
 }
 
 const summaryValue = computed((): string | null => {

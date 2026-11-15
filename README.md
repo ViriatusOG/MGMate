@@ -91,7 +91,7 @@ The bell opens the notifications, grouped by day. On a phone they fill the scree
 
 <!-- markdownlint-enable MD033 -->
 
-The map, statistics, maintenance, climate schedules and the light theme are in the [screenshot gallery](documentation/screenshots/README.md).
+The map, statistics, maintenance, schedules and the light theme are in the [screenshot gallery](documentation/screenshots/README.md).
 
 ## Where MGMate comes from
 
@@ -128,7 +128,7 @@ Thanks to Jos for the foundation.
 - [Prerequisites](#prerequisites) and [Installation](#installation)
 - [Updating](#updating), [Monitoring](#monitoring) and [Backup and restore](#backup-and-restore)
 - [Push notifications](#push-notifications)
-- [Trip log](#trip-log), [Climate schedules](#climate-schedules), [Maintenance](#maintenance) and [Warranty](#warranty)
+- [Trip log](#trip-log), [Schedules](#schedules), [Maintenance](#maintenance) and [Warranty](#warranty)
 - [Dutch registration (RDW)](#dutch-registration-rdw)
 - [Homepage dashboard widget](#homepage-dashboard-widget) and [Read-only API tokens](#read-only-api-tokens)
 - [Map overlays](#map-overlays)
@@ -154,8 +154,8 @@ Thanks to Jos for the foundation.
 - **Maintenance** -- Keep the car's service items (oil, tyres, the yearly inspection, ...) with a distance interval, a time interval or both. MGMate works out from the odometer and your service log when each one is due (a new car counts from its first registration), shows the most urgent on the dashboard, and sends a notification when an item reaches 90 % of its interval. Log each service with its date, odometer reading and notes.
 - **Dutch registration (RDW)** -- For a car with a Dutch licence plate, a dashboard card with the date the APK runs out and the days left, open recalls with what can go wrong and what the dealer does about it, and whether the car is insured, from the [RDW's open data](https://opendata.rdw.nl). Notifications come for a new recall, the APK a month and a week ahead, and a car with no insurance on record. Off until `RDW_ENABLED=true`; the plate, entered under Settings, is the only thing sent. See [Dutch registration (RDW)](#dutch-registration-rdw).
 - **Energy statistics** -- Track daily energy consumption, efficiency (Wh/km on a plug-in car, L/100 km on a hybrid), fuel use, electric share, average driving speed, and more, for any period from the last 24 hours to several years.
-- **Remote commands** -- Trigger climate pre-conditioning (normal climate, fan only or front defrost), lock or unlock the car, open the boot, and activate the horn and lights remotely from the dashboard. On a plug-in car also start or stop charging, lock or unlock the charging cable, switch battery heating on or off, set the charging and battery heating schedules, and set the charge current limit and, where the car takes one, the charge target. Opening the boot and unlocking the cable ask for a second tap. Each command reports whether the car carried it out, and if it refused, the reason the MG servers gave.
-- **Climate schedules** -- Switch climate on at a set time on chosen weekdays, or once. A schedule sets the temperature or mode, seat heating, the rear defroster and the heated steering wheel, and can skip mild days by the car's outside temperature. Schedules run on the server, so no browser needs to be open, and each run sends a push notification saying whether the car started climate.
+- **Remote commands** -- Trigger climate pre-conditioning (normal climate, fan only or front defrost), lock or unlock the car, open the boot, and activate the horn and lights remotely from the dashboard. On a plug-in car also start or stop charging, lock or unlock the charging cable, switch battery heating on or off, set the charging and battery heating schedules (on the Overview's cards or the Schedules page), and set the charge current limit and, where the car takes one, the charge target. Opening the boot and unlocking the cable ask for a second tap. Each command reports whether the car carried it out, and if it refused, the reason the MG servers gave.
+- **Schedules** -- One page for when the car charges, warms its battery and heats or cools the cabin. The charging window, charge target and battery pre-heating time are the car's own settings, which it runs by itself every day; the climate schedules run on the MGMate server. **Climate schedules:** switch climate on at a set time on chosen weekdays, or once. A schedule sets the temperature or mode, seat heating, the rear defroster and the heated steering wheel, and can skip mild days by the car's outside temperature. Schedules run on the server, so no browser needs to be open, and each run sends a push notification saying whether the car started climate.
 - **Push notifications** -- Browser and in-app alerts for key events: engine started, low or high tyre pressure, a slow puncture, low EV battery, low fuel, a weak 12V battery, car left unlocked, doors or windows left open, the car moving while parked, arriving at or leaving home or work, a charge that finished or stopped early, maintenance coming due, the APK running out or a recall on a Dutch plate, a climate schedule that ran, the messages the official MG app receives, and data that stopped arriving because the MG sign-in failed or the car went quiet. Each device chooses which ones it gets. In the app they are listed by day under the bell: tap one to open the page it is about, swipe it left on a phone to archive or delete it (with Undo).
 - **Homepage widget** -- A read-only API endpoint for the [gethomepage.dev](https://gethomepage.dev) Custom API widget, exposing key vehicle stats at a glance, along with the APK days left, open recalls, the maintenance due next and the last trip.
 - **Log viewer** -- The Logs page shows the entries of the API's and the Worker's log files, newest first and older ones loading as you scroll, filtered by service, level and text, with exceptions folded open on request and a live mode that adds what was written every ten seconds. The files themselves stay on the server, one per day (`LOG_RETAINED_FILES`).
@@ -526,9 +526,20 @@ Only trips the Worker has saved can be logged, so the trip being driven, and one
 
 ---
 
-## Climate schedules
+## Schedules
 
-**Climate schedules** in the sidebar switch the car's climate on at a time you set, so it is warm (or cool) when you leave. They run on the MGMate server: no phone or browser has to be open.
+**Schedules** in the sidebar (it used to be called Climate) holds every timed setting in one place. On a car that plugs in, the top of the page shows the two schedules the car keeps itself; below them come the climate schedules, which MGMate runs.
+
+### Charging and battery pre-heating (saved in the car)
+
+- **Charging.** One window that repeats every day: whenever the car is plugged in, it waits for the start time and charges until the end time, or until the charge target on a car that takes one. Switched off, the car starts charging as soon as it is plugged in. The card shows the window, when it next starts, the charge target and the charging current. **Change** opens the settings in the card: the mode, the start and end times, and the charge target (40 to 100 %), saved with one button.
+- **Battery pre-heating.** A daily time at which the car warms its battery, so it charges and drives better in the cold.
+- **Why the car's own schedule.** The car runs these by itself, even when MGMate, your network or MG's servers are offline, and nothing has to wake it at charge time, which spares the 12V battery. Reading them costs nothing: they come with the car's regular status. Only saving a change sends a command, which wakes the car once. The catch is that the car keeps one charging window, the same every day; MG's API has no weekday charging schedule.
+- The times are in the car's own time zone. The same settings stay on the Overview's charging and battery heating cards.
+
+### Climate schedules (run by MGMate)
+
+Climate schedules switch the car's climate on at a time you set, so it is warm (or cool) when you leave. They run on the MGMate server: no phone or browser has to be open. Each start sends a command, so it wakes the car.
 
 - **When.** A time on the chosen weekdays, or once, on the next day that time comes round, when no weekday is chosen. The time is kept in the time zone the browser had when the schedule was made, so 07:30 stays 07:30 across daylight saving time.
 - **What.** A temperature (16 to 28 °C), or the fan only, or the front defrost; seat heating for either front seat, the rear defroster, and the heated steering wheel (which the car switches off by itself after about 10 minutes). The three modes are one setting in MG's API, so climate and front defrost cannot run together.

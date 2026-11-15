@@ -49,6 +49,6 @@ const subtitle = computed(() =>
     :subtitle="subtitle"
     :variant="next ? 'info' : undefined"
     clickable
-    @click="router.push({ name: 'climateSchedules' })"
+    @click="router.push({ name: 'schedules' })"
   />
 </template>

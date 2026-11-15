@@ -38,7 +38,7 @@ const PAGES = [
   { file: 'reports', path: '/reports' },
   { file: 'battery-health', path: '/battery-health' },
   { file: 'maintenance', path: '/maintenance' },
-  { file: 'climate-schedules', path: '/climate-schedules' },
+  { file: 'schedules', path: '/schedules' },
   { file: 'settings', path: '/settings' },
   { file: 'debug', path: '/debug' },
   { file: 'notifications', path: '/', prepare: openNotifications },

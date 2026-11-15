@@ -71,10 +71,12 @@ const router = createRouter({
       component: () => import('@/views/ActivityView.vue'),
     },
     {
-      path: '/climate-schedules',
-      name: 'climateSchedules',
-      component: () => import('@/views/ClimateSchedulesView.vue'),
+      path: '/schedules',
+      name: 'schedules',
+      component: () => import('@/views/SchedulesView.vue'),
     },
+    // The page held only climate schedules once; old links and bookmarks still land on it.
+    { path: '/climate-schedules', redirect: '/schedules' },
     {
       path: '/maintenance',
       name: 'maintenance',

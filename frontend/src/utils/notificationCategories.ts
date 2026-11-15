@@ -80,7 +80,7 @@ const CATEGORY_PAGES: Record<NotificationCategoryId, string> = {
   'windows-open-parked': '/',
   'moved-parked': '/',
   'vehicle-message': '/',
-  'climate-schedule': '/climate-schedules',
+  'climate-schedule': '/schedules',
   'low-12v': '/',
   'low-fuel': '/',
   'gateway-login': '/',

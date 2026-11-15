@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import en from '@/locales/en.json'
 import type { SendOptions } from '@/composables/useVehicleCommand'
@@ -20,6 +20,7 @@ vi.mock('@/composables/useVehicleCommand', () => ({
     lastResult: ref(null),
     isPending: () => false,
     send,
+    waitUntilSettled: () => Promise.resolve(),
   }),
 }))
 
@@ -128,6 +129,53 @@ describe('ChargingScheduleForm', () => {
     const sent = lastSend()
     expect(sent.payload).toEqual({ mode: 'DISABLED', startTime: '23:00', endTime: '07:00' })
     expect(sent.confirmedBy({ chargingScheduleMode: 'DISABLED' })).toBe(true)
+  })
+
+  it('has no target slider unless given the target', () => {
+    expect(mountCharging({ canChargeUntilTarget: true }).find('input[type="range"]').exists()).toBe(
+      false,
+    )
+    expect(
+      mountCharging({ canChargeUntilTarget: true, target: 80 })
+        .find('input[type="range"]')
+        .exists(),
+    ).toBe(true)
+  })
+
+  it('sends only the target when only the target changed', async () => {
+    const wrapper = mountCharging({ canChargeUntilTarget: true, target: 80 })
+
+    await wrapper.find('input[type="range"]').setValue('90')
+    await saveButton(wrapper).trigger('click')
+
+    expect(send).toHaveBeenCalledTimes(1)
+    const [, command, value, options] = send.mock.lastCall!
+    expect(command).toBe('charge-target')
+    expect(value).toBe('90')
+    expect(options?.isConfirmed?.({ socTargetPercent: 90 } as TelemetrySnapshot)).toBe(true)
+  })
+
+  it('sends the schedule first, then the target, when both changed', async () => {
+    const wrapper = mountCharging({ canChargeUntilTarget: true, target: 80 })
+
+    await wrapper.find('#charging-schedule-start').setValue('1')
+    await wrapper.find('input[type="range"]').setValue('100')
+    await saveButton(wrapper).trigger('click')
+    await flushPromises()
+
+    expect(send.mock.calls.map((c) => c[1])).toEqual(['scheduled-charging', 'charge-target'])
+  })
+
+  it('does not send the target when the schedule was refused', async () => {
+    send.mockResolvedValueOnce(false)
+    const wrapper = mountCharging({ canChargeUntilTarget: true, target: 80 })
+
+    await wrapper.find('#charging-schedule-start').setValue('1')
+    await wrapper.find('input[type="range"]').setValue('100')
+    await saveButton(wrapper).trigger('click')
+    await flushPromises()
+
+    expect(send.mock.calls.map((c) => c[1])).toEqual(['scheduled-charging'])
   })
 
   it('reads a schedule the car never reported as off', () => {

@@ -5,7 +5,7 @@
     "map": "Map",
     "tripLog": "Trips",
     "charges": "Charges",
-    "climateSchedules": "Climate",
+    "schedules": "Schedules",
     "maintenance": "Maintenance",
     "logs": "System logs",
     "menuLabel": "Menu",
@@ -1110,7 +1110,6 @@
   },
   "climateSchedules": {
     "title": "Climate schedules",
-    "subtitle": "Warm or cool the car before you leave. Schedules run on the MGMate server, so your phone can stay off.",
     "addSchedule": "Add schedule",
     "editSchedule": "Edit schedule",
     "delete": "Delete",
@@ -1883,5 +1882,34 @@
     "monthsDays": "{months} mo {days} d",
     "years": "{n} year | {n} year | {n} years",
     "yearsMonths": "{years} yr {months} mo"
+  },
+  "schedules": {
+    "title": "Schedules",
+    "subtitle": "When the car charges, warms its battery and heats or cools the cabin.",
+    "savedInCar": "Saved in the car",
+    "on": "On",
+    "off": "Off",
+    "change": "Change",
+    "close": "Close",
+    "carHint": "The car runs these two itself, every day, even when MGMate or MG's servers are offline. Saving a change wakes the car once.",
+    "charging": {
+      "title": "Charging",
+      "target": "Charge target",
+      "current": "Charging current",
+      "untilTimeLine": "Every day, when plugged in. Charges until the end time.",
+      "untilTargetLine": "Every day, when plugged in. Charges until {percent}%.",
+      "offLine": "Charging starts as soon as you plug in."
+    },
+    "heating": {
+      "title": "Battery pre-heating",
+      "onLine": "Every day. Warms the battery so it charges and drives better in the cold.",
+      "offLine": "The battery is not warmed on a schedule."
+    },
+    "climate": {
+      "title": "Climate",
+      "where": "Run by MGMate · each start wakes the car"
+    },
+    "nextStart": "Next start",
+    "notSet": "Off"
   }
 }
