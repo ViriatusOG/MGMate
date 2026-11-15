@@ -4,7 +4,7 @@ namespace MGMate.Core.Models;
 
 /// <summary>
 /// A time to precondition the car: switch climate on (in a mode, at a temperature, with seat
-/// heating and the rear defroster if asked) on the chosen weekdays, or once when no day is chosen.
+/// heating, the rear defroster and the heated steering wheel if asked) on the chosen weekdays, or once when no day is chosen.
 /// The gateway has no climate schedule of its own, so the Worker sends the commands when one is due.
 /// </summary>
 public class ClimateSchedule
@@ -36,6 +36,9 @@ public class ClimateSchedule
     public int TemperatureC { get; set; } = 21;
 
     public bool RearDefroster { get; set; }
+
+    /// <summary>Whether the heated steering wheel goes on too. The car switches it off by itself after about 10 minutes.</summary>
+    public bool SteeringWheelHeat { get; set; }
 
     /// <summary>0 (off) to 3 (high).</summary>
     public int SeatLeftLevel { get; set; }

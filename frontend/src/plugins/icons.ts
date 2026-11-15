@@ -1,3 +1,5 @@
+import type { IconDefinition, IconName } from '@fortawesome/fontawesome-svg-core'
+
 // Every icon the app shows, named once. FontAwesome only bundles the icons listed here, so an icon
 // a template uses has to be added to this list as well; ./fontAwesome.ts registers all of them.
 export {
@@ -117,3 +119,17 @@ export {
   faWind,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
+
+// Font Awesome's free set has no steering wheel, so it is drawn here in the same 512 grid: a rim,
+// a hub and three spokes.
+export const faSteeringWheel: IconDefinition = {
+  prefix: 'fas',
+  iconName: 'steering-wheel' as IconName,
+  icon: [
+    512,
+    512,
+    [],
+    '',
+    'M256 0A256 256 0 1 1 256 512A256 256 0 1 1 256 0ZM256 56A200 200 0 1 0 256 456A200 200 0 1 0 256 56ZM256 216A64 64 0 1 1 256 344A64 64 0 1 1 256 216ZM60 232H200V288H60ZM312 232H452V288H312ZM228 330H284V452H228Z',
+  ],
+}

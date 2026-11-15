@@ -28,6 +28,8 @@ export interface ClimateScheduleRequest {
   /** Whole degrees Celsius, used by normal climate only. */
   temperatureC: number
   rearDefroster: boolean
+  /** The car switches the heated steering wheel off by itself after about 10 minutes. */
+  steeringWheelHeat: boolean
   seatLeftLevel: number
   seatRightLevel: number
   /** Runs only when it is colder than this outside (°C), or warmer than onlyAboveC. */

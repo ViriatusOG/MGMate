@@ -182,6 +182,7 @@ public static class DemoSeeder
             TimeZoneId = zoneId,
             Mode = ClimateScheduleMode.On,
             TemperatureC = 21,
+            SteeringWheelHeat = true,
             SeatLeftLevel = 2,
             LastRunAt = DateTime.UtcNow.AddDays(-1),
             LastRunOutcome = ClimateScheduleOutcome.Started,

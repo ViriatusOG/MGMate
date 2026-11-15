@@ -247,6 +247,9 @@ namespace MGMate.Data.Migrations
                     b.Property<TimeOnly>("StartTime")
                         .HasColumnType("time without time zone");
 
+                    b.Property<bool>("SteeringWheelHeat")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("TemperatureC")
                         .HasColumnType("integer");
 

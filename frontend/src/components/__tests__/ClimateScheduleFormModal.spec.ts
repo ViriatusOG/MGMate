@@ -63,12 +63,25 @@ describe('ClimateScheduleFormModal', () => {
       mode: 'on',
       temperatureC: 21,
       rearDefroster: false,
+      steeringWheelHeat: false,
       seatLeftLevel: 0,
       seatRightLevel: 0,
       onlyBelowC: null,
       onlyAboveC: null,
     })
     expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  it('saves the heated steering wheel when switched on', async () => {
+    const wrapper = await openForm()
+
+    await wrapper.find('input[aria-label="Heated steering wheel"]').trigger('change')
+    await save(wrapper)
+
+    expect(climateScheduleApi.create).toHaveBeenCalledWith(
+      'FAKEVN00000000001',
+      expect.objectContaining({ steeringWheelHeat: true }),
+    )
   })
 
   it('takes no temperature for fan only', async () => {

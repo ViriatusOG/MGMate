@@ -18,6 +18,7 @@ export function toRequest(schedule: ClimateSchedule): ClimateScheduleRequest {
     mode: schedule.mode,
     temperatureC: schedule.temperatureC,
     rearDefroster: schedule.rearDefroster,
+    steeringWheelHeat: schedule.steeringWheelHeat,
     seatLeftLevel: schedule.seatLeftLevel,
     seatRightLevel: schedule.seatRightLevel,
     onlyBelowC: schedule.onlyBelowC,

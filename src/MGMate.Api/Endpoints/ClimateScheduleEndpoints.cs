@@ -118,6 +118,7 @@ public static class ClimateScheduleEndpoints
         schedule.Mode = req.Mode;
         schedule.TemperatureC = req.TemperatureC;
         schedule.RearDefroster = req.RearDefroster;
+        schedule.SteeringWheelHeat = req.SteeringWheelHeat;
         schedule.SeatLeftLevel = req.SeatLeftLevel;
         schedule.SeatRightLevel = req.SeatRightLevel;
         schedule.OnlyBelowC = req.OnlyBelowC;
@@ -130,7 +131,7 @@ public static class ClimateScheduleEndpoints
     internal static ClimateScheduleDto ToDto(ClimateSchedule s) => new(
         s.Id, s.Name, s.Enabled,
         TimeOfDayText.ToText(s.StartTime), s.Days.ToIsoDays(), s.TimeZoneId,
-        s.Mode, s.TemperatureC, s.RearDefroster, s.SeatLeftLevel, s.SeatRightLevel,
+        s.Mode, s.TemperatureC, s.RearDefroster, s.SteeringWheelHeat, s.SeatLeftLevel, s.SeatRightLevel,
         s.OnlyBelowC, s.OnlyAboveC,
         AsUtc(s.NextRunUtc), AsUtc(s.LastRunAt), s.LastRunOutcome, s.LastRunFailedCommand, s.LastRunDetail);
 
@@ -147,12 +148,12 @@ public static class ClimateScheduleEndpoints
 /// </summary>
 public record ClimateScheduleRequest(
     string? Name, bool Enabled, string StartTime, int[]? Days, string TimeZoneId,
-    ClimateScheduleMode Mode, int TemperatureC, bool RearDefroster, int SeatLeftLevel, int SeatRightLevel,
+    ClimateScheduleMode Mode, int TemperatureC, bool RearDefroster, bool SteeringWheelHeat, int SeatLeftLevel, int SeatRightLevel,
     double? OnlyBelowC, double? OnlyAboveC);
 
 public record ClimateScheduleDto(
     int Id, string? Name, bool Enabled, string StartTime, int[] Days, string TimeZoneId,
-    ClimateScheduleMode Mode, int TemperatureC, bool RearDefroster, int SeatLeftLevel, int SeatRightLevel,
+    ClimateScheduleMode Mode, int TemperatureC, bool RearDefroster, bool SteeringWheelHeat, int SeatLeftLevel, int SeatRightLevel,
     double? OnlyBelowC, double? OnlyAboveC,
     DateTime? NextRunUtc, DateTime? LastRunAt, ClimateScheduleOutcome? LastRunOutcome,
     string? LastRunFailedCommand, string? LastRunDetail);
