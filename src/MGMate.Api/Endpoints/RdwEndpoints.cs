@@ -43,6 +43,8 @@ public static class RdwEndpoints
             IVehicleRepository vehicles,
             IRdwRepository rdw,
             RdwRefresher refresher,
+            IDvlaRepository dvla,
+            DvlaRefresher dvlaRefresher,
             CancellationToken ct) =>
         {
             var vehicle = httpContext.ResolvedVehicle();
@@ -56,8 +58,13 @@ public static class RdwEndpoints
                 // What the RDW said about the old plate is about another car.
                 await vehicles.SetLicensePlateAsync(vehicle.Id, plate, ct);
                 await rdw.DeleteAsync(vehicle.Id, ct);
+                await dvla.DeleteAsync(vehicle.Id, ct);
                 vehicle.LicensePlate = plate;
             }
+
+            // The DVLA likewise, when this deployment has a key for it (DVLA_API_KEY). Its answer
+            // is read from GET /dvla.
+            if (plate is not null) await dvlaRefresher.RefreshAsync(vehicle, ct);
 
             // The plate is kept for any car, to show beside its name. Only a deployment that looks
             // plates up asks the RDW, and then straight away, so the card has something to show

@@ -64,17 +64,36 @@ public static class NotificationCategories
     // The RDW has no WAM (third-party liability) insurance on record for the car.
     public const string RdwUninsured = "rdw-uninsured";
 
+    // What the DVLA categories below are grouped as: UK road tax and MOT.
+    public const string Dvla = "dvla";
+
+    /// <summary>
+    /// The road tax notice <paramref name="days"/> days ahead. The due date is part of it, so next
+    /// year's is not held back by this one's.
+    /// </summary>
+    public static string DvlaTaxDue(int days, DateOnly dueOn) =>
+        string.Create(CultureInfo.InvariantCulture, $"dvla-tax-due-{days}-{dueOn:yyyyMMdd}");
+
+    // Repeats, spaced out by the cooldown, for as long as the DVLA says the car is untaxed.
+    public const string DvlaUntaxed = "dvla-untaxed";
+
+    public static string DvlaMotDue(int days, DateOnly expiresOn) =>
+        string.Create(CultureInfo.InvariantCulture, $"dvla-mot-due-{days}-{expiresOn:yyyyMMdd}");
+
+    // Likewise for as long as the MOT has run out.
+    public const string DvlaMotExpired = "dvla-mot-expired";
+
     /// <summary>The types a user can switch off, as the frontend's notification checklist offers them.</summary>
     public static readonly IReadOnlySet<string> Groups = new HashSet<string>(StringComparer.Ordinal)
     {
         LowTyre, HighTyre, SlowPuncture, LowEv, ChargingComplete, ChargingInterrupted, EngineStart, UnlockedParked, DoorsOpenParked,
         WindowsOpenParked, MovedParked, VehicleMessage, ClimateSchedule, Low12V, LowFuel, GatewayLogin, DataStale,
-        PlaceArrival, PlaceDeparture, Maintenance, Rdw,
+        PlaceArrival, PlaceDeparture, Maintenance, Rdw, Dvla,
     };
 
     /// <summary>
     /// The type <paramref name="category"/> is switched off as: itself, "maintenance" for the
-    /// per-item maintenance categories, or "rdw" for the RDW ones. Mirrors notificationCategoryId
+    /// per-item maintenance categories, "rdw" for the RDW ones, or "dvla" for the DVLA ones. Mirrors notificationCategoryId
     /// in the frontend.
     /// </summary>
     public static string? GroupOf(string? category) =>
@@ -83,6 +102,7 @@ public static class NotificationCategories
             null => null,
             _ when category.StartsWith(Maintenance + "-", StringComparison.Ordinal) => Maintenance,
             _ when category.StartsWith(Rdw + "-", StringComparison.Ordinal) => Rdw,
+            _ when category.StartsWith(Dvla + "-", StringComparison.Ordinal) => Dvla,
             _ when Groups.Contains(category) => category,
             _ => null,
         };

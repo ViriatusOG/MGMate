@@ -101,6 +101,16 @@ The trip log (`/trip-log`, `TripEndpoints`) shows only saved trips, because only
 
 The `AddTripLog` migration clears the trips saved before it and resets the recording line, and the Worker saves them again with their new columns. Nothing is lost: until that migration, nothing a driver could enter was kept on a trip.
 
+## UK road tax and MOT (DVLA)
+
+With a `DVLA_API_KEY`, the same plate is looked up at the DVLA's Vehicle Enquiry Service: one POST
+with the plate and the deployment's own key (`DvlaApiClient`), which refuses before sending
+anything while there is no key. It follows the RDW's shape: `DvlaRefresher` saves one
+`DvlaVehicleInfo` row per vehicle (the tax and MOT fields as columns, the DVLA's whole answer as
+JSON in `RecordJson`), the API looks a plate up as it is entered and on `POST .../dvla/refresh`,
+and `DvlaSyncService` in the Worker asks again once a lookup is older than `DVLA_REFRESH_HOURS`
+and sends the `dvla-*` notifications. Neither the key nor the plate is ever logged.
+
 ## The Dutch registration (RDW)
 
 With `RDW_ENABLED`, a car's Dutch plate (`Vehicle.LicensePlate`, entered by the user: neither the

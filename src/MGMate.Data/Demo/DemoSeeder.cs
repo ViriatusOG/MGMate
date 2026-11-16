@@ -34,6 +34,8 @@ public static class DemoSeeder
 
         if (rdwEnabled && !await db.RdwVehicleInfos.AnyAsync(ct))
             await SeedRdwAsync(db, ct);
+        if (!await db.DvlaVehicleInfos.AnyAsync(ct))
+            await SeedDvlaAsync(db, ct);
 
         if (!await db.ChargeSessions.AnyAsync(ct))
             await SeedChargesAsync(db, ct);
@@ -140,6 +142,30 @@ public static class DemoSeeder
                 Category = NotificationCategories.RdwApkDue(ApkReminder.MonthNoticeDays, registration.ApkExpiresOn!.Value),
                 VehicleId = vehicle.Id,
             });
+        await db.SaveChangesAsync(ct);
+    }
+
+    // What a DVLA lookup two hours ago would have left: taxed for months, too new for an MOT.
+    private static async Task SeedDvlaAsync(AppDbContext db, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var vehicle = DemoVehicleRepository.DemoVehicle;
+        var found = DemoDvlaClient.Vehicle(now);
+        db.DvlaVehicleInfos.Add(new DvlaVehicleInfo
+        {
+            VehicleId = vehicle.Id,
+            LicensePlate = vehicle.LicensePlate!,
+            Found = true,
+            TaxStatus = found.TaxStatus,
+            TaxDueDate = found.TaxDueDate,
+            MotStatus = found.MotStatus,
+            MotExpiryDate = found.MotExpiryDate,
+            Make = found.Make,
+            Colour = found.Colour,
+            FuelType = found.FuelType,
+            RecordJson = found.RecordJson,
+            FetchedAt = now.AddHours(-2),
+        });
         await db.SaveChangesAsync(ct);
     }
 

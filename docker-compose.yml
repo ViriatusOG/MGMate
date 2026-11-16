@@ -43,6 +43,9 @@ x-dotnet-environment: &dotnet-environment
   RDW_ENABLED: "${RDW_ENABLED:-}"
   RDW_REFRESH_HOURS: "${RDW_REFRESH_HOURS:-}"
   RDW_APP_TOKEN: "${RDW_APP_TOKEN:-}"
+  # UK road tax and MOT: your own DVLA key, read by the API and the Worker alike. See .env.example.
+  DVLA_API_KEY: "${DVLA_API_KEY:-}"
+  DVLA_REFRESH_HOURS: "${DVLA_REFRESH_HOURS:-}"
 
 # Docker keeps container output forever unless told otherwise. The .NET services also write their
 # own rotated files (LOG_RETAINED_FILES), so a few megabytes of console history per container is

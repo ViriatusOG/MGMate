@@ -49,6 +49,7 @@ try
     builder.Services.AddHostedService<ChargeRecorderService>();
     // The Dutch registration's APK, recalls and insurance; stops at once unless RDW_ENABLED is set.
     builder.Services.AddHostedService<RdwSyncService>();
+    builder.Services.AddHostedService<DvlaSyncService>();
 
     // Climate schedules: the Worker decides when, the Api sends the commands (see VehicleCommandClient).
     builder.Services.AddSingleton(TimeProvider.System);

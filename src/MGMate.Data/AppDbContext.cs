@@ -25,6 +25,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CommutePlace> CommutePlaces => Set<CommutePlace>();
     public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
     public DbSet<RdwVehicleInfo> RdwVehicleInfos => Set<RdwVehicleInfo>();
+    public DbSet<DvlaVehicleInfo> DvlaVehicleInfos => Set<DvlaVehicleInfo>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +48,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(r => r.Model).HasMaxLength(RdwLimits.NameMaxLength);
             e.Property(r => r.RecallsJson).IsRequired();
             e.Property(r => r.LastError).HasMaxLength(RdwLimits.ErrorMaxLength);
+            e.HasOne(r => r.Vehicle)
+             .WithMany()
+             .HasForeignKey(r => r.VehicleId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DvlaVehicleInfo>(e =>
+        {
+            e.HasKey(r => r.Id);
+            // One lookup per vehicle, which is also how every read finds it.
+            e.HasIndex(r => r.VehicleId).IsUnique();
+            e.Property(r => r.LicensePlate).HasMaxLength(LicensePlate.MaxLength).IsRequired();
+            e.Property(r => r.TaxStatus).HasMaxLength(DvlaLimits.TextMaxLength);
+            e.Property(r => r.MotStatus).HasMaxLength(DvlaLimits.TextMaxLength);
+            e.Property(r => r.Make).HasMaxLength(DvlaLimits.TextMaxLength);
+            e.Property(r => r.Colour).HasMaxLength(DvlaLimits.TextMaxLength);
+            e.Property(r => r.FuelType).HasMaxLength(DvlaLimits.TextMaxLength);
+            e.Property(r => r.RecordJson).HasMaxLength(DvlaLimits.RecordMaxLength).IsRequired();
+            e.Property(r => r.LastError).HasMaxLength(DvlaLimits.ErrorMaxLength);
             e.HasOne(r => r.Vehicle)
              .WithMany()
              .HasForeignKey(r => r.VehicleId)

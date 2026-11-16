@@ -314,6 +314,71 @@ namespace MGMate.Data.Migrations
                     b.ToTable("CommutePlaces");
                 });
 
+            modelBuilder.Entity("MGMate.Core.Models.DvlaVehicleInfo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Colour")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("FetchedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Found")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("FuelType")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("LicensePlate")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.Property<string>("Make")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateOnly?>("MotExpiryDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("MotStatus")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("RecordJson")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<DateOnly?>("TaxDueDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("TaxStatus")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VehicleId")
+                        .IsUnique();
+
+                    b.ToTable("DvlaVehicleInfos");
+                });
+
             modelBuilder.Entity("MGMate.Core.Models.GeocodeCacheEntry", b =>
                 {
                     b.Property<int>("Id")
@@ -1288,6 +1353,17 @@ namespace MGMate.Data.Migrations
                 });
 
             modelBuilder.Entity("MGMate.Core.Models.CommutePlace", b =>
+                {
+                    b.HasOne("MGMate.Core.Models.Vehicle", "Vehicle")
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("MGMate.Core.Models.DvlaVehicleInfo", b =>
                 {
                     b.HasOne("MGMate.Core.Models.Vehicle", "Vehicle")
                         .WithMany()

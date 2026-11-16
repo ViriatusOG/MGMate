@@ -80,6 +80,10 @@ public static class EnvironmentAliases
         ["RDW_ENABLED"] = "Rdw:Enabled",
         ["RDW_REFRESH_HOURS"] = "Rdw:RefreshHours",
         ["RDW_APP_TOKEN"] = "Rdw:AppToken",
+
+        // The UK registration (road tax, MOT), off until the deployment has its own DVLA key.
+        ["DVLA_API_KEY"] = "Dvla:ApiKey",
+        ["DVLA_REFRESH_HOURS"] = "Dvla:RefreshHours",
     };
 
     /// <summary>
