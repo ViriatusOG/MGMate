@@ -23,6 +23,8 @@ describe('notificationCategoryId', () => {
     expect(notificationCategoryId('rdw-recall-MGP230061')).toBe('rdw')
     expect(notificationCategoryId('rdw-apk-due-30-20261108')).toBe('rdw')
     expect(notificationCategoryId('rdw-uninsured')).toBe('rdw')
+    expect(notificationCategoryId('dvla-tax-due-30-20261216')).toBe('dvla')
+    expect(notificationCategoryId('dvla-mot-expired')).toBe('dvla')
   })
 
   it.each(NOTIFICATION_CATEGORY_IDS.filter((id) => id !== 'maintenance'))(

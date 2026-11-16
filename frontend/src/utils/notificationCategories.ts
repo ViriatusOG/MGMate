@@ -23,6 +23,7 @@ export const NOTIFICATION_CATEGORY_IDS = [
   'place-departure',
   'maintenance',
   'rdw',
+  'dvla',
 ] as const
 
 export type NotificationCategoryId = (typeof NOTIFICATION_CATEGORY_IDS)[number]
@@ -60,6 +61,7 @@ export function notificationCategoryId(category: string | null): NotificationCat
   if (!category) return null
   if (category.startsWith('maintenance-')) return 'maintenance'
   if (category.startsWith('rdw-')) return 'rdw'
+  if (category.startsWith('dvla-')) return 'dvla'
   return (NOTIFICATION_CATEGORY_IDS as readonly string[]).includes(category)
     ? (category as NotificationCategoryId)
     : null
@@ -89,6 +91,7 @@ const CATEGORY_PAGES: Record<NotificationCategoryId, string> = {
   'place-departure': '/trip-log',
   maintenance: '/maintenance',
   rdw: '/',
+  dvla: '/',
 }
 
 export function notificationPage(category: string | null): string | null {

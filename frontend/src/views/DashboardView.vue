@@ -5,6 +5,7 @@ import { onMounted, onUnmounted, computed, defineAsyncComponent, ref, watch } fr
 import { useI18n } from 'vue-i18n'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useRdwStore } from '@/stores/rdw'
+import { useDvlaStore } from '@/stores/dvla'
 import { cardsHiddenByType, useDashboardSettingsStore } from '@/stores/settingsDashboard'
 import { useUiSettingsStore } from '@/stores/settingsUi'
 import type { CardId } from '@/cards/registry'
@@ -43,6 +44,7 @@ const EditableCardGrid = defineAsyncComponent(
 const { t } = useI18n()
 const store = useVehicleStore()
 const rdw = useRdwStore()
+const dvla = useDvlaStore()
 const settings = useDashboardSettingsStore()
 
 const vin = computed(() => store.activeVin)
@@ -92,7 +94,11 @@ const carDiagramProps = computed(() => {
 
 // Cards this deployment does not serve at all: not offered in edit mode, not even as a placeholder.
 const unavailableCards = computed(
-  (): ReadonlySet<CardId> => new Set<CardId>(rdw.available === true ? [] : ['rdw']),
+  (): ReadonlySet<CardId> =>
+    new Set<CardId>([
+      ...(rdw.available === true ? [] : (['rdw'] as const)),
+      ...(dvla.available === true ? [] : (['dvla'] as const)),
+    ]),
 )
 
 const skeletonCards = computed(() => {
@@ -160,6 +166,7 @@ async function refresh() {
       store.fetchConfig(vin.value),
       store.fetchLatestTrip(vin.value),
       rdw.fetchStatus(vin.value),
+      dvla.fetchStatus(vin.value),
     ])
   }
 }
@@ -378,6 +385,11 @@ onUnmounted(() => {
               <DashboardCardContent :card-id="id" />
             </CardInfoWrap>
           </div>
+        </section>
+
+        <!-- Road tax and MOT likewise, wherever the DVLA is asked about the car. -->
+        <section v-if="!settings.showStatusCards && hasData('dvla')" class="ov-dvla">
+          <DashboardCardContent card-id="dvla" />
         </section>
 
         <div v-if="settings.showStatusCards" class="status-grid">

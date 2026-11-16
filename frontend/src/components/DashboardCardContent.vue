@@ -23,6 +23,7 @@ import ChargingSessionCard from './ChargingSessionCard.vue'
 import BatteryHeatingCard from './BatteryHeatingCard.vue'
 import MaintenanceSummaryCard from './MaintenanceSummaryCard.vue'
 import RdwCard from './RdwCard.vue'
+import DvlaCard from './DvlaCard.vue'
 import ClimateScheduleSummaryCard from './ClimateScheduleSummaryCard.vue'
 import { formatNumber } from '@/utils/format'
 import { energyUnit, hvBatteryReading, litres, litresPer100Km, whPerKm } from '@/utils/energy'
@@ -376,6 +377,8 @@ const activeSimpleCard = computed(() => {
 
     <!-- the Dutch registration (RDW) -->
     <RdwCard v-else-if="cardId === 'rdw'" />
+    <!-- UK road tax and MOT (DVLA) -->
+    <DvlaCard v-else-if="cardId === 'dvla'" />
     <ClimateScheduleSummaryCard v-else-if="cardId === 'climateSchedule'" />
   </template>
 </template>

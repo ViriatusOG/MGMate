@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useRdwStore } from '@/stores/rdw'
+import { useDvlaStore } from '@/stores/dvla'
 import type { CardDataContext } from './registry'
 
 /**
@@ -11,6 +12,7 @@ import type { CardDataContext } from './registry'
 export function useCardData() {
   const store = useVehicleStore()
   const rdw = useRdwStore()
+  const dvla = useDvlaStore()
 
   return computed((): CardDataContext | null => {
     const status = store.currentStatus
@@ -20,6 +22,7 @@ export function useCardData() {
       vehicleType: store.effectiveVehicleType,
       latestTrip: store.latestTrip,
       rdwPlateSet: rdw.hasPlate,
+      dvlaPlateSet: dvla.hasPlate,
     }
   })
 }

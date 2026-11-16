@@ -6,6 +6,7 @@ import en from '@/locales/en.json'
 import DashboardView from '../DashboardView.vue'
 import { vehicleApi, type TelemetrySnapshot, type Trip, type Vehicle } from '@/services/vehicleApi'
 import { rdwApi } from '@/services/rdwApi'
+import { dvlaApi } from '@/services/dvlaApi'
 import { ApiError } from '@/services/apiCore'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useDashboardSettingsStore } from '@/stores/settingsDashboard'
@@ -29,6 +30,11 @@ vi.mock('@/components/EditableCardGrid.vue', () => ({
 vi.mock('@/services/rdwApi', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/services/rdwApi')>()),
   rdwApi: { get: vi.fn<(typeof import('@/services/rdwApi'))['rdwApi']['get']>() },
+}))
+
+vi.mock('@/services/dvlaApi', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/services/dvlaApi')>()),
+  dvlaApi: { get: vi.fn<(typeof import('@/services/dvlaApi'))['dvlaApi']['get']>() },
 }))
 
 // A car that has not reported yet: the API answers 204, which the client returns as undefined.
@@ -96,6 +102,7 @@ describe('DashboardView', () => {
     vi.mocked(vehicleApi.config).mockResolvedValue({})
     vi.mocked(vehicleApi.latestTrip).mockResolvedValue(undefined)
     vi.mocked(rdwApi.get).mockRejectedValue(new ApiError(404, '/rdw', { code: 'rdw.disabled' }))
+    vi.mocked(dvlaApi.get).mockRejectedValue(new ApiError(404, '/dvla', { code: 'dvla.disabled' }))
   })
 
   afterEach(() => {
@@ -106,7 +113,13 @@ describe('DashboardView', () => {
   it('loads everything the cards show for the car', async () => {
     await mountView()
 
-    for (const call of [vehicleApi.status, vehicleApi.config, vehicleApi.latestTrip, rdwApi.get])
+    for (const call of [
+      vehicleApi.status,
+      vehicleApi.config,
+      vehicleApi.latestTrip,
+      rdwApi.get,
+      dvlaApi.get,
+    ])
       expect(call).toHaveBeenCalledWith('FAKEVN00000000001')
   })
 
@@ -124,6 +137,7 @@ describe('DashboardView', () => {
     expect(shown).toEqual(expect.arrayContaining(['evBattery', 'odometer', 'battery12v', 'doors']))
     expect(shown).not.toContain('fuelLevel')
     expect(shown).not.toContain('rdw')
+    expect(shown).not.toContain('dvla')
   })
 
   it('says there is no data yet when the car has reported nothing', async () => {

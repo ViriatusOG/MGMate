@@ -96,6 +96,7 @@ Click the flask icon in the bottom-right corner to open the panel. Changes take 
 | `ITelemetryRepository` | Serves pre-built snapshots; mutable via `/api/demo/status/{vin}` |
 | `ITripRepository` | Serves the pre-built trips |
 | `IRdwClient` | Answers for the RDW with any plate: an APK due in three weeks, one open recall and one repaired, so the RDW card shows without a car and without a request leaving the machine. The demo seeds the two notifications the Worker would have sent about it. `RDW_ENABLED=false` leaves the card, the plate field and those notifications out |
+| `IDvlaClient` | Answers for the DVLA with any plate: taxed for another eight months and too new for an MOT, so the Tax and MOT card shows without a key and without a request leaving the machine |
 | `IMqttPublisher` | Carries commands out on the demo car: after two seconds the car's state changes and the answer arrives, as from the gateway. Starting to charge without the cable plugged in (Demo Controls) is refused, to show a refusal |
 
 No PostgreSQL, Mosquitto, Worker, or SAIC gateway containers are started.

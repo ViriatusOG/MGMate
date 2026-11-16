@@ -18,8 +18,9 @@ function context(
   vehicleType: VehicleType = 'phev',
   latestTrip: TripSummary | null = null,
   rdwPlateSet = false,
+  dvlaPlateSet = false,
 ): CardDataContext {
-  return { status: status as TelemetrySnapshot, vehicleType, latestTrip, rdwPlateSet }
+  return { status: status as TelemetrySnapshot, vehicleType, latestTrip, rdwPlateSet, dvlaPlateSet }
 }
 
 describe('card registry', () => {
@@ -32,6 +33,8 @@ describe('card registry', () => {
   it('shows the RDW card only for a plate the deployment looks up', () => {
     expect(cardHasData('rdw', context({}))).toBe(false)
     expect(cardHasData('rdw', context({}, 'phev', null, true))).toBe(true)
+    expect(cardHasData('dvla', context({}))).toBe(false)
+    expect(cardHasData('dvla', context({}, 'bev', null, false, true))).toBe(true)
   })
 
   it('treats a card without a predicate as always having data', () => {

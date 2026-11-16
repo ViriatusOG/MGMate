@@ -65,6 +65,7 @@
       "batteryHeating": "High-voltage battery pre-heating status and schedule. Warming the battery before a charge session improves charging speed in cold weather. Only relevant for PHEV and BEV.",
       "maintenance": "Upcoming and overdue maintenance items based on the service intervals you define. Click through to the Maintenance page to add items or log a completed service.",
       "rdw": "The APK expiry date and the days left, open recalls and the WAM insurance, as the RDW has them on record for the car's Dutch plate. Click for each recall's risk and repair.",
+      "dvla": "Whether the car is taxed and until when, and its MOT, as the DVLA has them on record for the car's UK plate. Click for everything the DVLA holds.",
       "climateSchedule": "When a climate schedule warms or cools the car next"
     }
   },
@@ -538,6 +539,7 @@
       "climateSchedule": "Scheduled climate",
       "maintenance": "Maintenance reminders",
       "rdw": "APK, recalls and insurance (RDW)",
+      "dvla": "Road tax and MOT (DVLA)",
       "low12v": "Low 12V battery",
       "lowFuel": "Low fuel",
       "gatewayLogin": "MG sign-in failed",
@@ -602,6 +604,7 @@
       "batteryHeating": "Battery Heating",
       "maintenance": "Maintenance",
       "rdw": "APK & recalls",
+      "dvla": "Tax and MOT",
       "climateSchedule": "Next climate start"
     },
     "carColor": {
@@ -643,6 +646,8 @@
       "desc": "Shown beside the car's name on the Overview.",
       "descRdw": "A Dutch plate is also looked up at the RDW, for the APK date, recalls and insurance it has on record. Only the plate is sent to the RDW.",
       "label": "Licence plate",
+      "descDvla": "A UK plate is also looked up at the DVLA, for the road tax and MOT it has on record. Only the plate is sent to the DVLA.",
+      "savedDvla": "Saved and looked up at the DVLA.",
       "placeholder": {
         "nl": "AB-123-C",
         "gb": "AB12 CDE",
@@ -1323,6 +1328,52 @@
     "end": "No older entries in the log files.",
     "workerMissing": "The Worker's log files are not visible here: set WORKER_LOG_DIRECTORY to the folder they are in (see CONFIGURATION.md).",
     "exception": "Exception"
+  },
+  "dvla": {
+    "title": "Tax and MOT",
+    "notLookedUp": "Not looked up yet",
+    "plateUnknown": "Plate unknown",
+    "unknown": "Unknown",
+    "plate": "Plate {plate}",
+    "waiting": "The DVLA has not been asked about this plate yet. It is looked up within the hour.",
+    "notFound": "The DVLA knows no vehicle with the plate {plate}. Check it under Settings > Licence plate.",
+    "roadTax": "Road tax",
+    "mot": "MOT",
+    "due": "Due {date}",
+    "left": "{span} left",
+    "today": "today",
+    "taxRanOut": "Ran out {date}",
+    "motRanOut": "Ran out {date}",
+    "motNone": "No valid MOT on record",
+    "motExpired": "Expired",
+    "motNotNeeded": "Not needed yet",
+    "firstMotDue": "First MOT due {date}",
+    "motFirstUnknown": "A new car needs its first MOT three years after it was first registered.",
+    "note": {
+      "taxDue": "Tax due {date}",
+      "taxRanOut": "Tax ran out {date}",
+      "motDue": "MOT due {date}",
+      "motExpired": "MOT expired",
+      "firstMotDue": "first MOT due {date}"
+    },
+    "held": {
+      "title": "What the DVLA holds",
+      "registeredAs": "Registered as",
+      "firstRegistered": "First registered",
+      "yearOfManufacture": "Year of manufacture",
+      "lastV5c": "Last V5C issued",
+      "co2": "CO2 emissions",
+      "engine": "Engine size",
+      "euroStatus": "Euro status",
+      "typeApproval": "Type approval · wheel plan",
+      "revenueWeight": "Revenue weight",
+      "export": "Marked for export"
+    },
+    "yes": "Yes",
+    "no": "No",
+    "fetchedAt": "Checked {time}",
+    "source": "DVLA Vehicle Enquiry Service",
+    "lastAttemptFailed": "The last check with the DVLA failed, so this may be out of date."
   },
   "rdw": {
     "title": "APK & recalls",

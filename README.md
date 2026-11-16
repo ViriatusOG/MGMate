@@ -130,6 +130,7 @@ Thanks to Jos for the foundation.
 - [Push notifications](#push-notifications)
 - [Trip log](#trip-log), [Schedules](#schedules), [Maintenance](#maintenance) and [Warranty](#warranty)
 - [Dutch registration (RDW)](#dutch-registration-rdw)
+- [UK road tax and MOT (DVLA)](#uk-road-tax-and-mot-dvla)
 - [Homepage dashboard widget](#homepage-dashboard-widget) and [Read-only API tokens](#read-only-api-tokens)
 - [Map overlays](#map-overlays)
 - [Security defaults](#security-defaults), [HTTPS](#https) and [What leaves your network](#what-leaves-your-network)
@@ -153,6 +154,7 @@ Thanks to Jos for the foundation.
 - **Warranty** -- On the Maintenance page, every part of the manufacturer's warranty (MG UK's covers to start with, all editable), counted from the first registration, with the time and miles left on each, marked as it nears its end. See [Warranty](#warranty).
 - **Maintenance** -- Keep the car's service items (oil, tyres, the yearly inspection, ...) with a distance interval, a time interval or both. MGMate works out from the odometer and your service log when each one is due (a new car counts from its first registration), shows the most urgent on the dashboard, and sends a notification when an item reaches 90 % of its interval. Log each service with its date, odometer reading and notes.
 - **Dutch registration (RDW)** -- For a car with a Dutch licence plate, a dashboard card with the date the APK runs out and the days left, open recalls with what can go wrong and what the dealer does about it, and whether the car is insured, from the [RDW's open data](https://opendata.rdw.nl). Notifications come for a new recall, the APK a month and a week ahead, and a car with no insurance on record. Off until `RDW_ENABLED=true`; the plate, entered under Settings, is the only thing sent. See [Dutch registration (RDW)](#dutch-registration-rdw).
+- **UK road tax and MOT (DVLA)** -- For a car with a UK plate, a **Tax and MOT** card on the Overview with whether the car is taxed and until when, when the MOT (or a new car's first MOT) is due, and everything else the DVLA holds on record. Notifications come a month and a week before either runs out. It needs your own free DVLA key (`DVLA_API_KEY`); without one nothing is sent and nothing is shown. See [UK road tax and MOT (DVLA)](#uk-road-tax-and-mot-dvla).
 - **Energy statistics** -- Track daily energy consumption, efficiency (Wh/km on a plug-in car, L/100 km on a hybrid), fuel use, electric share, average driving speed, and more, for any period from the last 24 hours to several years.
 - **Remote commands** -- Trigger climate pre-conditioning (normal climate, fan only or front defrost), lock or unlock the car, open the boot, and activate the horn and lights remotely from the dashboard. On a plug-in car also start or stop charging, lock or unlock the charging cable, switch battery heating on or off, set the charging and battery heating schedules (on the Overview's cards or the Schedules page), and set the charge current limit and, where the car takes one, the charge target. Opening the boot and unlocking the cable ask for a second tap. Each command reports whether the car carried it out, and if it refused, the reason the MG servers gave.
 - **Schedules** -- One page for when the car charges, warms its battery and heats or cools the cabin. The charging window, charge target and battery pre-heating time are the car's own settings, which it runs by itself every day; the climate schedules run on the MGMate server. **Climate schedules:** switch climate on at a set time on chosen weekdays, or once. A schedule sets the temperature or mode, seat heating, the rear defroster and the heated steering wheel, and can skip mild days by the car's outside temperature. Schedules run on the server, so no browser needs to be open, and each run sends a push notification saying whether the car started climate.
@@ -209,6 +211,7 @@ The overview above is what you see by default. The classic status cards below ar
 | Battery Heating | Pre-heating status and schedule; switch it on or off, set the schedule | PHEV, BEV |
 | Maintenance | The most urgent state of your maintenance items, linking to the Maintenance page | All |
 | APK & recalls | The APK expiry date and days left, open recalls with their risk and repair, and the insurance on record, from the RDW | All (only with `RDW_ENABLED` and a plate set) |
+| Tax and MOT | Whether the car is taxed and until when, the MOT date, and what else the DVLA holds on record. Also shown on the Overview when the tile wall is off | All (only with `DVLA_API_KEY` and a plate set) |
 | Climate Schedule | When a climate schedule starts climate next | All (off by default) |
 
 ### Statistics insights
@@ -472,12 +475,16 @@ MGMate checks your vehicle's state every 5 minutes and sends both a browser push
 | APK due | The APK runs out within 30 days, and again within 7 days, of the date the RDW has (once each per APK date) |
 | APK expired | The APK's last valid day has passed (repeated monthly until the RDW has a new date) |
 | No insurance on record | The RDW has no WAM insurance on record for the car (repeated monthly while that lasts) |
+| Road tax due | The road tax runs out within 30 days, and again within 7 days, of the date the DVLA has (once each per due date; needs `DVLA_API_KEY`) |
+| Car is untaxed | The DVLA says the car is untaxed (repeated monthly while that lasts; a car declared off the road, SORN, sends nothing) |
+| MOT due | The MOT runs out within 30 days, and again within 7 days (once each per MOT date) |
+| MOT expired | The DVLA says the car has no valid MOT (repeated monthly while that lasts) |
 | MG app message | The official MG app receives a message, such as an alarm or a reminder (sent as it arrives, once per message) |
 | Scheduled climate | A climate schedule ran: climate started, the car refused, or it did not answer (nothing is sent for a run skipped because the car was in use or the day was mild) |
 
 Push notifications require VAPID keys to be configured (`VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`). Without them, alerts still appear in the in-app notification panel. While MGMate is open in a browser that allowed notifications but is not subscribed to push, the same alerts show up as system notifications too; a subscribed browser gets them through push instead, so nothing arrives twice.
 
-Settings has a push switch for the device you are on and a per-type checklist for these alerts, which offers only the types the car's drivetrain can produce: the plug-in alerts (low EV battery, charging complete, charging interrupted) are left out for a plain hybrid, low fuel for a full electric car, and the RDW type (APK, recalls and insurance) wherever `RDW_ENABLED` is off. Both are kept per device: a type switched off on your phone still reaches your laptop, and still shows up in the notification panel. Only the switch turns push on or off; the checklist never asks the browser for permission.
+Settings has a push switch for the device you are on and a per-type checklist for these alerts, which offers only the types the car's drivetrain can produce: the plug-in alerts (low EV battery, charging complete, charging interrupted) are left out for a plain hybrid, low fuel for a full electric car, the RDW type (APK, recalls and insurance) wherever `RDW_ENABLED` is off, and the DVLA type (road tax and MOT) wherever there is no `DVLA_API_KEY`. Both are kept per device: a type switched off on your phone still reaches your laptop, and still shows up in the notification panel. Only the switch turns push on or off; the checklist never asks the browser for permission.
 
 Notification texts are written by the background worker, which has no browser to take a language from, so their language is a deployment setting: `NOTIFICATION_LANGUAGE=en` (the default, and the only language shipped).
 
@@ -583,6 +590,21 @@ For a car with a Dutch licence plate, MGMate shows what the [RDW](https://openda
 - **Notifications.** A new open recall (once per recall: one reported repaired later sends nothing), the APK a month and a week before it runs out and once it has, and a car with no WAM insurance on record. They are listed under [Push notifications](#push-notifications), and can be switched off per device like the other types.
 
 The settings, including an optional Socrata app token for a higher rate limit, are in [`CONFIGURATION.md`](documentation/CONFIGURATION.md#dutch-registration-rdw).
+
+---
+
+## UK road tax and MOT (DVLA)
+
+For a car with a UK registration, MGMate shows what the DVLA has on record for it: whether it is taxed and until when, its MOT, and the rest of its registration record. It uses the DVLA's [Vehicle Enquiry Service](https://developer-portal.driver-vehicle-licensing.api.gov.uk/apis/vehicle-enquiry-service/vehicle-enquiry-service-description.html), and it is off until the deployment has a DVLA key of its own; until then nothing is sent and none of the below appears.
+
+- **Your own key.** MGMate ships without a DVLA key, and nobody else's will do: every install needs its own. Applying is free. Fill in the DVLA's [registration form](https://register-for-ves.driver-vehicle-licensing.api.gov.uk/) and the DVLA sends the key by email. Then set it as the environment variable `DVLA_API_KEY` on your server (in `.env` for the Compose stack, or in the container's environment settings for the all-in-one image) and restart. Treat the key like a password: never commit it, and never post it in an issue or a screenshot.
+- **The plate.** Enter it under **Settings > Licence plate**. Saving it looks it up straight away; after that the Worker asks again every `DVLA_REFRESH_HOURS` (a day by default). The plate is the only thing sent to the DVLA.
+- **The card.** The **Tax and MOT** card on the Overview shows the tax status with the date the tax is due and the MOT date. Clicking it shows road tax and MOT with the time left, and what else the DVLA holds: make, colour and fuel, first registration, the last V5C, CO2 emissions, type approval and whether the car is marked for export. A car too new for an MOT shows **Not needed yet** with the date its first MOT falls due, three years after the registration date entered on the Maintenance page. MGMate keeps the DVLA's whole answer, and the API serves it at `GET /api/vehicles/{vin}/dvla`.
+- **Notifications.** Road tax and the MOT a month and a week before they run out, and once the DVLA says the car is untaxed or has no valid MOT. They are listed under [Push notifications](#push-notifications), and can be switched off per device like the other types.
+
+![The Tax and MOT card opened on the Overview: road tax with its due date and time left, the MOT, and what the DVLA holds on record](documentation/screenshots/desktop-tax-mot.webp)
+
+The settings are in [`CONFIGURATION.md`](documentation/CONFIGURATION.md#uk-road-tax-and-mot-dvla).
 
 ---
 
@@ -734,6 +756,7 @@ MGMate runs on your own hardware, but a few features ask public services for wha
 | [Overpass](https://overpass-api.de) (fuel stations, service areas, speed cameras) | the API and the Worker | The map tiles being looked at, and the ones around the car (0.5° squares, not the car's position) | Turn the layers off; `SPEEDCAMERAS__ENABLED=false` removes the camera layer |
 | [Open Charge Map](https://openchargemap.org) (charging stations) | the API and the Worker | The map tiles being looked at, and your OCM key | Leave `OPENCHARGEMAP_API_KEY` empty |
 | [RDW open data](https://opendata.rdw.nl) (APK, recalls, insurance) | the API and the Worker | The licence plate, and the RDW's own codes for the recalls it lists | Off until `RDW_ENABLED=true` |
+| [DVLA Vehicle Enquiry Service](https://developer-portal.driver-vehicle-licensing.api.gov.uk/apis/vehicle-enquiry-service/vehicle-enquiry-service-description.html) (road tax, MOT) | the API and the Worker | The licence plate, and your DVLA key | Off until `DVLA_API_KEY` is set |
 | [GitHub](https://github.com/ViriatusOG/MGMate/releases) (update notice) | the API | One request a day for the latest release | `UPDATE_CHECK_ENABLED=false` |
 | [OpenFreeMap](https://openfreemap.org) and [OpenStreetMap](https://www.openstreetmap.org) tiles (the basemap) | your browser | The map tiles your browser shows | Serve your own tiles, see [Basemap](#basemap) |
 | Your browser's push service (Google, Mozilla, Apple) | the Worker | Each notification, encrypted so only your browser can read it, and `VAPID_SUBJECT` | Leave the VAPID keys empty, or switch push off per device |

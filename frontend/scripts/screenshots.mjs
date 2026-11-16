@@ -42,6 +42,7 @@ const PAGES = [
   { file: 'settings', path: '/settings' },
   { file: 'debug', path: '/debug' },
   { file: 'notifications', path: '/', prepare: openNotifications },
+  { file: 'tax-mot', path: '/', prepare: openTaxMot },
   { file: 'dashboard-charging', path: '/', prepare: parkAndCharge, after: driveOn, tall: true },
   // Only a phone shows the charge under way at the top of Charges.
   {
@@ -210,6 +211,16 @@ async function selectTrip(page) {
 }
 
 // The notification panel over the Overview, from the bell (in the sidebar on a wide screen).
+// The Tax and MOT card on the Overview, opened: road tax, MOT and what else the DVLA holds.
+async function openTaxMot(page) {
+  await page
+    .locator('.status-card--clickable')
+    .filter({ hasText: 'Tax and MOT' })
+    .first()
+    .click()
+  await settled(page)
+}
+
 async function openNotifications(page) {
   const bell = page.locator('.sidebar-notif-btn:visible, .notif-bell:visible').first()
   await bell.click()

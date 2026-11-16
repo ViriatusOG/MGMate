@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRdwStore } from '@/stores/rdw'
+import { useDvlaStore } from '@/stores/dvla'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useErrorMessage } from '@/composables/useErrorMessage'
 import { useUiSettingsStore } from '@/stores/settingsUi'
@@ -15,6 +16,7 @@ import LicensePlateInput from './LicensePlateInput.vue'
 const { t } = useI18n()
 const errorMessage = useErrorMessage()
 const rdw = useRdwStore()
+const dvla = useDvlaStore()
 const vehicleStore = useVehicleStore()
 const style = computed(() => plateStyle(useUiSettingsStore().effectiveRegion))
 
@@ -43,11 +45,15 @@ async function save(value: string) {
   try {
     vehicleStore.setLicensePlate(vin, await rdw.setLicensePlate(vin, value))
     plate.value = saved.value
+    // The server asked the DVLA while it saved, when it has a key for it.
+    await dvla.fetchStatus(vin)
     done.value = !plate.value
       ? t('settings.licensePlate.cleared')
       : rdw.available
         ? t('settings.licensePlate.savedRdw')
-        : t('settings.licensePlate.saved')
+        : dvla.available
+          ? t('settings.licensePlate.savedDvla')
+          : t('settings.licensePlate.saved')
   } catch (e) {
     error.value = errorMessage(e)
   } finally {
@@ -61,6 +67,7 @@ async function save(value: string) {
     <p class="settings-toggle__desc">
       {{ t('settings.licensePlate.desc') }}
       <template v-if="rdw.available"> {{ t('settings.licensePlate.descRdw') }}</template>
+      <template v-if="dvla.available"> {{ t('settings.licensePlate.descDvla') }}</template>
     </p>
 
     <form class="license-plate-form" @submit.prevent="save(plate)">
