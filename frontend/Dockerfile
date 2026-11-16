@@ -35,7 +35,7 @@ RUN pnpm run build
 
 # The slim variant is the same nginx build without the optional dynamic modules (njs, XSLT, GeoIP,
 # image filter, ACME) and the libraries they pull in. nginx.conf loads none of them.
-FROM nginx:1.31-alpine-slim@sha256:9c68ad4f28e7dee4b9484a7859bf451da39ef661bcd038ef62e87593fcd91c86 AS runtime
+FROM nginx:1.31-alpine-slim@sha256:4c734d33ee731135dc9f2349914a34551c920f4451fca8bb05bf5880eb9079e8 AS runtime
 ARG OS_PATCH_DATE=0
 RUN echo "os patch date: ${OS_PATCH_DATE}" && apk upgrade --no-cache
 COPY --from=build /app/dist /usr/share/nginx/html
