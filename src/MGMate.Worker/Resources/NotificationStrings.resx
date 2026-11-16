@@ -291,4 +291,40 @@
   <data name="RdwUninsuredBody" xml:space="preserve">
     <value>The RDW has no WAM insurance on record for the car. A car on the public road must be insured.</value>
   </data>
+  <data name="DvlaTaxDueTitle" xml:space="preserve">
+    <value>Road tax due soon</value>
+  </data>
+  <data name="DvlaTaxDueBody" xml:space="preserve">
+    <value>The road tax runs out on {0}, in {1} days.</value>
+  </data>
+  <data name="DvlaTaxDueTomorrowBody" xml:space="preserve">
+    <value>The road tax runs out tomorrow, {0}.</value>
+  </data>
+  <data name="DvlaTaxDueTodayBody" xml:space="preserve">
+    <value>Today, {0}, is the road tax's last day.</value>
+  </data>
+  <data name="DvlaUntaxedTitle" xml:space="preserve">
+    <value>Car is untaxed</value>
+  </data>
+  <data name="DvlaUntaxedBody" xml:space="preserve">
+    <value>The DVLA says the car is untaxed. It must be taxed, or declared off the road (SORN), before it is driven or parked on a public road.</value>
+  </data>
+  <data name="DvlaMotDueTitle" xml:space="preserve">
+    <value>MOT due soon</value>
+  </data>
+  <data name="DvlaMotDueBody" xml:space="preserve">
+    <value>The MOT runs out on {0}, in {1} days.</value>
+  </data>
+  <data name="DvlaMotDueTomorrowBody" xml:space="preserve">
+    <value>The MOT runs out tomorrow, {0}.</value>
+  </data>
+  <data name="DvlaMotDueTodayBody" xml:space="preserve">
+    <value>Today, {0}, is the MOT's last day.</value>
+  </data>
+  <data name="DvlaMotExpiredTitle" xml:space="preserve">
+    <value>MOT expired</value>
+  </data>
+  <data name="DvlaMotExpiredBody" xml:space="preserve">
+    <value>The DVLA says the car has no valid MOT. Without one it may only be driven to a booked test.</value>
+  </data>
 </root>

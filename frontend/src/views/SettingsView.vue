@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 import { useUiSettingsStore } from '@/stores/settingsUi'
 import { useRdwStore } from '@/stores/rdw'
+import { useDvlaStore } from '@/stores/dvla'
 import { useVehicleStore } from '@/stores/vehicle'
 import ViewHeader from '@/components/ViewHeader.vue'
 import SettingsToggle from '@/components/SettingsToggle.vue'
@@ -23,13 +24,17 @@ import { apiUrl } from '@/services/apiCore'
 const { t } = useI18n()
 const settings = useUiSettingsStore()
 const rdw = useRdwStore()
+const dvla = useDvlaStore()
 const vehicleStore = useVehicleStore()
 
 // The plate field only exists where the deployment looks plates up, which only the API knows.
 watch(
   () => vehicleStore.activeVin,
   (vin) => {
-    if (vin) rdw.ensureLoaded(vin)
+    if (vin) {
+      rdw.ensureLoaded(vin)
+      dvla.ensureLoaded(vin)
+    }
   },
   { immediate: true },
 )

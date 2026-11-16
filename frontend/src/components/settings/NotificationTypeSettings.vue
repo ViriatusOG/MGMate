@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useUiSettingsStore } from '@/stores/settingsUi'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useRdwStore } from '@/stores/rdw'
+import { useDvlaStore } from '@/stores/dvla'
 import { useNotificationPushSync } from '@/composables/useNotificationPushSync'
 import SettingsToggle from '../SettingsToggle.vue'
 import {
@@ -16,6 +17,7 @@ const { t } = useI18n()
 const settings = useUiSettingsStore()
 const vehicleStore = useVehicleStore()
 const rdw = useRdwStore()
+const dvla = useDvlaStore()
 const {
   pushSupported,
   pushEnabled,
@@ -50,14 +52,15 @@ const NOTIFICATION_CATEGORY_LABEL_KEYS: Record<NotificationCategoryId, string> =
   'place-departure': 'placeDeparture',
   maintenance: 'maintenance',
   rdw: 'rdw',
+  dvla: 'dvla',
 }
 
 // Only the types this drivetrain can actually produce: a plain hybrid never charges, so offering
 // it a "charging complete" switch is a control that does nothing. The RDW's only where the
-// deployment looks plates up.
+// deployment looks plates up, the DVLA's only where it has a DVLA key.
 const offeredNotificationTypes = computed(() =>
   notificationCategoryIdsFor(vehicleStore.effectiveVehicleType).filter(
-    (id) => id !== 'rdw' || rdw.available === true,
+    (id) => (id !== 'rdw' || rdw.available === true) && (id !== 'dvla' || dvla.available === true),
   ),
 )
 

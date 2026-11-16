@@ -16,6 +16,9 @@ public class NotificationCategoriesTests
     [InlineData("rdw-apk-due-30-20261108", "rdw")]
     [InlineData("rdw-apk-expired-20261108", "rdw")]
     [InlineData("rdw-uninsured", "rdw")]
+    [InlineData("dvla-tax-due-30-20261216", "dvla")]
+    [InlineData("dvla-untaxed", "dvla")]
+    [InlineData("dvla-mot-expired", "dvla")]
     public void GroupOf_KnownCategory_IsTheTypeTheChecklistOffers(string category, string group)
     {
         Assert.Equal(group, NotificationCategories.GroupOf(category));

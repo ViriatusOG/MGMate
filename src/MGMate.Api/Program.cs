@@ -195,6 +195,7 @@ try
     app.MapClimateScheduleEndpoints();
     app.MapCommutePlaceEndpoints();
     app.MapRdwEndpoints();
+    app.MapDvlaEndpoints();
     app.MapWidgetEndpoints();
     app.MapUpdateEndpoints();
     app.MapGatewayEndpoints();

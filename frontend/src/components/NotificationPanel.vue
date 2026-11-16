@@ -62,11 +62,14 @@ const CATEGORY_TONES: Record<string, 'good' | 'warn' | 'bad'> = {
 function categoryIcon(category: string | null): string[] {
   if (category?.startsWith('maintenance-')) return ['fas', 'screwdriver-wrench']
   if (category?.startsWith('rdw-')) return ['fas', 'clipboard-check']
+  if (category?.startsWith('dvla-')) return ['fas', 'clipboard-check']
   return (category && CATEGORY_ICONS[category]) || ['fas', 'bell']
 }
 
 function categoryTone(category: string | null): string {
   if (category?.startsWith('rdw-recall')) return 'notif-item__icon--bad'
+  if (category === 'dvla-untaxed' || category === 'dvla-mot-expired') return 'notif-item__icon--bad'
+  if (category?.startsWith('dvla-')) return 'notif-item__icon--warn'
   const tone = category ? CATEGORY_TONES[category] : undefined
   return tone ? `notif-item__icon--${tone}` : ''
 }

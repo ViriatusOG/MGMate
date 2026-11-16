@@ -15,6 +15,8 @@ export interface CardDataContext {
   latestTrip: TripSummary | null
   /** The deployment looks plates up at the RDW, and the car has one. */
   rdwPlateSet: boolean
+  /** The deployment has a DVLA key, and the car has a plate. */
+  dvlaPlateSet: boolean
 }
 
 interface CardDefinition {
@@ -133,6 +135,8 @@ export const CARD_DEFINITIONS = [
   { id: 'maintenance', icon: 'screwdriver-wrench' },
   // Shown wherever there is a plate to show it for; a deployment without RDW lookups never has one.
   { id: 'rdw', icon: 'clipboard-check', hasData: ({ rdwPlateSet }) => rdwPlateSet },
+  // UK road tax and MOT, likewise: only with a DVLA key and a plate.
+  { id: 'dvla', icon: 'clipboard-check', hasData: ({ dvlaPlateSet }) => dvlaPlateSet },
   // Off until asked for: most cars have no schedule, and the climate card links to them anyway.
   { id: 'climateSchedule', icon: 'calendar-days', defaultVisible: () => false },
 ] as const satisfies readonly CardDefinition[]

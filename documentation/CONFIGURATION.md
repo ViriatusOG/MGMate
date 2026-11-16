@@ -108,6 +108,25 @@ sent to the RDW once this is on.
 | `RDW_REFRESH_HOURS` | `24` | Hours a lookup is kept before the Worker asks again. One hour at the least. |
 | `RDW_APP_TOKEN` | none | A Socrata app token, sent as `X-App-Token`. Not needed: requests without one work, but share a lower rate limit with everyone else asking anonymously. Free to create with an account on the RDW's open data portal. |
 
+## UK road tax and MOT (DVLA)
+
+For a car with a UK registration, MGMate can ask the DVLA's
+[Vehicle Enquiry Service](https://developer-portal.driver-vehicle-licensing.api.gov.uk/apis/vehicle-enquiry-service/vehicle-enquiry-service-description.html)
+what it has on record: whether the car is taxed and until when, its MOT, and the rest of its
+registration record. The DVLA issues a key to each applicant, so MGMate ships without one and
+**every deployment needs its own**. Applying is free: fill in the DVLA's
+[registration form](https://register-for-ves.driver-vehicle-licensing.api.gov.uk/) and the DVLA
+sends the key by email.
+
+The key is a secret. Set it only as an environment variable on your own server; never commit it,
+and never put it in an issue or a screenshot. The plate is the only thing sent to the DVLA, and
+only once a key is set.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `DVLA_API_KEY` | none | Your own DVLA Vehicle Enquiry Service key, sent as `x-api-key`. With it, the plate is looked up at the DVLA: once as soon as it is entered, then by the Worker every `DVLA_REFRESH_HOURS`. Notifications come for road tax and the MOT a month and a week before they run out, and once the DVLA says the car is untaxed or has no valid MOT. Without it, nothing is sent and nothing DVLA-related is shown. |
+| `DVLA_REFRESH_HOURS` | `24` | Hours a lookup is kept before the Worker asks again. One hour at the least. |
+
 ## The car
 
 | Variable | Default | What it does |

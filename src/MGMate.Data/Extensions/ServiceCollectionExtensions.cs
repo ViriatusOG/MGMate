@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITripRepository, TripRepository>();
         services.AddScoped<IHousekeepingRepository, HousekeepingRepository>();
         services.AddMGMateRdw();
+        services.AddMGMateDvla();
 
         return services;
     }
@@ -47,6 +48,10 @@ public static class ServiceCollectionExtensions
         });
         services.AddSingleton<IRdwClient, DemoRdwClient>();
         services.AddRdwLookups();
+        // The Tax and MOT card likewise, answered by a stand-in: no key, and no plate leaves.
+        services.AddSingleton(new DvlaOptions { Demo = true });
+        services.AddSingleton<IDvlaClient, DemoDvlaClient>();
+        services.AddDvlaLookups();
 
         return services;
     }
@@ -83,6 +88,28 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(sp => RdwOptions.From(sp.GetRequiredService<IConfiguration>()));
         services.AddSingleton<IRdwClient, RdwApiClient>();
         return services.AddRdwLookups();
+    }
+
+    // The DVLA lookups. Without a key (DVLA_API_KEY) the client refuses before sending anything,
+    // and nothing calls it anyway.
+    private static IServiceCollection AddMGMateDvla(this IServiceCollection services)
+    {
+        services.AddHttpClient(DvlaApiClient.HttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(UpstreamHttp.UserAgent);
+            client.Timeout = TimeSpan.FromSeconds(20);
+        });
+        services.AddSingleton(sp => DvlaOptions.From(sp.GetRequiredService<IConfiguration>()));
+        services.AddSingleton<IDvlaClient, DvlaApiClient>();
+        return services.AddDvlaLookups();
+    }
+
+    private static IServiceCollection AddDvlaLookups(this IServiceCollection services)
+    {
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddScoped<IDvlaRepository, DvlaRepository>();
+        services.AddScoped<DvlaRefresher>();
+        return services;
     }
 
     private static IServiceCollection AddRdwLookups(this IServiceCollection services)

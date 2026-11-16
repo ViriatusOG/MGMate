@@ -16,6 +16,12 @@ vi.mock('@/stores/rdw', () => ({
   useRdwStore: () => ({ available: rdwAvailable.value }),
 }))
 
+const dvlaAvailable = vi.hoisted(() => ({ value: null as boolean | null }))
+
+vi.mock('@/stores/dvla', () => ({
+  useDvlaStore: () => ({ available: dvlaAvailable.value }),
+}))
+
 vi.mock('@/stores/settingsUi', () => ({
   useUiSettingsStore: () => ({ notificationTypeExclusions: [] }),
 }))
@@ -49,6 +55,7 @@ describe('NotificationTypeSettings', () => {
     vehicleType.value = 'unknown'
     pushSupported.value = true
     rdwAvailable.value = null
+    dvlaAvailable.value = null
   })
 
   it('offers the RDW type only where the deployment looks plates up', () => {
@@ -59,6 +66,13 @@ describe('NotificationTypeSettings', () => {
 
     rdwAvailable.value = true
     expect(labels()).toContain('notifications.categories.rdw')
+  })
+
+  it('offers the DVLA type only where the deployment has a DVLA key', () => {
+    expect(labels()).not.toContain('notifications.categories.dvla')
+
+    dvlaAvailable.value = true
+    expect(labels()).toContain('notifications.categories.dvla')
   })
 
   it('hides the charging notification types for a hybrid', () => {
