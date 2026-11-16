@@ -72,7 +72,7 @@ RUN printf '%s\n' "${RELEASE_VERSION:-unknown}" > /tmp/release-version
 # image, the one the separate API image runs on. Trixie replaced gnupg with sqv for apt signature
 # verification, and sqv rejects SHA1-signed keys (policy change since 2026-02-01), which breaks
 # the Microsoft apt repo. Copying also needs no install script fetched and run at build time.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:1a48394b6f29d3a32c79d9edecd4abda0ecbe8776d567dbfc4590ed6979c740c AS dotnet-runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0@sha256:bc0d6653979efba491ab3d6f589d691f96c309c3c3ef81325efa6978e7b7f242 AS dotnet-runtime
 
 # ── Stage 5: Final all-in-one runtime image ───────────────────────────────────
 # python:3.14-slim is Debian trixie (13) -- the same base the saic gateway uses,
