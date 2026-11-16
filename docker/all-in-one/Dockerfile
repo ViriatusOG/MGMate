@@ -37,7 +37,7 @@ ENV VITE_MAP_STYLE_COLORFUL=$MAP_STYLE_COLORFUL
 RUN pnpm run build
 
 # ── Stage 2: Build .NET API and Worker ────────────────────────────────────────
-FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e AS dotnet-build
+FROM mcr.microsoft.com/dotnet/sdk:11.0@sha256:65f3c7c6a25a239ab3e6719f2896147e7b68242ff2d8818dd70498bde6ef8bea AS dotnet-build
 WORKDIR /src
 ARG APP_VERSION=0.0.0-local
 # Shared build settings (target framework, analyzers) and central package versions. MSBuild
