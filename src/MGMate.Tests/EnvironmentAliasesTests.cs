@@ -109,7 +109,7 @@ public class EnvironmentAliasesTests
         "APP_VERSION", "API_PORT", "FRONTEND_PORT",
         // Read by Docker Compose itself: the prefix of every volume and network.
         "COMPOSE_PROJECT_NAME",
-        "SAIC_REGION", "SAIC_REST_URI", "CACHED_STATUS_INTERVAL",
+        "SAIC_REGION", "SAIC_REST_URI", "CACHED_STATUS_INTERVAL", "CACHED_STATUS_ALWAYS",
         "POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD",
         // Build arguments and Vite variables, baked into the frontend bundle at build time.
         "MAP_STYLE_DARK", "MAP_STYLE_LIGHT", "MAP_STYLE_COLORFUL", "VITE_API_URL", "VITE_DEMO_MODE",
