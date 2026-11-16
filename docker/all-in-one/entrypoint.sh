@@ -60,6 +60,10 @@ export MQTT_PASSWORD="${MQTT_BROKER_PASSWORD}"
 # Reads the status MG's servers already hold for the car every 2 minutes. This never wakes
 # the car, so it costs neither the 12V nor the traction battery; 0 turns it off.
 export CACHED_STATUS_INTERVAL="${CACHED_STATUS_INTERVAL:-120}"
+# The gateway skips that read while it thinks the car is charging or driving. A car unplugged
+# at the end of a charge and driven off then goes unseen until the gateway's next charging
+# poll, which can be 20 minutes away. Reading in every state closes that gap; still no 12V cost.
+export DEBUG_CACHED_STATUS_IGNORE_VEHICLE_STATE="${CACHED_STATUS_ALWAYS:-true}"
 
 # auto marks the session cookie Secure whenever the browser uses HTTPS (also behind a
 # TLS-terminating proxy) and keeps plain-HTTP LAN installs working.
