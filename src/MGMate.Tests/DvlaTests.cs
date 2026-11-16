@@ -425,4 +425,16 @@ public class DvlaEndpointsTests
         Assert.Null(dto.Info);
         Assert.Null(dto.FirstMotDue);
     }
+
+    [Fact]
+    public void NeverAsked_IsTrueOnlyForAPlateWithoutALookupOfItsOwn()
+    {
+        var vehicle = new Vehicle { Vin = "V", LicensePlate = "AB12CDE" };
+
+        Assert.True(DvlaEndpoints.NeverAsked(vehicle, null));
+        Assert.True(DvlaEndpoints.NeverAsked(vehicle, new DvlaVehicleInfo { LicensePlate = "ZZ99ZZZ" }));
+        // A failed lookup left a row: the Worker retries it, the page does not.
+        Assert.False(DvlaEndpoints.NeverAsked(vehicle, new DvlaVehicleInfo { LicensePlate = "AB12CDE", LastError = "x" }));
+        Assert.False(DvlaEndpoints.NeverAsked(new Vehicle { Vin = "V" }, null));
+    }
 }

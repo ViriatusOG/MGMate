@@ -34,6 +34,7 @@ const plate = computed(() =>
 )
 const info = computed(() => store.status?.info ?? null)
 const known = computed(() => (info.value?.found ? info.value : null))
+const asked = computed(() => !!info.value?.fetchedAt)
 
 function day(text: string | null | undefined): string | null {
   const date = parseLocalDate(text)
@@ -121,7 +122,8 @@ const motLine = computed(() => {
 })
 
 const value = computed(() => {
-  if (!info.value) return t('dvla.notLookedUp')
+  // A row without an answer is a lookup that failed, not a plate the DVLA does not know.
+  if (!info.value || !asked.value) return t('dvla.notLookedUp')
   if (!info.value.found) return t('dvla.plateUnknown')
   return known.value?.taxStatus ?? t('dvla.unknown')
 })
@@ -231,10 +233,10 @@ const fetchedAt = computed(() =>
     :note="note"
     :variant="variant"
   >
-    <p v-if="info && !info.found" class="card-info-desc">
+    <p v-if="info && asked && !info.found" class="card-info-desc">
       {{ t('dvla.notFound', { plate }) }}
     </p>
-    <p v-else-if="!info" class="card-info-desc">{{ t('dvla.waiting') }}</p>
+    <p v-else-if="!info || !asked" class="card-info-desc">{{ t('dvla.waiting') }}</p>
 
     <template v-if="known">
       <div class="dvla-row" data-testid="dvla-tax">

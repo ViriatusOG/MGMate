@@ -1335,7 +1335,7 @@
     "plateUnknown": "Plate unknown",
     "unknown": "Unknown",
     "plate": "Plate {plate}",
-    "waiting": "The DVLA has not been asked about this plate yet. It is looked up within the hour.",
+    "waiting": "The DVLA has not answered for this plate yet.",
     "notFound": "The DVLA knows no vehicle with the plate {plate}. Check it under Settings > Licence plate.",
     "roadTax": "Road tax",
     "mot": "MOT",
@@ -1373,7 +1373,7 @@
     "no": "No",
     "fetchedAt": "Checked {time}",
     "source": "DVLA Vehicle Enquiry Service",
-    "lastAttemptFailed": "The last check with the DVLA failed, so this may be out of date."
+    "lastAttemptFailed": "The last check with the DVLA failed. It is tried again within the hour; if it keeps failing, check DVLA_API_KEY."
   },
   "rdw": {
     "title": "APK & recalls",
