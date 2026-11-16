@@ -15,7 +15,7 @@ WORKDIR /src/MGMate.Api
 # ${APP_VERSION#v} strips a leading "v" (e.g. a tag name), which MinVer rejects
 RUN dotnet publish -c Release -o /app /p:MinVerVersionOverride=${APP_VERSION#v}
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:1a48394b6f29d3a32c79d9edecd4abda0ecbe8776d567dbfc4590ed6979c740c AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0@sha256:bc0d6653979efba491ab3d6f589d691f96c309c3c3ef81325efa6978e7b7f242 AS runtime
 WORKDIR /app
 # OS_PATCH_DATE busts the layer cache so apt-get upgrade actually re-runs instead of
 # reusing a stale cached layer from before an OS package fix was published.
