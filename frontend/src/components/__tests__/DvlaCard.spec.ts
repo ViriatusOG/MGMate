@@ -132,4 +132,17 @@ describe('DvlaCard', () => {
     expect(text).toContain('Plate unknown')
     expect(text).toContain('The DVLA knows no vehicle with the plate AB12 CDE')
   })
+
+  it('does not call the plate unknown when the lookup itself failed', () => {
+    const text = mountCard({
+      ...info(),
+      found: false,
+      fetchedAt: null,
+      lastError: 'The DVLA refused the key (DVLA_API_KEY)',
+    }).text()
+
+    expect(text).toContain('Not looked up yet')
+    expect(text).not.toContain('Plate unknown')
+    expect(text).toContain('The last check with the DVLA failed')
+  })
 })

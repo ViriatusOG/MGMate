@@ -29,12 +29,17 @@ public static class DvlaEndpoints
         var time = app.ServiceProvider.GetRequiredService<TimeProvider>();
 
         // A GET, so read-only API tokens can read it too.
-        group.MapGet("/dvla", async (HttpContext httpContext, IDvlaRepository dvla, CancellationToken ct) =>
+        group.MapGet("/dvla", async (
+            HttpContext httpContext, IDvlaRepository dvla, DvlaRefresher refresher, CancellationToken ct) =>
         {
             if (!options.Enabled) return Disabled();
 
             var vehicle = httpContext.ResolvedVehicle();
             var info = await dvla.GetAsync(vehicle.Id, ct);
+            // A plate that was saved before the key was set has never been asked about: ask now,
+            // rather than leave the card empty until the Worker's next round. Once only: the
+            // lookup leaves a row behind even when it fails, and the Worker retries those.
+            if (NeverAsked(vehicle, info)) info = await refresher.RefreshAsync(vehicle, ct);
             return Results.Ok(ToDto(vehicle, info, time.GetUtcNow().UtcDateTime));
         })
         .WithSummary("The vehicle's plate and what the DVLA last said about it");
@@ -52,6 +57,9 @@ public static class DvlaEndpoints
 
         return app;
     }
+
+    internal static bool NeverAsked(Vehicle vehicle, DvlaVehicleInfo? info) =>
+        vehicle.LicensePlate is { } plate && (info is null || info.LicensePlate != plate);
 
     private static IResult Disabled() =>
         ApiProblems.Problem(StatusCodes.Status404NotFound, DisabledCode,
