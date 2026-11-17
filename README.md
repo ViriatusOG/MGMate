@@ -612,7 +612,7 @@ The settings are in [`CONFIGURATION.md`](documentation/CONFIGURATION.md#uk-road-
 
 ## Android app
 
-MGMate has a native Android app for the things you do from your pocket: the controls first, then where the car is and where it has been. It talks to your own MGMate server and to nothing else.
+MGMate has a native Android app for the things you do from your pocket: the controls first, then where the car is and where it has been. Your sign-in and the car's data only ever travel between the app and your own MGMate server.
 
 | Car | Charging | Trips | A trip | Sign-in |
 |---|---|---|---|---|
@@ -625,13 +625,15 @@ The pictures are the design the app was built from, with sample data.
 - **Car**: lock and unlock, climate on and off with the cabin temperature, front defrost, rear window heating, the heated steering wheel, both front seat heaters, open the boot, and find my car. Windows are missing because MG's API cannot move them.
 - **Charging**: start and stop a charge, the charge limit, the charging current, the cable lock, battery heating and the car's own charging schedule.
 - **Trips**: the car on a map with a button that hands its position to your maps app, and the last 30 days of trips, each opening on its route.
-- **Settings**: the app lock, the server it talks to, sign out, and a deliberate "ask the car for fresh data".
+- **Settings**: the app lock, the server it talks to, sign out, updating the app, and a deliberate "ask the car for fresh data".
 
 Unlocking, opening the boot, stopping a charge and waking the car ask first.
 
 **It does not wake the car.** Opening the app reads what your server already holds and listens to the server for news. Pulling a page down reads the server again. The car is only contacted when you tap a control, so the app can stay open without drawing on the 12 V battery.
 
 **Fingerprint lock.** You type the server address and your MGMate sign-in once, and the app then asks to be protected with your fingerprint or PIN. After that it opens with your fingerprint, your face or the phone's screen lock, and locks again as soon as you leave it. The sign-in is kept encrypted with a key in the phone's keystore, is left out of backups, and is only ever sent to your server; the app uses it to sign in again by itself when the server's 30-day session ends. The lock can be switched off under Settings.
+
+**Updates from inside the app.** Each time it is started the app asks GitHub whether a newer build has been published, and says so when there is one. **Settings > Update** then downloads it and hands it to Android's installer, which asks you once whether MGMate may install apps and then asks before each install. Nothing about you or the car is sent: the app fetches two public files from this project's [android-latest release](https://github.com/ViriatusOG/MGMate/releases/tag/android-latest). The maps on the Trips tab are drawn from [OpenStreetMap](https://www.openstreetmap.org) tiles, fetched by the phone for the area on screen.
 
 **Install it**
 
@@ -796,6 +798,8 @@ MGMate runs on your own hardware, but a few features ask public services for wha
 | [DVLA Vehicle Enquiry Service](https://developer-portal.driver-vehicle-licensing.api.gov.uk/apis/vehicle-enquiry-service/vehicle-enquiry-service-description.html) (road tax, MOT) | the API and the Worker | The licence plate, and your DVLA key | Off until `DVLA_API_KEY` is set |
 | [GitHub](https://github.com/ViriatusOG/MGMate/releases) (update notice) | the API | One request a day for the latest release | `UPDATE_CHECK_ENABLED=false` |
 | [OpenFreeMap](https://openfreemap.org) and [OpenStreetMap](https://www.openstreetmap.org) tiles (the basemap) | your browser | The map tiles your browser shows | Serve your own tiles, see [Basemap](#basemap) |
+| [GitHub](https://github.com/ViriatusOG/MGMate/releases/tag/android-latest) (Android app updates) | the Android app | One request each time the app is started, and the download when you update | Cannot be, but nothing personal is sent |
+| [OpenStreetMap](https://www.openstreetmap.org) tiles (the Android app's maps) | the Android app | The map tiles the Trips tab shows | Cannot be, short of not opening the Trips tab |
 | Your browser's push service (Google, Mozilla, Apple) | the Worker | Each notification, encrypted so only your browser can read it, and `VAPID_SUBJECT` | Leave the VAPID keys empty, or switch push off per device |
 
 Requests to the map, lookup and update services identify themselves as `MGMate/1.0 (+https://github.com/ViriatusOG/MGMate)`, as Nominatim's usage policy asks. Apart from what the table lists, the car's telemetry, its trips, your notifications and your settings stay on your server, unless you connect something to it yourself, such as a script with an API token.

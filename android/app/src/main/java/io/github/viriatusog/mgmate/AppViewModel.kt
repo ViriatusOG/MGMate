@@ -14,7 +14,9 @@ import io.github.viriatusog.mgmate.data.CarStatus
 import io.github.viriatusog.mgmate.data.CommandResult
 import io.github.viriatusog.mgmate.data.LiveHub
 import io.github.viriatusog.mgmate.data.Session
+import io.github.viriatusog.mgmate.data.PublishedBuild
 import io.github.viriatusog.mgmate.data.TripLogEntry
+import io.github.viriatusog.mgmate.data.Updater
 import io.github.viriatusog.mgmate.data.Vehicle
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
@@ -26,6 +28,17 @@ import java.time.temporal.ChronoUnit
 
 /** A trip opened from the list: its figures at once, its route once it has loaded. */
 data class OpenTrip(val entry: TripLogEntry, val route: List<Pair<Double, Double>>? = null)
+
+/** Where the app is with its own updates. */
+sealed interface UpdateState {
+    data object Unknown : UpdateState
+    data object Checking : UpdateState
+    data object UpToDate : UpdateState
+    data class Available(val build: PublishedBuild) : UpdateState
+    /** [progress] runs from 0 to 1, or is null while the size is not known. */
+    data class Downloading(val build: PublishedBuild, val progress: Float?) : UpdateState
+    data class Failed(val reason: String) : UpdateState
+}
 
 /**
  * Everything the screens show and do. The car is only ever contacted when the person asks for
@@ -68,6 +81,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var openTrip by mutableStateOf<OpenTrip?>(null)
         private set
+
+    private val updater = Updater(app)
+    var updateState by mutableStateOf<UpdateState>(UpdateState.Unknown)
+        private set
+    private var updateChecked = false
 
     /** The controls with a command on its way, by the control's key. */
     val pending = mutableStateMapOf<String, Boolean>()
@@ -121,6 +139,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun start() {
         if (!signedIn) return
         refresh()
+        if (!updateChecked) {
+            updateChecked = true
+            checkForUpdate(announce = true)
+        }
         watcher?.cancel()
         watcher = viewModelScope.launch {
             while (true) {
@@ -129,6 +151,47 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 // A safety net under the live connection; the server answers from its database.
                 delay(60_000)
                 reloadStatus()
+            }
+        }
+    }
+
+    /**
+     * Looks on GitHub for a newer build. Done once each time the app is started, and whenever the
+     * owner asks under Settings; [announce] says so in a note when one is found.
+     */
+    fun checkForUpdate(announce: Boolean = false) {
+        if (updateState is UpdateState.Checking || updateState is UpdateState.Downloading) return
+        updateState = UpdateState.Checking
+        viewModelScope.launch {
+            updateState = try {
+                val build = updater.latest()
+                if (build.versionCode > BuildConfig.VERSION_CODE) {
+                    if (announce) message = "Version ${build.versionName} is ready. Update under Settings."
+                    UpdateState.Available(build)
+                } else {
+                    UpdateState.UpToDate
+                }
+            } catch (e: ApiException) {
+                UpdateState.Failed(e.message ?: "Could not look for an update.")
+            }
+        }
+    }
+
+    /** Downloads the newer build and opens Android's installer on it. */
+    fun installUpdate() {
+        val build = (updateState as? UpdateState.Available)?.build ?: return
+        updateState = UpdateState.Downloading(build, 0f)
+        viewModelScope.launch {
+            try {
+                val apk = updater.download { progress ->
+                    viewModelScope.launch { if (updateState is UpdateState.Downloading) updateState = UpdateState.Downloading(build, progress) }
+                }
+                updateState = UpdateState.Available(build)
+                updater.install(apk)
+            } catch (e: ApiException) {
+                updateState = UpdateState.Failed(e.message ?: "The update could not be downloaded.")
+            } catch (e: Exception) {
+                updateState = UpdateState.Failed("Android could not open the installer.")
             }
         }
     }

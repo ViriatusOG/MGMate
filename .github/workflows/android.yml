@@ -32,6 +32,9 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+    outputs:
+      version-name: ${{ steps.version.outputs.name }}
+      version-code: ${{ steps.version.outputs.code }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -108,11 +111,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          VERSION_NAME: ${{ needs.build.outputs.version-name }}
+          VERSION_CODE: ${{ needs.build.outputs.version-code }}
         run: |
-          notes="The newest build of the MGMate Android app from main (commit ${GITHUB_SHA::7}). Download mgmate.apk on your phone and open it to install or update."
+          # The app's own update check reads this file to learn whether a newer build exists.
+          printf '{"versionCode": %s, "versionName": "%s"}\n' "$VERSION_CODE" "$VERSION_NAME" > version.json
+          notes="MGMate for Android $VERSION_NAME, the newest build from main (commit ${GITHUB_SHA::7}). Download mgmate.apk on your phone and open it to install. Once installed, the app updates itself from here: Settings, then Update."
+          title="MGMate for Android $VERSION_NAME"
           if gh release view android-latest >/dev/null 2>&1; then
+            # The APK first: a phone that sees the new version.json must find the new APK too.
             gh release upload android-latest mgmate.apk --clobber
-            gh release edit android-latest --notes "$notes" --target "$GITHUB_SHA"
+            gh release upload android-latest version.json --clobber
+            gh release edit android-latest --title "$title" --notes "$notes" --target "$GITHUB_SHA"
           else
-            gh release create android-latest mgmate.apk --prerelease --title "MGMate for Android (latest build)" --notes "$notes" --target "$GITHUB_SHA"
+            gh release create android-latest mgmate.apk version.json --prerelease --title "$title" --notes "$notes" --target "$GITHUB_SHA"
           fi

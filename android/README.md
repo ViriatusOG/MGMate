@@ -27,7 +27,13 @@ The APK is written to `app/build/outputs/apk/debug/`.
 
 ## The builds GitHub makes
 
-The [Android app workflow](../.github/workflows/android.yml) runs on every pull request and push to `main` that touches `android/`. It runs the tests, builds a release APK and attaches it to the run as the `mgmate-android` artifact. A build of `main` also replaces `mgmate.apk` on the rolling [`android-latest`](https://github.com/ViriatusOG/MGMate/releases/tag/android-latest) pre-release, which is where the README sends people to download it. The version comes from the git tags, like the server's.
+The [Android app workflow](../.github/workflows/android.yml) runs on every pull request and push to `main` that touches `android/`. It runs the tests, builds a release APK and attaches it to the run as the `mgmate-android` artifact. A build of `main` also replaces `mgmate.apk` on the rolling [`android-latest`](https://github.com/ViriatusOG/MGMate/releases/tag/android-latest) pre-release, which is where the README sends people to download it, and writes a `version.json` (`versionCode`, `versionName`) beside it. The version comes from the git tags, like the server's.
+
+## Updates from inside the app
+
+`data/Updater.kt` reads that `version.json` once each time the app is started and when asked under **Settings > Update**. When its `versionCode` (the number of commits on `main`) is higher than the installed build's, Settings offers the update: the app downloads `mgmate.apk` into its cache folder and opens Android's installer on it through a `FileProvider`. The updater has its own HTTP client, so the server's session cookie never goes to GitHub.
+
+This only works between builds signed with the same key, which is why the signing key below matters.
 
 ## Signing
 
