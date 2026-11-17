@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material.icons.outlined.Waves
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.viriatusog.mgmate.AppViewModel
@@ -134,34 +137,94 @@ fun CarScreen(vm: AppViewModel, ask: (Confirm) -> Unit) {
         }
 
         SectionTitle("Comfort")
-        Panel {
-            TemperatureRow(vm, status)
-            RowDivider()
+        Panel { TemperatureRow(vm, status) }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val front = status?.climateMode == "front"
-            ListRow(Icons.Outlined.Air, "Front defrost", on = front) {
-                BusySwitch(front, vm.pending["front"] == true) { wanted ->
-                    vm.send("front", "climate", if (wanted) "front" else "off") { (it.climateMode == "front") == wanted }
-                }
+            ComfortButton(Icons.Outlined.Air, "Front defrost", Modifier.weight(1f), on = front, busy = vm.pending["front"] == true) {
+                val wanted = !front
+                vm.send("front", "climate", if (wanted) "front" else "off") { (it.climateMode == "front") == wanted }
             }
-            RowDivider()
             val rear = status?.rearWindowDefroster == true
-            ListRow(Icons.Outlined.Waves, "Rear window heating", on = rear) {
-                BusySwitch(rear, vm.pending["rear"] == true) { wanted ->
-                    vm.send("rear", "rear-defroster", if (wanted) "on" else "off") { (it.rearWindowDefroster == true) == wanted }
-                }
+            ComfortButton(Icons.Outlined.Waves, "Rear window", Modifier.weight(1f), on = rear, busy = vm.pending["rear"] == true) {
+                val wanted = !rear
+                vm.send("rear", "rear-defroster", if (wanted) "on" else "off") { (it.rearWindowDefroster == true) == wanted }
             }
-            RowDivider()
             val wheel = status?.steeringWheelHeating == true
-            ListRow(Icons.Outlined.Adjust, "Heated steering wheel", on = wheel) {
-                BusySwitch(wheel, vm.pending["wheel"] == true) { wanted ->
-                    vm.send("wheel", "steering-wheel-heat", if (wanted) "on" else "off") { (it.steeringWheelHeating == true) == wanted }
+            ComfortButton(Icons.Outlined.Adjust, "Steering wheel", Modifier.weight(1f), on = wheel, busy = vm.pending["wheel"] == true) {
+                val wanted = !wheel
+                vm.send("wheel", "steering-wheel-heat", if (wanted) "on" else "off") { (it.steeringWheelHeating == true) == wanted }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            SeatButton(vm, "Driver seat", "seat-left", status?.heatedSeatFrontLeft, Modifier.weight(1f)) { it.heatedSeatFrontLeft }
+            SeatButton(vm, "Passenger seat", "seat-right", status?.heatedSeatFrontRight, Modifier.weight(1f)) { it.heatedSeatFrontRight }
+        }
+    }
+}
+
+/**
+ * A comfort control as a button: tap to switch it, lit while it is on. With [level] it also shows
+ * three bars for a seat heater's strength.
+ */
+@Composable
+private fun ComfortButton(
+    icon: ImageVector,
+    title: String,
+    modifier: Modifier = Modifier,
+    on: Boolean = false,
+    busy: Boolean = false,
+    level: Int? = null,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(20.dp)
+    val state = when {
+        busy -> "Sending"
+        level != null && level > 0 -> "Level $level"
+        on -> "On"
+        else -> "Off"
+    }
+    Column(
+        modifier
+            .heightIn(min = 96.dp)
+            .clip(shape)
+            .background(if (on) Volt.AccentWash else Volt.Elev)
+            .border(1.dp, if (on) Volt.AccentLine else Volt.LineSoft, shape)
+            .clickable(enabled = !busy, role = Role.Button, onClickLabel = title, onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+    ) {
+        if (busy) {
+            CircularProgressIndicator(Modifier.size(26.dp), color = Volt.Info, strokeWidth = 2.5.dp)
+        } else {
+            Icon(icon, contentDescription = null, tint = if (on) Volt.Accent else Volt.Ink2, modifier = Modifier.size(26.dp))
+        }
+        Text(title, color = Volt.Ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            state,
+            color = if (busy) Volt.Info else if (on) Volt.Accent else Volt.Ink3,
+            fontSize = 12.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (level != null) {
+            Row(Modifier.padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                for (bar in 1..3) {
+                    Box(Modifier.size(width = 18.dp, height = 5.dp).clip(RoundedCornerShape(3.dp)).background(if (bar <= level) Volt.Accent else Volt.Raise))
                 }
             }
-            RowDivider()
-            SeatRow(vm, "Driver seat", "seat-left", status?.heatedSeatFrontLeft) { it.heatedSeatFrontLeft }
-            RowDivider()
-            SeatRow(vm, "Passenger seat", "seat-right", status?.heatedSeatFrontRight) { it.heatedSeatFrontRight }
         }
+    }
+}
+
+/** A seat heater: each tap goes one level up, and from 3 back to off. */
+@Composable
+private fun SeatButton(vm: AppViewModel, title: String, command: String, level: Int?, modifier: Modifier, read: (CarStatus) -> Int?) {
+    val now = (level ?: 0).coerceIn(0, 3)
+    ComfortButton(Icons.Outlined.EventSeat, title, modifier, on = now > 0, busy = vm.pending[command] == true, level = now) {
+        val wanted = if (now >= 3) 0 else now + 1
+        vm.send(command, command, wanted.toString()) { (read(it) ?: 0) == wanted }
     }
 }
 
@@ -248,15 +311,15 @@ private fun TemperatureRow(vm: AppViewModel, status: CarStatus?) {
     }
 
     val inside = status?.interiorTemperature?.let { "Inside now ${it.roundToInt()} °C" }
-    ListRow(Icons.Outlined.Thermostat, "Cabin temperature", inside, on = status?.climateOn == true) {
+    ListRow(Icons.Outlined.Thermostat, "Temperature", inside, on = status?.climateOn == true) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             StepButton(Icons.Outlined.Remove, "Cooler", enabled = !busy && shown > MIN_TEMPERATURE) { wanted = shown - 1 }
             Text(
                 "$shown°",
                 color = if (busy) Volt.Info else Volt.Ink,
-                fontSize = 16.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.widthIn(min = 36.dp),
+                modifier = Modifier.widthIn(min = 44.dp),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
             StepButton(Icons.Outlined.Add, "Warmer", enabled = !busy && shown < MAX_TEMPERATURE) { wanted = shown + 1 }
@@ -269,7 +332,7 @@ private fun StepButton(icon: ImageVector, label: String, enabled: Boolean, onCli
     val shape = RoundedCornerShape(10.dp)
     Box(
         Modifier
-            .size(40.dp)
+            .size(44.dp)
             .clip(shape)
             .background(Volt.Raise)
             .border(1.dp, Volt.Line, shape)
@@ -277,20 +340,5 @@ private fun StepButton(icon: ImageVector, label: String, enabled: Boolean, onCli
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, contentDescription = label, tint = if (enabled) Volt.Ink else Volt.Ink4, modifier = Modifier.size(18.dp))
-    }
-}
-
-@Composable
-private fun SeatRow(vm: AppViewModel, title: String, command: String, level: Int?, read: (CarStatus) -> Int?) {
-    val on = (level ?: 0) > 0
-    ListRow(Icons.Outlined.EventSeat, title, "Heating", on = on) {
-        Segmented(
-            options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
-            selected = level ?: 0,
-            modifier = Modifier.width(168.dp),
-            busy = vm.pending[command] == true,
-        ) { wanted ->
-            vm.send(command, command, wanted.toString()) { (read(it) ?: 0) == wanted }
-        }
     }
 }
