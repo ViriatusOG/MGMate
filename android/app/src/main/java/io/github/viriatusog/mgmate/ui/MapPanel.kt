@@ -37,8 +37,11 @@ fun MapPanel(
             setMultiTouchControls(true)
             zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
             overlayManager.tilesOverlay.setColorFilter(TilesOverlay.INVERT_COLORS)
+            // Map tiles are drawn for a 160 dpi screen; unscaled, a phone shows them at a third of
+            // the size, which reads as a map zoomed far out with labels too small to read.
+            isTilesScaledToDpi = true
             minZoomLevel = 3.0
-            controller.setZoom(16.0)
+            controller.setZoom(CAR_ZOOM)
         }
     }
 
@@ -69,15 +72,24 @@ fun MapPanel(
             view.overlays.add(dot(view, context, points.first(), Volt.Ink.toArgb()))
             view.overlays.add(dot(view, context, points.last(), Volt.Accent.toArgb()))
             // The view has no size until it is laid out, and framing needs one.
-            view.post { view.zoomToBoundingBox(BoundingBox.fromGeoPoints(points).increaseByScale(1.3f), false) }
+            view.post { view.zoomToBoundingBox(BoundingBox.fromGeoPoints(points).increaseByScale(1.15f), false) }
         } else if (car != null) {
             val at = GeoPoint(car.first, car.second)
             view.overlays.add(dot(view, context, at, Volt.Accent.toArgb()))
-            view.controller.setCenter(at)
+            // Framed on the car whenever it has moved, close enough to tell the street and the
+            // side of it; a redraw for anything else leaves the map where it was dragged to.
+            if (view.tag != car) {
+                view.tag = car
+                view.controller.setZoom(CAR_ZOOM)
+                view.controller.setCenter(at)
+            }
         }
         view.invalidate()
     }
 }
+
+// Street level: a few hundred metres across on a phone.
+private const val CAR_ZOOM = 17.5
 
 private fun dot(map: MapView, context: Context, at: GeoPoint, colour: Int): Marker {
     val density = context.resources.displayMetrics.density
