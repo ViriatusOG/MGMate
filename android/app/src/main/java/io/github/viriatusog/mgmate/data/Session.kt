@@ -3,7 +3,7 @@ package io.github.viriatusog.mgmate.data
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import androidx.security.crypto.MasterKeys
 
 /**
  * What the app remembers between launches: the server's address, the sign-in and the session
@@ -55,11 +55,11 @@ class Session(context: Context) {
 
         fun open(context: Context): SharedPreferences {
             fun create(): SharedPreferences {
-                val key = MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
+                val key = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
                 return EncryptedSharedPreferences.create(
-                    context,
                     FILE,
                     key,
+                    context,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
                 )

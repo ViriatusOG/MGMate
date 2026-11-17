@@ -170,7 +170,7 @@ class Api(private val session: Session) {
     companion object {
         const val COOKIE_NAME = "garagestack-auth"
 
-        /** "192.168.0.240:4020" and "https://car.example.com/" both become a clean base address. */
+        /** "192.168.1.50:4020" and "https://car.example.com/" both become a clean base address. */
         fun normaliseServer(input: String): String? {
             val trimmed = input.trim().trimEnd('/')
             if (trimmed.isEmpty()) return null
