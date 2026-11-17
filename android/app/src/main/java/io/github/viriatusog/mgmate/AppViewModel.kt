@@ -48,6 +48,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var signInError by mutableStateOf<String?>(null)
         private set
+    /** True between a fresh sign-in and the answer to "protect the app with your fingerprint?". */
+    var lockSetup by mutableStateOf(false)
+        private set
 
     var vehicle by mutableStateOf<Vehicle?>(null)
         private set
@@ -81,9 +84,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 api.signIn(server, username.trim(), password)
                 signedIn = true
-                if (session.lockEnabled && canLock()) {
-                    message = "Saved. From now on the app opens with your fingerprint or screen lock."
-                }
+                // Asked once, straight after signing in: how the app should open from now on.
+                lockSetup = true
                 start()
             } catch (e: ApiException) {
                 signInError = e.message
@@ -96,6 +98,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Whether this phone has a fingerprint, a face or a screen lock to open the app with. */
     fun canLock(): Boolean =
         BiometricManager.from(getApplication()).canAuthenticate(LOCK_AUTHENTICATORS) == BiometricManager.BIOMETRIC_SUCCESS
+
+    /** The answer to the question after signing in. */
+    fun chooseLock(enabled: Boolean) {
+        session.lockEnabled = enabled
+        lockSetup = false
+        if (enabled) message = "Done. The app now opens with your fingerprint or PIN."
+    }
 
     fun signOut() {
         stop()

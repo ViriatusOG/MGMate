@@ -36,6 +36,7 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.viriatusog.mgmate.AppViewModel
@@ -65,12 +67,52 @@ private enum class Tab(val label: String, val icon: ImageVector) {
 
 /** The whole app: sign-in until signed in, the lock until unlocked, then the four tabs. */
 @Composable
-fun AppRoot(vm: AppViewModel, locked: Boolean, canLock: Boolean, onUnlock: () -> Unit) {
+fun AppRoot(vm: AppViewModel, locked: Boolean, canLock: Boolean, onUnlock: () -> Unit, onEnableLock: () -> Unit) {
     MGMateTheme {
         when {
             !vm.signedIn -> SignInScreen(vm)
+            vm.lockSetup -> LockSetupScreen(canLock, onEnableLock) { vm.chooseLock(false) }
             locked -> LockScreen(onUnlock)
             else -> Tabs(vm, canLock)
+        }
+    }
+}
+
+/** Shown once after signing in: the app asks to be protected before it shows the car. */
+@Composable
+private fun LockSetupScreen(canLock: Boolean, onEnable: () -> Unit, onSkip: () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().background(Volt.Bg).systemBarsPadding().padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Logo()
+        Text("Protect the app", color = Volt.Ink, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            if (canLock) {
+                "This app can unlock and start your car. Open it with your fingerprint, face or PIN, so you never type your password again and nobody else can use it."
+            } else {
+                "This app can unlock and start your car, but this phone has no fingerprint or screen lock to protect it with. Set one up in the phone's settings, then switch on the lock under Settings in this app."
+            },
+            color = Volt.Ink2,
+            fontSize = 15.sp,
+            lineHeight = 21.sp,
+            textAlign = TextAlign.Center,
+        )
+        if (canLock) {
+            Button(
+                onClick = onEnable,
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Volt.Accent, contentColor = Volt.AccentInk),
+            ) {
+                Icon(Icons.Outlined.Fingerprint, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.size(8.dp))
+                Text("Use fingerprint or PIN", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
+        TextButton(onClick = onSkip, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+            Text(if (canLock) "Not now" else "Continue without a lock", color = Volt.Ink2, fontSize = 16.sp)
         }
     }
 }

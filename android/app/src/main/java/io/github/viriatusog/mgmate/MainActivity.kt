@@ -33,7 +33,14 @@ class MainActivity : FragmentActivity() {
         locked = savedInstanceState?.getBoolean(STATE_LOCKED) ?: shouldLock()
         leftAt = savedInstanceState?.getLong(STATE_LEFT_AT, -1L)?.takeIf { it >= 0 }
         setContent {
-            AppRoot(vm, locked = locked && vm.signedIn, canLock = canAuthenticate(), onUnlock = ::unlock)
+            AppRoot(
+                vm,
+                locked = locked && vm.signedIn,
+                canLock = canAuthenticate(),
+                onUnlock = ::unlock,
+                // Switching the lock on proves it works first: the same check the lock will ask for.
+                onEnableLock = { confirm("Turn on the app lock", "Confirm it is you") { vm.chooseLock(true) } },
+            )
         }
     }
 
@@ -66,12 +73,17 @@ class MainActivity : FragmentActivity() {
     private fun shouldLock(): Boolean = vm.session.isSignedIn && vm.session.lockEnabled && canAuthenticate()
 
     private fun unlock() {
-        if (prompting) return
         if (!canAuthenticate()) {
             // The phone's screen lock was removed since: there is nothing left to ask.
             opened()
             return
         }
+        confirm("Unlock MGMate", "Confirm it is you to control the car", ::opened)
+    }
+
+    /** Asks for a fingerprint, a face or the phone's PIN, pattern or password, then runs [then]. */
+    private fun confirm(title: String, subtitle: String, then: () -> Unit) {
+        if (prompting) return
         prompting = true
         val prompt = BiometricPrompt(
             this,
@@ -79,18 +91,18 @@ class MainActivity : FragmentActivity() {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     prompting = false
-                    opened()
+                    then()
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    // Cancelled or failed: stay locked; the Unlock button asks again.
+                    // Cancelled or failed: nothing changes; the button on screen asks again.
                     prompting = false
                 }
             },
         )
         val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Unlock MGMate")
-            .setSubtitle("Confirm it is you to control the car")
+            .setTitle(title)
+            .setSubtitle(subtitle)
             .setAllowedAuthenticators(AppViewModel.LOCK_AUTHENTICATORS)
             .build()
         prompt.authenticate(info)
