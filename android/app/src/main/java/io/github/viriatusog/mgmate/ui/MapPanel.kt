@@ -36,7 +36,6 @@ fun MapPanel(
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
             zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
-            overlayManager.tilesOverlay.setColorFilter(TilesOverlay.INVERT_COLORS)
             // Map tiles are drawn for a 160 dpi screen; unscaled, a phone shows them at a third of
             // the size, which reads as a map zoomed far out with labels too small to read.
             isTilesScaledToDpi = true
@@ -54,6 +53,8 @@ fun MapPanel(
     }
 
     AndroidView(factory = { map }, modifier = modifier) { view ->
+        // The street map is light as drawn; in the dark look its colours are turned over.
+        view.overlayManager.tilesOverlay.setColorFilter(if (Volt.Dark) TilesOverlay.INVERT_COLORS else null)
         view.overlays.clear()
 
         if (route.size >= 2) {

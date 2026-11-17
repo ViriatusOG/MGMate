@@ -15,6 +15,7 @@ import io.github.viriatusog.mgmate.data.CommandResult
 import io.github.viriatusog.mgmate.data.LiveHub
 import io.github.viriatusog.mgmate.data.Session
 import io.github.viriatusog.mgmate.data.PublishedBuild
+import io.github.viriatusog.mgmate.data.ThemeMode
 import io.github.viriatusog.mgmate.data.TripLogEntry
 import io.github.viriatusog.mgmate.data.Updater
 import io.github.viriatusog.mgmate.data.Vehicle
@@ -81,6 +82,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var openTrip by mutableStateOf<OpenTrip?>(null)
         private set
+
+    var themeMode by mutableStateOf(session.themeMode)
+        private set
+
+    fun chooseTheme(mode: ThemeMode) {
+        session.themeMode = mode
+        themeMode = mode
+    }
 
     private val updater = Updater(app)
     var updateState by mutableStateOf<UpdateState>(UpdateState.Unknown)

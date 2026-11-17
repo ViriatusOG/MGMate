@@ -75,7 +75,7 @@ private enum class Tab(val label: String, val icon: ImageVector) {
 /** The whole app: sign-in until signed in, the lock until unlocked, then the four tabs. */
 @Composable
 fun AppRoot(vm: AppViewModel, locked: Boolean, canLock: Boolean, onUnlock: () -> Unit, onEnableLock: () -> Unit) {
-    MGMateTheme {
+    MGMateTheme(vm.themeMode) {
         when {
             !vm.signedIn -> SignInScreen(vm)
             vm.lockSetup -> LockSetupScreen(canLock, onEnableLock) { vm.chooseLock(false) }

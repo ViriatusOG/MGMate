@@ -625,7 +625,9 @@ The pictures are the design the app was built from, with sample data.
 - **Car**: lock and unlock, climate on and off with the cabin temperature, front defrost, rear window heating, the heated steering wheel, both front seat heaters, open the boot, and find my car. Windows are missing because MG's API cannot move them.
 - **Charging**: start and stop a charge, the charge limit, the charging current, the cable lock, battery heating and the car's own charging schedule.
 - **Trips**: the car on a map with a button that hands its position to your maps app, and the last 30 days of trips, each opening on its route.
-- **Settings**: the app lock, the server it talks to, sign out, updating the app, and a deliberate "ask the car for fresh data".
+- **Settings**: the app lock, dark or light, the server it talks to, sign out, updating the app, and a deliberate "ask the car for fresh data".
+
+The app is dark or light with the phone, and **Settings > Appearance** fixes it to one of the two.
 
 Unlocking, opening the boot, stopping a charge and waking the car ask first.
 

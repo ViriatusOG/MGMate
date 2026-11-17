@@ -13,6 +13,9 @@ import androidx.security.crypto.MasterKeys
  * The password is kept so the app can sign in again by itself when the server's 30-day session
  * runs out. The fingerprint lock is what guards the app from then on.
  */
+/** Whether the app is dark, light, or follows the phone. */
+enum class ThemeMode { System, Light, Dark }
+
 class Session(context: Context) {
     private val prefs: SharedPreferences = open(context.applicationContext)
 
@@ -38,6 +41,11 @@ class Session(context: Context) {
         get() = prefs.getBoolean(KEY_LOCK, true)
         set(value) = prefs.edit().putBoolean(KEY_LOCK, value).apply()
 
+    /** Dark, light, or whatever the phone is set to. */
+    var themeMode: ThemeMode
+        get() = ThemeMode.entries.firstOrNull { it.name == prefs.getString(KEY_THEME, null) } ?: ThemeMode.System
+        set(value) = prefs.edit().putString(KEY_THEME, value.name).apply()
+
     val isSignedIn: Boolean
         get() = serverUrl != null && username != null && password != null
 
@@ -52,6 +60,7 @@ class Session(context: Context) {
         const val KEY_PASSWORD = "password"
         const val KEY_COOKIE = "cookie"
         const val KEY_LOCK = "lock"
+        const val KEY_THEME = "theme"
 
         fun open(context: Context): SharedPreferences {
             fun create(): SharedPreferences {

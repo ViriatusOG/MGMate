@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import io.github.viriatusog.mgmate.AppViewModel
 import io.github.viriatusog.mgmate.BuildConfig
 import io.github.viriatusog.mgmate.UpdateState
+import io.github.viriatusog.mgmate.data.ThemeMode
 
 /** The Settings tab: the lock, the connection, and asking the car itself for fresh data. */
 @Composable
@@ -52,6 +53,16 @@ fun SettingsScreen(vm: AppViewModel, canLock: Boolean, ask: (Confirm) -> Unit) {
                     vm.session.lockEnabled = it
                 }
             }
+        }
+
+        SectionTitle("Appearance")
+        Panel {
+            Segmented(
+                options = listOf(ThemeMode.System to "System", ThemeMode.Light to "Light", ThemeMode.Dark to "Dark"),
+                selected = vm.themeMode,
+                modifier = Modifier.padding(12.dp),
+                onSelect = vm::chooseTheme,
+            )
         }
 
         SectionTitle("Connection")
