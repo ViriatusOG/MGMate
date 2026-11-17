@@ -251,7 +251,7 @@ private fun TopBar(vm: AppViewModel) {
                     Box(Modifier.size(7.dp).clip(CircleShape).background(if (vm.loadError == null) Volt.Info else Volt.Alert))
                     val read = Units.parseInstant(vm.status?.recordedAt)
                     Text(
-                        if (read != null) "Updated ${Units.time(read)} · ${Units.ago(read, now)}" else "No data from the car yet",
+                        if (read != null) "Car last reported ${Units.time(read)} · ${Units.ago(read, now)}" else "No data from the car yet",
                         color = Volt.Ink3,
                         fontSize = 13.sp,
                     )
@@ -341,7 +341,7 @@ private fun TopBar(vm: AppViewModel) {
                     Box(Modifier.size(7.dp).clip(CircleShape).background(if (vm.loadError == null) Volt.Info else Volt.Alert))
                     val read = Units.parseInstant(vm.status?.recordedAt)
                     Text(
-                        if (read != null) "Updated ${Units.time(read)} · ${Units.ago(read, now)}" else "No data from the car yet",
+                        if (read != null) "Car last reported ${Units.time(read)} · ${Units.ago(read, now)}" else "No data from the car yet",
                         color = Volt.Ink3,
                         fontSize = 13.sp,
                     )
