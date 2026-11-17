@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.DirectionsCar
 import androidx.compose.material.icons.outlined.Fingerprint
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
@@ -232,7 +231,7 @@ private fun Tabs(vm: AppViewModel, canLock: Boolean) {
     confirm?.let { ConfirmSheet(it) { confirm = null } }
 }
 
-/** The car's name and how old the data on screen is, with a button to read the server again. */
+/** The car's name and how old the data on screen is. Pulling a page down reads the server again. */
 @Composable
 private fun TopBar(vm: AppViewModel) {
     // Ticks so "2 min ago" keeps counting while the screen stays open.
@@ -245,7 +244,97 @@ private fun TopBar(vm: AppViewModel) {
     }
 
     Column(Modifier.background(Volt.Bg).statusBarsPadding()) {
-        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(vm.vehicle?.model ?: "MGMate", color = Volt.Ink, fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.size(7.dp).clip(CircleShape).background(if (vm.loadError == null) Volt.Info else Volt.Alert))
+                    val read = Units.parseInstant(vm.status?.recordedAt)
+                    Text(
+                        if (read != null) "Updated ${Units.time(read)} · ${Units.ago(read, now)}" else "No data from the car yet",
+                        color = Volt.Ink3,
+                        fontSize = 13.sp,
+                    )
+                }
+            }
+        }
+        HorizontalDivider(color = Volt.LineSoft)
+                NavigationBar(containerColor = Volt.Bg) {
+                    Tab.entries.forEachIndexed { index, item ->
+                        NavigationBarItem(
+                            selected = tab == index,
+                            onClick = {
+                                tab = index
+                                if (item != Tab.Trips) vm.closeTrip()
+                            },
+                            icon = { Icon(item.icon, contentDescription = null) },
+                            label = { Text(item.label, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Volt.Accent,
+                                selectedTextColor = Volt.Accent,
+                                unselectedIconColor = Volt.Ink4,
+                                unselectedTextColor = Volt.Ink4,
+                                indicatorColor = Volt.AccentWash,
+                            ),
+                        )
+                    }
+                }
+            }
+        },
+    ) { padding ->
+        Column(Modifier.padding(padding).fillMaxSize()) {
+            vm.loadError?.let { error ->
+                Text(
+                    error,
+                    color = Volt.Alert,
+                    fontSize = 13.sp,
+                    modifier = Modifier.fillMaxWidth().background(Volt.AlertWash).padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+            // Pulling down reads the server's newest data again, like the button in the top bar.
+            // It does not wake the car.
+            PullToRefreshBox(
+                isRefreshing = vm.loading,
+                onRefresh = vm::refresh,
+                modifier = Modifier.fillMaxSize(),
+                state = pull,
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pull,
+                        isRefreshing = vm.loading,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        containerColor = Volt.Raise,
+                        color = Volt.Accent,
+                    )
+                },
+            ) {
+                when (Tab.entries[tab]) {
+                    Tab.Car -> CarScreen(vm) { confirm = it }
+                    Tab.Charging -> ChargingScreen(vm) { confirm = it }
+                    Tab.Trips -> TripsScreen(vm)
+                    Tab.Settings -> SettingsScreen(vm, canLock) { confirm = it }
+                }
+            }
+        }
+    }
+
+    confirm?.let { ConfirmSheet(it) { confirm = null } }
+}
+
+/** The car's name and how old the data on screen is. Pulling a page down reads the server again. */
+@Composable
+private fun TopBar(vm: AppViewModel) {
+    // Ticks so "2 min ago" keeps counting while the screen stays open.
+    var now by remember { mutableStateOf(Instant.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000)
+            now = Instant.now()
+        }
+    }
+
+    Column(Modifier.background(Volt.Bg).statusBarsPadding()) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(vm.vehicle?.model ?: "MGMate", color = Volt.Ink, fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
