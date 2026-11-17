@@ -1,0 +1,270 @@
+package io.github.viriatusog.mgmate
+
+import android.app.Application
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import io.github.viriatusog.mgmate.data.Api
+import io.github.viriatusog.mgmate.data.ApiException
+import io.github.viriatusog.mgmate.data.CarStatus
+import io.github.viriatusog.mgmate.data.CommandResult
+import io.github.viriatusog.mgmate.data.LiveHub
+import io.github.viriatusog.mgmate.data.Session
+import io.github.viriatusog.mgmate.data.TripLogEntry
+import io.github.viriatusog.mgmate.data.Vehicle
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
+/** A trip opened from the list: its figures at once, its route once it has loaded. */
+data class OpenTrip(val entry: TripLogEntry, val route: List<Pair<Double, Double>>? = null)
+
+/**
+ * Everything the screens show and do. The car is only ever contacted when the person asks for
+ * something: readings come from the server's own store, and the live connection listens to the
+ * server, so an open app costs the car's 12 V battery nothing.
+ */
+class AppViewModel(app: Application) : AndroidViewModel(app) {
+    val session = Session(app)
+    private val api = Api(session)
+    private val hub = LiveHub(
+        api,
+        onStatus = { viewModelScope.launch { reloadStatus() } },
+        onCommandResult = { result -> viewModelScope.launch { answered(result) } },
+        onTripCompleted = { viewModelScope.launch { loadTrips() } },
+    )
+
+    var signedIn by mutableStateOf(session.isSignedIn)
+        private set
+    var signingIn by mutableStateOf(false)
+        private set
+    var signInError by mutableStateOf<String?>(null)
+        private set
+
+    var vehicle by mutableStateOf<Vehicle?>(null)
+        private set
+    var status by mutableStateOf<CarStatus?>(null)
+        private set
+    var loading by mutableStateOf(false)
+        private set
+    /** Why the last load failed, shown until one succeeds. */
+    var loadError by mutableStateOf<String?>(null)
+        private set
+    /** A one-off note for the snackbar: a command the car refused, say. */
+    var message by mutableStateOf<String?>(null)
+
+    var trips by mutableStateOf<List<TripLogEntry>?>(null)
+        private set
+    var openTrip by mutableStateOf<OpenTrip?>(null)
+        private set
+
+    /** The controls with a command on its way, by the control's key. */
+    val pending = mutableStateMapOf<String, Boolean>()
+
+    // One waiter per command name: the gateway's answer names the command, not the request.
+    private val waiting = HashMap<String, CompletableDeferred<CommandResult>>()
+    private var watcher: Job? = null
+
+    fun signIn(server: String, username: String, password: String) {
+        if (signingIn) return
+        signingIn = true
+        signInError = null
+        viewModelScope.launch {
+            try {
+                api.signIn(server, username.trim(), password)
+                signedIn = true
+                start()
+            } catch (e: ApiException) {
+                signInError = e.message
+            } finally {
+                signingIn = false
+            }
+        }
+    }
+
+    fun signOut() {
+        stop()
+        session.signOut()
+        signedIn = false
+        vehicle = null
+        status = null
+        trips = null
+        openTrip = null
+        loadError = null
+    }
+
+    /** Called when the app comes on screen: reads what the server holds and starts listening. */
+    fun start() {
+        if (!signedIn) return
+        refresh()
+        watcher?.cancel()
+        watcher = viewModelScope.launch {
+            while (true) {
+                val id = vehicle?.id
+                if (id != null && !hub.isOpen) hub.open(id)
+                // A safety net under the live connection; the server answers from its database.
+                delay(60_000)
+                reloadStatus()
+            }
+        }
+    }
+
+    /** Called when the app leaves the screen. */
+    fun stop() {
+        watcher?.cancel()
+        watcher = null
+        hub.close()
+    }
+
+    /** Reads the server's newest data again. This does not wake the car. */
+    fun refresh() {
+        if (!signedIn || loading) return
+        loading = true
+        viewModelScope.launch {
+            try {
+                if (vehicle == null) vehicle = api.vehicles().firstOrNull()
+                val car = vehicle
+                if (car == null) {
+                    loadError = "The server has no car yet."
+                } else {
+                    status = api.status(car.vin)
+                    loadError = null
+                    if (!hub.isOpen) hub.open(car.id)
+                    loadTrips()
+                }
+            } catch (e: ApiException) {
+                failed(e)
+            } finally {
+                loading = false
+            }
+        }
+    }
+
+    private suspend fun reloadStatus() {
+        val car = vehicle ?: return
+        try {
+            status = api.status(car.vin) ?: status
+            loadError = null
+        } catch (e: ApiException) {
+            failed(e)
+        }
+    }
+
+    private suspend fun loadTrips() {
+        val car = vehicle ?: return
+        try {
+            val now = Instant.now()
+            trips = api.tripLog(car.vin, now.minus(30, ChronoUnit.DAYS), now.plus(1, ChronoUnit.DAYS))
+                .filter { !it.isHidden }
+                .sortedByDescending { it.startedAt }
+        } catch (e: ApiException) {
+            if (trips == null) trips = emptyList()
+            failed(e)
+        }
+    }
+
+    private fun failed(e: ApiException) {
+        if (e.status == 401) signOut() else loadError = e.message
+    }
+
+    fun showTrip(entry: TripLogEntry) {
+        openTrip = OpenTrip(entry)
+        val car = vehicle ?: return
+        viewModelScope.launch {
+            val route = try {
+                val from = Instant.parse(normalise(entry.startedAt))
+                val to = Instant.parse(normalise(entry.endedAt))
+                api.tripRoute(car.vin, entry.id, from, to)
+            } catch (_: Exception) {
+                emptyList()
+            }
+            if (openTrip?.entry?.id == entry.id) openTrip = OpenTrip(entry, route)
+        }
+    }
+
+    fun closeTrip() {
+        openTrip = null
+    }
+
+    private fun normalise(time: String): String =
+        io.github.viriatusog.mgmate.data.Units.parseInstant(time)?.toString() ?: time
+
+    /**
+     * Sends one command and waits for the car. [key] names the control showing the wait;
+     * [confirmed] says when a reading shows the command took effect, for controls whose state the
+     * car reports. Without it the gateway's own "done" is the end.
+     */
+    fun send(
+        key: String,
+        command: String,
+        value: String,
+        done: String? = null,
+        confirmed: ((CarStatus) -> Boolean)? = null,
+    ) {
+        val car = vehicle ?: return
+        if (pending[key] == true) return
+        pending[key] = true
+        viewModelScope.launch {
+            try {
+                val answer = CompletableDeferred<CommandResult>()
+                waiting[command] = answer
+                api.command(car.vin, command, value)
+
+                // The gateway polls MG for up to 30 s before it answers.
+                val result = withTimeoutOrNull(ANSWER_TIMEOUT_MS) { answer.await() }
+                when {
+                    result == null -> {
+                        // No answer heard: the live connection may have dropped, so look.
+                        reloadStatus()
+                        val current = status
+                        if (confirmed != null && current != null && confirmed(current)) {
+                            done?.let { message = it }
+                        } else {
+                            message = "The car has not answered yet. Check again in a moment."
+                        }
+                    }
+                    !result.success -> message = result.detail?.let { "The car refused: $it" } ?: "The car refused the command."
+                    else -> {
+                        if (confirmed != null) awaitReading(confirmed)
+                        done?.let { message = it }
+                    }
+                }
+            } catch (e: ApiException) {
+                message = e.message
+            } finally {
+                waiting.remove(command)
+                pending.remove(key)
+            }
+        }
+    }
+
+    /** After the car said yes: reads the server a few times until the new state shows. */
+    private suspend fun awaitReading(confirmed: (CarStatus) -> Boolean) {
+        repeat(6) {
+            reloadStatus()
+            val current = status
+            if (current != null && confirmed(current)) return
+            delay(4_000)
+        }
+    }
+
+    private fun answered(result: CommandResult) {
+        waiting[result.command]?.complete(result)
+    }
+
+    override fun onCleared() {
+        hub.close()
+    }
+
+    private companion object {
+        // Matches the web app, which gives the gateway 45 s.
+        const val ANSWER_TIMEOUT_MS = 45_000L
+    }
+}

@@ -17,6 +17,7 @@ MGMate is a free, open-source web app for **modern MG cars**, the ones built by 
 - **Know your battery.** Battery health works out the usable capacity from your charges, compares it with the pack when new, and shows the trend over time. It waits for a charge to 100 % first, because that is when the car knows its charge level exactly. The 12V battery, temperatures, distance and range get charts of their own on Statistics.
 - **Keep a trip log for the taxman.** Mark trips as business, commute or private, add notes, search them, and export a month or a year as a spreadsheet.
 - **Control it from anywhere.** Pre-condition the cabin, lock the car or flash its lights to find it, and see whether the car actually carried the command out, without waking the car more than it needs.
+- **An Android app for the controls.** A native app that locks, heats, charges and finds the car, shows where it is and where it has been, and opens with your fingerprint. See [Android app](#android-app).
 - **See everything the car reports.** Switch on Advanced in Settings and a Debug page lists every sensor and control the MG gateway announces, with its latest value and whether MGMate keeps its history.
 - **Hear about it when something is off.** Push notifications for low tyre pressure, a car left unlocked, a window left open, charging complete, maintenance coming due and more.
 - **Keep it yours.** Everything runs in Docker on your own hardware, as one all-in-one container or a Compose stack. No subscription, and no account needed beyond your MG login.
@@ -131,6 +132,7 @@ Thanks to Jos for the foundation.
 - [Trip log](#trip-log), [Schedules](#schedules), [Maintenance](#maintenance) and [Warranty](#warranty)
 - [Dutch registration (RDW)](#dutch-registration-rdw)
 - [UK road tax and MOT (DVLA)](#uk-road-tax-and-mot-dvla)
+- [Android app](#android-app)
 - [Homepage dashboard widget](#homepage-dashboard-widget) and [Read-only API tokens](#read-only-api-tokens)
 - [Map overlays](#map-overlays)
 - [Security defaults](#security-defaults), [HTTPS](#https) and [What leaves your network](#what-leaves-your-network)
@@ -605,6 +607,41 @@ For a car with a UK registration, MGMate shows what the DVLA has on record for i
 ![The Tax and MOT card opened on the Overview: road tax with its due date and time left, the MOT, and what the DVLA holds on record](documentation/screenshots/desktop-tax-mot.webp)
 
 The settings are in [`CONFIGURATION.md`](documentation/CONFIGURATION.md#uk-road-tax-and-mot-dvla).
+
+---
+
+## Android app
+
+MGMate has a native Android app for the things you do from your pocket: the controls first, then where the car is and where it has been. It talks to your own MGMate server and to nothing else.
+
+| Car | Charging | Trips | A trip | Sign-in |
+|---|---|---|---|---|
+| <img src="documentation/screenshots/android-car.webp" alt="The app's Car tab: range and charge level beside the car from above, buttons for the locks, climate, boot and find my car, and switches for defrost, rear window heating, the heated steering wheel and both seats" width="180"> | <img src="documentation/screenshots/android-charging.webp" alt="The app's Charging tab: the charge level in a ring with the power and time left, a Stop charging button, the charge limit, the charging current, the cable lock, battery heating and the car's schedule" width="180"> | <img src="documentation/screenshots/android-trips.webp" alt="The app's Trips tab: a map with the car on it, since when it has been parked, a Directions button, and the trips of each day with distance, mi/kWh and battery used" width="180"> | <img src="documentation/screenshots/android-trip-detail.webp" alt="A trip opened in the app: its route on a map and its distance, time, efficiency, battery, energy and average speed" width="180"> | <img src="documentation/screenshots/android-sign-in.webp" alt="The app's sign-in: the server address, username and password, and a Connect button" width="180"> |
+
+The pictures are the design the app was built from, with sample data.
+
+**What it does**
+
+- **Car**: lock and unlock, climate on and off with the cabin temperature, front defrost, rear window heating, the heated steering wheel, both front seat heaters, open the boot, and find my car. Windows are missing because MG's API cannot move them.
+- **Charging**: start and stop a charge, the charge limit, the charging current, the cable lock, battery heating and the car's own charging schedule.
+- **Trips**: the car on a map with a button that hands its position to your maps app, and the last 30 days of trips, each opening on its route.
+- **Settings**: the app lock, the server it talks to, sign out, and a deliberate "ask the car for fresh data".
+
+Unlocking, opening the boot, stopping a charge and waking the car ask first.
+
+**It does not wake the car.** Opening the app reads what your server already holds and listens to the server for news. The car is only contacted when you tap a control, so the app can stay open without drawing on the 12 V battery.
+
+**Fingerprint lock.** You type the server address and your MGMate sign-in once. After that the app opens with your fingerprint, your face or the phone's screen lock, and locks again once it has been out of sight for a minute. The sign-in is kept encrypted with a key in the phone's keystore, is left out of backups, and is only ever sent to your server; the app uses it to sign in again by itself when the server's 30-day session ends. The lock can be switched off under Settings.
+
+**Install it**
+
+1. On your phone, open the [android-latest release](https://github.com/ViriatusOG/MGMate/releases/tag/android-latest) and download `mgmate.apk`.
+2. Open the download. Android asks once whether your browser may install apps: allow it, then install.
+3. Open MGMate, enter the address you open MGMate at in your browser (for example `http://192.168.1.50:4020`), and sign in with the same username and password as the web app.
+
+The app needs Android 8 or newer and an MGMate server with the built-in password sign-in (single sign-on is not supported in the app yet). It works over plain HTTP on your home network and over HTTPS; away from home it needs the same way in as the web app, such as a VPN to your network.
+
+To update, download the newer `mgmate.apk` and open it: it installs over the old one and keeps your sign-in, as long as both were signed with the same key. Building and signing are described in [`android/README.md`](android/README.md).
 
 ---
 

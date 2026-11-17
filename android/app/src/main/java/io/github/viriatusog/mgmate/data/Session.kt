@@ -1,0 +1,77 @@
+package io.github.viriatusog.mgmate.data
+
+import android.content.Context
+import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+
+/**
+ * What the app remembers between launches: the server's address, the sign-in and the session
+ * cookie. Everything is encrypted with a key held in the Android Keystore, so it cannot be read
+ * off the phone's storage or restored onto another device.
+ *
+ * The password is kept so the app can sign in again by itself when the server's 30-day session
+ * runs out. The fingerprint lock is what guards the app from then on.
+ */
+class Session(context: Context) {
+    private val prefs: SharedPreferences = open(context.applicationContext)
+
+    var serverUrl: String?
+        get() = prefs.getString(KEY_SERVER, null)
+        set(value) = prefs.edit().putString(KEY_SERVER, value).apply()
+
+    var username: String?
+        get() = prefs.getString(KEY_USER, null)
+        set(value) = prefs.edit().putString(KEY_USER, value).apply()
+
+    var password: String?
+        get() = prefs.getString(KEY_PASSWORD, null)
+        set(value) = prefs.edit().putString(KEY_PASSWORD, value).apply()
+
+    /** The session cookie as "name=value", or null when signed out. */
+    var cookie: String?
+        get() = prefs.getString(KEY_COOKIE, null)
+        set(value) = prefs.edit().putString(KEY_COOKIE, value).apply()
+
+    /** Whether opening the app asks for a fingerprint, face or the phone's screen lock. */
+    var lockEnabled: Boolean
+        get() = prefs.getBoolean(KEY_LOCK, true)
+        set(value) = prefs.edit().putBoolean(KEY_LOCK, value).apply()
+
+    val isSignedIn: Boolean
+        get() = serverUrl != null && username != null && password != null
+
+    fun signOut() {
+        prefs.edit().remove(KEY_USER).remove(KEY_PASSWORD).remove(KEY_COOKIE).apply()
+    }
+
+    private companion object {
+        const val FILE = "mgmate_session"
+        const val KEY_SERVER = "server"
+        const val KEY_USER = "user"
+        const val KEY_PASSWORD = "password"
+        const val KEY_COOKIE = "cookie"
+        const val KEY_LOCK = "lock"
+
+        fun open(context: Context): SharedPreferences {
+            fun create(): SharedPreferences {
+                val key = MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
+                return EncryptedSharedPreferences.create(
+                    context,
+                    FILE,
+                    key,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+                )
+            }
+            return try {
+                create()
+            } catch (_: Exception) {
+                // The keystore key is gone (a restored phone, say), so the old file cannot be
+                // read by anyone: start again signed out.
+                context.deleteSharedPreferences(FILE)
+                create()
+            }
+        }
+    }
+}
