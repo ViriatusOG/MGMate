@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -59,6 +62,7 @@ import androidx.compose.ui.unit.sp
 import io.github.viriatusog.mgmate.AppViewModel
 import io.github.viriatusog.mgmate.data.Units
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.Instant
 
 private enum class Tab(val label: String, val icon: ImageVector) {
@@ -145,10 +149,17 @@ private fun LockScreen(onUnlock: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Tabs(vm: AppViewModel, canLock: Boolean) {
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    // The tabs sit side by side, so a swipe left or right moves between them.
+    val pager = rememberPagerState(pageCount = { Tab.entries.size })
+    val scope = rememberCoroutineScope()
     var confirm by remember { mutableStateOf<Confirm?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val pull = rememberPullToRefreshState()
+
+    // A trip opened on the Trips tab is closed once another tab has settled.
+    LaunchedEffect(pager.settledPage) {
+        if (Tab.entries[pager.settledPage] != Tab.Trips) vm.closeTrip()
+    }
 
     val note = vm.message
     LaunchedEffect(note) {
@@ -172,11 +183,8 @@ private fun Tabs(vm: AppViewModel, canLock: Boolean) {
                 NavigationBar(containerColor = Volt.Bg) {
                     Tab.entries.forEachIndexed { index, item ->
                         NavigationBarItem(
-                            selected = tab == index,
-                            onClick = {
-                                tab = index
-                                if (item != Tab.Trips) vm.closeTrip()
-                            },
+                            selected = pager.currentPage == index,
+                            onClick = { scope.launch { pager.animateScrollToPage(index) } },
                             icon = { Icon(item.icon, contentDescription = null) },
                             label = { Text(item.label, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
                             colors = NavigationBarItemDefaults.colors(
@@ -218,11 +226,13 @@ private fun Tabs(vm: AppViewModel, canLock: Boolean) {
                     )
                 },
             ) {
-                when (Tab.entries[tab]) {
-                    Tab.Car -> CarScreen(vm) { confirm = it }
-                    Tab.Charging -> ChargingScreen(vm) { confirm = it }
-                    Tab.Trips -> TripsScreen(vm)
-                    Tab.Settings -> SettingsScreen(vm, canLock) { confirm = it }
+                HorizontalPager(state = pager, modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.Top) { page ->
+                    when (Tab.entries[page]) {
+                        Tab.Car -> CarScreen(vm) { confirm = it }
+                        Tab.Charging -> ChargingScreen(vm) { confirm = it }
+                        Tab.Trips -> TripsScreen(vm)
+                        Tab.Settings -> SettingsScreen(vm, canLock) { confirm = it }
+                    }
                 }
             }
         }
