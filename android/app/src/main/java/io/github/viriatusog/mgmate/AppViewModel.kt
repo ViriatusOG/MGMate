@@ -1,6 +1,7 @@
 package io.github.viriatusog.mgmate
 
 import android.app.Application
+import androidx.biometric.BiometricManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -80,6 +81,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 api.signIn(server, username.trim(), password)
                 signedIn = true
+                if (session.lockEnabled && canLock()) {
+                    message = "Saved. From now on the app opens with your fingerprint or screen lock."
+                }
                 start()
             } catch (e: ApiException) {
                 signInError = e.message
@@ -88,6 +92,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
     }
+
+    /** Whether this phone has a fingerprint, a face or a screen lock to open the app with. */
+    fun canLock(): Boolean =
+        BiometricManager.from(getApplication()).canAuthenticate(LOCK_AUTHENTICATORS) == BiometricManager.BIOMETRIC_SUCCESS
 
     fun signOut() {
         stop()
@@ -263,8 +271,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         hub.close()
     }
 
-    private companion object {
+    companion object {
+        /** A fingerprint or face, or else the phone's PIN, pattern or password. */
+        const val LOCK_AUTHENTICATORS = BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+
         // Matches the web app, which gives the gateway 45 s.
-        const val ANSWER_TIMEOUT_MS = 45_000L
+        private const val ANSWER_TIMEOUT_MS = 45_000L
     }
 }

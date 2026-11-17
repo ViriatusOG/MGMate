@@ -14,3 +14,9 @@
 -dontwarn org.openjsse.**
 -dontwarn com.google.errorprone.annotations.**
 -dontwarn javax.annotation.**
+
+# The saved sign-in (EncryptedSharedPreferences) keeps its key set as a protobuf message that Tink
+# reads back by reflection on these fields, so they keep their names.
+-keepclassmembers class * extends com.google.crypto.tink.shaded.protobuf.GeneratedMessageLite {
+    <fields>;
+}

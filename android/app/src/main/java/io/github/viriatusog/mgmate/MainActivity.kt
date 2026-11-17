@@ -5,9 +5,6 @@ import android.os.SystemClock
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
-import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,8 +15,8 @@ import io.github.viriatusog.mgmate.ui.AppRoot
 
 /**
  * The one screen of the app. It also keeps the lock: with a saved sign-in, the app opens only
- * after a fingerprint, a face or the phone's own screen lock, and locks again once it has been
- * out of sight for a minute.
+ * after a fingerprint, a face or the phone's own screen lock, and locks again as soon as it
+ * leaves the screen.
  */
 class MainActivity : FragmentActivity() {
     private val vm: AppViewModel by viewModels()
@@ -42,8 +39,8 @@ class MainActivity : FragmentActivity() {
 
     override fun onStart() {
         super.onStart()
-        val away = leftAt?.let { SystemClock.elapsedRealtime() - it }
-        if (away != null && away > RELOCK_AFTER_MS && shouldLock()) locked = true
+        // Any time the app has been off screen it comes back locked, however briefly it was away.
+        if (leftAt != null && shouldLock()) locked = true
         leftAt = null
         if (locked && vm.signedIn) unlock() else vm.start()
     }
@@ -51,7 +48,9 @@ class MainActivity : FragmentActivity() {
     override fun onStop() {
         super.onStop()
         if (!isChangingConfigurations) {
-            leftAt = SystemClock.elapsedRealtime()
+            // On older Androids the screen-lock check is a screen of its own, which stops this
+            // one: that is not the app being left.
+            if (!prompting) leftAt = SystemClock.elapsedRealtime()
             vm.stop()
         }
     }
@@ -62,8 +61,7 @@ class MainActivity : FragmentActivity() {
         outState.putLong(STATE_LEFT_AT, leftAt ?: -1L)
     }
 
-    private fun canAuthenticate(): Boolean =
-        BiometricManager.from(this).canAuthenticate(AUTHENTICATORS) == BiometricManager.BIOMETRIC_SUCCESS
+    private fun canAuthenticate(): Boolean = vm.canLock()
 
     private fun shouldLock(): Boolean = vm.session.isSignedIn && vm.session.lockEnabled && canAuthenticate()
 
@@ -93,7 +91,7 @@ class MainActivity : FragmentActivity() {
         val info = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Unlock MGMate")
             .setSubtitle("Confirm it is you to control the car")
-            .setAllowedAuthenticators(AUTHENTICATORS)
+            .setAllowedAuthenticators(AppViewModel.LOCK_AUTHENTICATORS)
             .build()
         prompt.authenticate(info)
     }
@@ -104,9 +102,6 @@ class MainActivity : FragmentActivity() {
     }
 
     private companion object {
-        // A fingerprint or face, or else the phone's PIN, pattern or password.
-        const val AUTHENTICATORS = BIOMETRIC_WEAK or DEVICE_CREDENTIAL
-        const val RELOCK_AFTER_MS = 60_000L
         const val STATE_LOCKED = "locked"
         const val STATE_LEFT_AT = "leftAt"
     }
