@@ -629,7 +629,7 @@ The pictures are the design the app was built from, with sample data.
 
 Unlocking, opening the boot, stopping a charge and waking the car ask first.
 
-**It does not wake the car.** Opening the app reads what your server already holds and listens to the server for news. The car is only contacted when you tap a control, so the app can stay open without drawing on the 12 V battery.
+**It does not wake the car.** Opening the app reads what your server already holds and listens to the server for news. Pulling a page down reads the server again. The car is only contacted when you tap a control, so the app can stay open without drawing on the 12 V battery.
 
 **Fingerprint lock.** You type the server address and your MGMate sign-in once, and the app then asks to be protected with your fingerprint or PIN. After that it opens with your fingerprint, your face or the phone's screen lock, and locks again as soon as you leave it. The sign-in is kept encrypted with a key in the phone's keystore, is left out of backups, and is only ever sent to your server; the app uses it to sign in again by itself when the server's 30-day session ends. The lock can be switched off under Settings.
 

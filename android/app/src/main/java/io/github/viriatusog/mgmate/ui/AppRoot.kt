@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +37,9 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -139,11 +143,13 @@ private fun LockScreen(onUnlock: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Tabs(vm: AppViewModel, canLock: Boolean) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var confirm by remember { mutableStateOf<Confirm?>(null) }
     val snackbar = remember { SnackbarHostState() }
+    val pull = rememberPullToRefreshState()
 
     val note = vm.message
     LaunchedEffect(note) {
@@ -196,11 +202,29 @@ private fun Tabs(vm: AppViewModel, canLock: Boolean) {
                     modifier = Modifier.fillMaxWidth().background(Volt.AlertWash).padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
-            when (Tab.entries[tab]) {
-                Tab.Car -> CarScreen(vm) { confirm = it }
-                Tab.Charging -> ChargingScreen(vm) { confirm = it }
-                Tab.Trips -> TripsScreen(vm)
-                Tab.Settings -> SettingsScreen(vm, canLock) { confirm = it }
+            // Pulling down reads the server's newest data again, like the button in the top bar.
+            // It does not wake the car.
+            PullToRefreshBox(
+                isRefreshing = vm.loading,
+                onRefresh = vm::refresh,
+                modifier = Modifier.fillMaxSize(),
+                state = pull,
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pull,
+                        isRefreshing = vm.loading,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        containerColor = Volt.Raise,
+                        color = Volt.Accent,
+                    )
+                },
+            ) {
+                when (Tab.entries[tab]) {
+                    Tab.Car -> CarScreen(vm) { confirm = it }
+                    Tab.Charging -> ChargingScreen(vm) { confirm = it }
+                    Tab.Trips -> TripsScreen(vm)
+                    Tab.Settings -> SettingsScreen(vm, canLock) { confirm = it }
+                }
             }
         }
     }
