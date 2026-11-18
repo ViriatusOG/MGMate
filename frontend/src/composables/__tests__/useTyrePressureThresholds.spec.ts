@@ -43,7 +43,14 @@ describe('useTyrePressureThresholds', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ lowBar: 2.4, goodBar: 2.55, highBar: 2.7, dropBar: 0.2, recommendedBar: 2.4 }),
+        json: () =>
+          Promise.resolve({
+            lowBar: 2.4,
+            goodBar: 2.55,
+            highBar: 2.7,
+            dropBar: 0.2,
+            recommendedBar: 2.4,
+          }),
       }),
     )
 
@@ -54,7 +61,13 @@ describe('useTyrePressureThresholds', () => {
     await nextTick()
     await new Promise((resolve) => setTimeout(resolve, 0))
 
-    expect(thresholds.value).toEqual({ lowBar: 2.4, goodBar: 2.55, highBar: 2.7, dropBar: 0.2, recommendedBar: 2.4 })
+    expect(thresholds.value).toEqual({
+      lowBar: 2.4,
+      goodBar: 2.55,
+      highBar: 2.7,
+      dropBar: 0.2,
+      recommendedBar: 2.4,
+    })
   })
 
   it('keeps the default thresholds when the fetch fails', async () => {
