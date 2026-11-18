@@ -7,7 +7,10 @@ export type VehicleType = 'hev' | 'phev' | 'bev' | 'unknown'
 export interface Vehicle {
   id: number
   vin: string
+  /** What to call the car: the owner's own name for it (Settings > Your car), or MG's. */
   model: string | null
+  /** The name MG reports for the car, whatever the owner calls it. */
+  reportedModel?: string | null
   series: string | null
   createdAt: string
   /** Drivetrain the API detected from the vehicle's hardware version. */
