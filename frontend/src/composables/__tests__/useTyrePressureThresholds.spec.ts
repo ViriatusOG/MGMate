@@ -25,7 +25,7 @@ describe('pressureVariant', () => {
   })
 
   it('honours custom thresholds instead of the defaults', () => {
-    const custom = { lowBar: 2.4, goodBar: 2.55, highBar: 2.7, dropBar: 0.2, recommendedBar: 2.4 }
+    const custom = { ...DEFAULT_TYRE_PRESSURE_THRESHOLDS, lowBar: 2.4, goodBar: 2.55, highBar: 2.7 }
     expect(pressureVariant(2.5, custom)).toBe('warning')
     expect(pressureVariant(2.55, custom)).toBe('ok')
   })
