@@ -678,7 +678,7 @@
       "desc": "Shown everywhere in MGMate and in the Android app.",
       "descReported": "Leave it empty to use the name MG reports: {name}",
       "save": "Save",
-      "clear": "Use MG's name",
+      "clear": "Reset",
       "saved": "Saved.",
       "cleared": "Back to the name MG reports."
     },
