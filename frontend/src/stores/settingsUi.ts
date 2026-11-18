@@ -75,6 +75,19 @@ interface UiSettings {
    * which one is in use. Null until set, when the deployment's recommended pressure is used.
    */
   tyrePressures: OwnTyrePressures | null
+  /**
+   * Settings > Your car: what the owner calls the car. Null until set, when the name MG reports
+   * is used. The server serves it as the car's name, so the Android app shows it too.
+   */
+  carName: string | null
+}
+
+export const CAR_NAME_MAX_LENGTH = 40
+
+function parseCarName(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const name = raw.trim()
+  return name.length > 0 && name.length <= CAR_NAME_MAX_LENGTH ? name : null
 }
 
 export type TyreSeason = 'summer' | 'winter'
@@ -139,6 +152,7 @@ function defaultsFor(): UiSettings {
     showDebugPage: false,
     autoHomeCharges: true,
     tyrePressures: null,
+    carName: null,
   }
 }
 
@@ -242,6 +256,7 @@ function parseUiFields(parsed: Record<string, unknown>, fallback: UiSettings): U
     showDebugPage: parsed.showDebugPage === true,
     autoHomeCharges: parsed.autoHomeCharges !== false,
     tyrePressures: parseTyrePressures(parsed.tyrePressures),
+    carName: parseCarName(parsed.carName),
   }
 }
 

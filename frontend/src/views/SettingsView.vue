@@ -12,6 +12,7 @@ import SettingsToggle from '@/components/SettingsToggle.vue'
 import RegionalSettings from '@/components/RegionalSettings.vue'
 import SideIconSwitch from '@/components/settings/SideIconSwitch.vue'
 import CarColorPicker from '@/components/settings/CarColorPicker.vue'
+import CarNameSetting from '@/components/settings/CarNameSetting.vue'
 import VehicleTypeSetting from '@/components/settings/VehicleTypeSetting.vue'
 import LicensePlateSetting from '@/components/settings/LicensePlateSetting.vue'
 import TyrePressureSetting from '@/components/settings/TyrePressureSetting.vue'
@@ -145,6 +146,10 @@ onMounted(async () => {
 
         <section id="settings-car" class="settings-card">
           <h2 class="settings-card__title">{{ t('settings.yourCar') }}</h2>
+          <div class="settings-card__group">
+            <h3 class="settings-card__subtitle">{{ t('settings.carName.title') }}</h3>
+            <CarNameSetting />
+          </div>
           <div class="settings-card__group">
             <h3 class="settings-card__subtitle">{{ t('settings.carColor.title') }}</h3>
             <CarColorPicker />

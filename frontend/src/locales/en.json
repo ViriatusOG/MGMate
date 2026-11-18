@@ -672,6 +672,16 @@
       "useDefault": "Use MG's {pressure}",
       "invalid": "Enter a pressure for each tyre, between 1 and 5 bar (15 to 72 psi)."
     },
+    "carName": {
+      "title": "Name",
+      "label": "Car name",
+      "desc": "Shown everywhere in MGMate and in the Android app.",
+      "descReported": "Leave it empty to use the name MG reports: {name}",
+      "save": "Save",
+      "clear": "Reset",
+      "saved": "Saved.",
+      "cleared": "Back to the name MG reports."
+    },
     "licensePlate": {
       "title": "Licence plate",
       "desc": "Shown beside the car's name on the Overview.",

@@ -190,7 +190,14 @@ export const useVehicleStore = defineStore('vehicle', () => {
 
   // MGMate follows one car. Every view needs the same one, so "the first vehicle" is
   // resolved here instead of being re-derived from the list by index in each component.
-  const activeVehicle = computed((): Vehicle | null => vehicles.value[0] ?? null)
+  // Its name is the one the owner set under Settings > Your car, at once and before the server
+  // has it; otherwise the one MG reports.
+  const activeVehicle = computed((): Vehicle | null => {
+    const first = vehicles.value[0]
+    if (!first) return null
+    const reported = first.reportedModel === undefined ? first.model : first.reportedModel
+    return { ...first, model: uiSettings.carName ?? reported }
+  })
   const activeVin = computed((): string | null => activeVehicle.value?.vin ?? null)
 
   // Detected by the API from the vehicle's reported hardware version, so the rule lives in one

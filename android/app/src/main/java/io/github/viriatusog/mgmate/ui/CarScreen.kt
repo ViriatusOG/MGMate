@@ -1,0 +1,402 @@
+package io.github.viriatusog.mgmate.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AcUnit
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Adjust
+import androidx.compose.material.icons.outlined.Air
+import androidx.compose.material.icons.outlined.EventSeat
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.NearMe
+import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material.icons.outlined.Thermostat
+import androidx.compose.material.icons.outlined.Waves
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import io.github.viriatusog.mgmate.AppViewModel
+import io.github.viriatusog.mgmate.data.CarStatus
+import io.github.viriatusog.mgmate.data.TyreLimits
+import io.github.viriatusog.mgmate.data.Units
+import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
+
+private const val MIN_TEMPERATURE = 16
+private const val MAX_TEMPERATURE = 28
+private const val DEFAULT_TEMPERATURE = 21
+
+/** The Car tab: what the car is doing, the four things done most, then comfort. */
+@Composable
+fun CarScreen(vm: AppViewModel, ask: (Confirm) -> Unit) {
+    val status = vm.status
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        StatusCard(status, vm.tyreLimits)
+
+        val locked = status?.isLocked == true
+        val climateOn = status?.climateOn == true
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ControlTile(
+                icon = if (locked) Icons.Outlined.Lock else Icons.Outlined.LockOpen,
+                title = when (status?.isLocked) {
+                    true -> "Locked"
+                    false -> "Unlocked"
+                    null -> "Locks"
+                },
+                subtitle = if (locked) "Tap to unlock" else "Tap to lock",
+                modifier = Modifier.weight(1f),
+                busy = vm.pending["lock"] == true,
+            ) {
+                if (locked) {
+                    ask(
+                        Confirm("Unlock the car?", "All doors will unlock. Lock it again from here when you are done.", "Unlock") {
+                            vm.send("lock", "lock", "False", done = "Unlocked") { it.isLocked == false }
+                        },
+                    )
+                } else {
+                    vm.send("lock", "lock", "True", done = "Locked") { it.isLocked == true }
+                }
+            }
+            ControlTile(
+                icon = Icons.Outlined.AcUnit,
+                title = if (climateOn) "Climate on" else "Climate",
+                subtitle = if (climateOn) "Tap to stop" else "Tap to start",
+                modifier = Modifier.weight(1f),
+                on = climateOn,
+                busy = vm.pending["climate"] == true,
+            ) {
+                if (climateOn) {
+                    vm.send("climate", "climate", "off") { it.climateOn == false }
+                } else {
+                    vm.send("climate", "climate", "on") { it.climateOn == true }
+                }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ControlTile(
+                icon = Icons.Outlined.Inventory2,
+                title = if (status?.trunkOpen == true) "Boot open" else "Boot",
+                subtitle = "Tap to open",
+                modifier = Modifier.weight(1f),
+                busy = vm.pending["boot"] == true,
+            ) {
+                ask(
+                    Confirm("Open the boot?", "The boot will unlatch. It cannot be closed from the app.", "Open the boot") {
+                        vm.send("boot", "boot", "false", done = "Boot opened")
+                    },
+                )
+            }
+            ControlTile(
+                icon = Icons.Outlined.NearMe,
+                title = "Find my car",
+                subtitle = "Horn and lights",
+                modifier = Modifier.weight(1f),
+                busy = vm.pending["find"] == true,
+            ) {
+                vm.send("find", "find-my-car", "activate", done = "Listen and look for your car")
+            }
+        }
+
+        SectionTitle("Comfort")
+        Panel { TemperatureRow(vm, status) }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            val front = status?.climateMode == "front"
+            ComfortButton(Icons.Outlined.Air, "Front defrost", Modifier.weight(1f), on = front, busy = vm.pending["front"] == true) {
+                val wanted = !front
+                vm.send("front", "climate", if (wanted) "front" else "off") { (it.climateMode == "front") == wanted }
+            }
+            val rear = status?.rearWindowDefroster == true
+            ComfortButton(Icons.Outlined.Waves, "Rear window", Modifier.weight(1f), on = rear, busy = vm.pending["rear"] == true) {
+                val wanted = !rear
+                vm.send("rear", "rear-defroster", if (wanted) "on" else "off") { (it.rearWindowDefroster == true) == wanted }
+            }
+            val wheel = status?.steeringWheelHeating == true
+            ComfortButton(Icons.Outlined.Adjust, "Steering wheel", Modifier.weight(1f), on = wheel, busy = vm.pending["wheel"] == true) {
+                val wanted = !wheel
+                vm.send("wheel", "steering-wheel-heat", if (wanted) "on" else "off") { (it.steeringWheelHeating == true) == wanted }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            SeatButton(vm, "Driver seat", "seat-left", status?.heatedSeatFrontLeft, Modifier.weight(1f)) { it.heatedSeatFrontLeft }
+            SeatButton(vm, "Passenger seat", "seat-right", status?.heatedSeatFrontRight, Modifier.weight(1f)) { it.heatedSeatFrontRight }
+        }
+    }
+}
+
+/**
+ * A comfort control as a button: tap to switch it, lit while it is on. With [level] it also shows
+ * three bars for a seat heater's strength.
+ */
+@Composable
+private fun ComfortButton(
+    icon: ImageVector,
+    title: String,
+    modifier: Modifier = Modifier,
+    on: Boolean = false,
+    busy: Boolean = false,
+    level: Int? = null,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(20.dp)
+    val state = when {
+        busy -> "Sending"
+        level != null && level > 0 -> "Level $level"
+        on -> "On"
+        else -> "Off"
+    }
+    Column(
+        modifier
+            .heightIn(min = 96.dp)
+            .clip(shape)
+            .background(if (on) Volt.AccentWash else Volt.Elev)
+            .border(1.dp, if (on) Volt.AccentLine else Volt.LineSoft, shape)
+            .clickable(enabled = !busy, role = Role.Button, onClickLabel = title, onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+    ) {
+        if (busy) {
+            CircularProgressIndicator(Modifier.size(26.dp), color = Volt.Info, strokeWidth = 2.5.dp)
+        } else {
+            Icon(icon, contentDescription = null, tint = if (on) Volt.Accent else Volt.Ink2, modifier = Modifier.size(26.dp))
+        }
+        Text(title, color = Volt.Ink, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            state,
+            color = if (busy) Volt.Info else if (on) Volt.Accent else Volt.Ink3,
+            fontSize = 12.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (level != null) {
+            Row(Modifier.padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                for (bar in 1..3) {
+                    Box(Modifier.size(width = 18.dp, height = 5.dp).clip(RoundedCornerShape(3.dp)).background(if (bar <= level) Volt.Accent else Volt.Raise))
+                }
+            }
+        }
+    }
+}
+
+/** A seat heater: each tap goes one level up, and from 3 back to off. */
+@Composable
+private fun SeatButton(vm: AppViewModel, title: String, command: String, level: Int?, modifier: Modifier, read: (CarStatus) -> Int?) {
+    val now = (level ?: 0).coerceIn(0, 3)
+    ComfortButton(Icons.Outlined.EventSeat, title, modifier, on = now > 0, busy = vm.pending[command] == true, level = now) {
+        val wanted = if (now >= 3) 0 else now + 1
+        vm.send(command, command, wanted.toString()) { (read(it) ?: 0) == wanted }
+    }
+}
+
+/** One tyre as the top card shows it. */
+private class Tyre(val name: String, val bar: Double?, limits: TyreLimits) {
+    val low = bar != null && bar < limits.lowBar
+    val high = bar != null && bar > limits.highBar
+    val text = bar?.let { Units.psi(it).toString() } ?: "--"
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun StatusCard(status: CarStatus?, limits: TyreLimits) {
+    val frontLeft = Tyre("front left", status?.tyrePressureFrontLeft, limits)
+    val frontRight = Tyre("front right", status?.tyrePressureFrontRight, limits)
+    val rearLeft = Tyre("rear left", status?.tyrePressureRearLeft, limits)
+    val rearRight = Tyre("rear right", status?.tyrePressureRearRight, limits)
+    val tyres = listOf(frontLeft, frontRight, rearLeft, rearRight)
+    val hasTyres = tyres.any { it.bar != null }
+
+    Panel {
+        Row(Modifier.padding(horizontal = 14.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Each pressure stands beside its wheel.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (hasTyres) TyreColumn(frontLeft, rearLeft, Alignment.End)
+                    CarDrawing(
+                        Modifier.padding(horizontal = 4.dp).width(88.dp).height(136.dp),
+                        pluggedIn = status?.chargerConnected == true || status?.isCharging == true,
+                        charging = status?.isCharging == true,
+                    )
+                    if (hasTyres) TyreColumn(frontRight, rearRight, Alignment.Start)
+                }
+                if (hasTyres) {
+                    val off = tyres.filter { it.low || it.high }
+                    val wrong = when (off.size) {
+                        0 -> ""
+                        1 -> "${off[0].name} ${if (off[0].low) "low" else "high"}"
+                        else -> "${off.size} tyres off"
+                    }
+                    Row(Modifier.padding(top = 4.dp)) {
+                        Text(if (wrong.isEmpty()) "Tyres in psi" else "Tyres in psi · ", color = Volt.Ink3, fontSize = 11.5.sp)
+                        if (wrong.isNotEmpty()) Text(wrong, color = Volt.Warn, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(Units.wholeMiles(status?.electricRangeKm) ?: "--", color = Volt.Ink, fontSize = 36.sp, fontWeight = FontWeight.Bold)
+                    Text(" mi", color = Volt.Ink3, fontSize = 16.sp, modifier = Modifier.padding(bottom = 6.dp))
+                    Spacer(Modifier.weight(1f))
+                    Text(Units.percent(status?.evSocPercent) ?: "--", color = Volt.Ink, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 4.dp))
+                }
+                Meter(status?.evSocPercent, status?.socTargetPercent, Modifier.padding(top = 4.dp))
+                FlowRow(
+                    Modifier.padding(top = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    when (status?.isLocked) {
+                        true -> Chip("Locked", icon = Icons.Outlined.Lock)
+                        false -> Chip("Unlocked", Tone.Warn, Icons.Outlined.LockOpen)
+                        null -> Unit
+                    }
+                    when {
+                        status?.engineRunning == true -> Chip("Driving", Tone.Accent)
+                        status?.isCharging == true -> Chip(chargingText(status), Tone.Accent)
+                        status?.chargerConnected == true -> Chip("Plugged in")
+                    }
+                    for (open in openThings(status)) Chip(open, Tone.Alert)
+                }
+                if (hasTyres) {
+                    val front = Units.psi(limits.recommendedFrontBar ?: limits.recommendedBar)
+                    val rear = Units.psi(limits.recommendedRearBar ?: limits.recommendedBar)
+                    val recommended = if (front == rear) "Recommended $front psi" else "Recommended $front front, $rear rear"
+                    Text(recommended, color = Volt.Ink3, fontSize = 12.sp, modifier = Modifier.padding(top = 9.dp))
+                }
+            }
+        }
+    }
+}
+
+/** The front and rear pressure of one side, level with the wheels of the drawing beside them. */
+@Composable
+private fun TyreColumn(front: Tyre, rear: Tyre, align: Alignment.Horizontal) {
+    Column(Modifier.height(136.dp).widthIn(min = 26.dp).padding(vertical = 22.dp), verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = align) {
+        for (tyre in listOf(front, rear)) {
+            Text(
+                tyre.text,
+                color = if (tyre.low || tyre.high) Volt.Warn else Volt.Ink,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.semantics { contentDescription = "${tyre.name} tyre ${tyre.text} psi" },
+            )
+        }
+    }
+}
+
+internal fun chargingText(status: CarStatus): String {
+    val left = status.remainingChargingTime?.takeIf { it > 0 }?.toLong()
+    return if (left != null) "Charging · ${Units.duration(left)} left" else "Charging"
+}
+
+/** Whatever stands open, in the words of the web app's car card. */
+private fun openThings(status: CarStatus?): List<String> {
+    if (status == null) return emptyList()
+    val open = ArrayList<String>()
+    if (status.driverDoorOpen == true) open += "Driver door open"
+    if (status.passengerDoorOpen == true) open += "Passenger door open"
+    if (status.rearLeftDoorOpen == true) open += "Rear left door open"
+    if (status.rearRightDoorOpen == true) open += "Rear right door open"
+    if (status.trunkOpen == true) open += "Boot open"
+    if (status.bonnetOpen == true) open += "Bonnet open"
+    val windows = listOf(status.driverWindowOpen, status.passengerWindowOpen, status.rearLeftWindowOpen, status.rearRightWindowOpen).count { it == true }
+    if (windows == 1) open += "1 window open"
+    if (windows > 1) open += "$windows windows open"
+    return open
+}
+
+/**
+ * The cabin temperature the climate aims for. Taps are collected for a moment and sent as one
+ * command, since every command wakes the car and takes it up to half a minute to answer.
+ */
+@Composable
+private fun TemperatureRow(vm: AppViewModel, status: CarStatus?) {
+    val reported = status?.remoteTemperature?.roundToInt()?.coerceIn(MIN_TEMPERATURE, MAX_TEMPERATURE)
+    var wanted by remember { mutableStateOf<Int?>(null) }
+    val busy = vm.pending["temperature"] == true
+    val shown = wanted ?: reported ?: DEFAULT_TEMPERATURE
+
+    LaunchedEffect(wanted) {
+        val target = wanted ?: return@LaunchedEffect
+        delay(1_200)
+        if (target != reported) {
+            vm.send("temperature", "climate-temperature", target.toString()) { it.remoteTemperature?.roundToInt() == target }
+        }
+        wanted = null
+    }
+
+    val inside = status?.interiorTemperature?.let { "Inside now ${it.roundToInt()} °C" }
+    ListRow(Icons.Outlined.Thermostat, "Temperature", inside, on = status?.climateOn == true) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            StepButton(Icons.Outlined.Remove, "Cooler", enabled = !busy && shown > MIN_TEMPERATURE) { wanted = shown - 1 }
+            Text(
+                "$shown°",
+                color = if (busy) Volt.Info else Volt.Ink,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.widthIn(min = 44.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            StepButton(Icons.Outlined.Add, "Warmer", enabled = !busy && shown < MAX_TEMPERATURE) { wanted = shown + 1 }
+        }
+    }
+}
+
+@Composable
+private fun StepButton(icon: ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(10.dp)
+    Box(
+        Modifier
+            .size(44.dp)
+            .clip(shape)
+            .background(Volt.Raise)
+            .border(1.dp, Volt.Line, shape)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = label, tint = if (enabled) Volt.Ink else Volt.Ink4, modifier = Modifier.size(18.dp))
+    }
+}

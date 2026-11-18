@@ -23,12 +23,20 @@ public static class VehicleEndpoints
         var hvBatteryCapacity = app.ServiceProvider.GetRequiredService<HvBatteryCapacity>();
         var tyreThresholds = app.ServiceProvider.GetRequiredService<TyrePressureThresholds>();
 
-        group.MapGet("/", async (IVehicleRepository vehicles, CancellationToken ct) =>
+        group.MapGet("/", async (
+            HttpContext httpContext,
+            IVehicleRepository vehicles,
+            IUserSettingsRepository settings,
+            CancellationToken ct) =>
         {
             var all = await vehicles.GetAllAsync(ct);
+            // The name the account gave its car wins over the one MG reports, for every client:
+            // the web app and the Android app both show `model`.
+            var account = SessionPrincipal.ResolveAccountKey(httpContext.User);
+            var ownName = account is null ? null : OwnCarName.From(await settings.GetAsync(account, ct));
             return Results.Ok(all.Select(v => new VehicleListItemDto(
-                v.Id, v.Vin, v.Model, v.Series, v.CreatedAt, VehicleTypeHelper.GetVehicleType(v),
-                hvBatteryCapacity.Kwh, VehicleTypeHelper.SupportsTargetSoc(v), v.LicensePlate)));
+                v.Id, v.Vin, ownName ?? v.Model, v.Series, v.CreatedAt, VehicleTypeHelper.GetVehicleType(v),
+                hvBatteryCapacity.Kwh, VehicleTypeHelper.SupportsTargetSoc(v), v.LicensePlate, v.Model)));
         })
         .WithSummary("List all vehicles");
 
@@ -197,6 +205,7 @@ public static class VehicleEndpoints
 public record VehicleListItemDto(
     int Id,
     string Vin,
+    // What to call the car: the owner's own name for it, or else the one MG reports.
     string? Model,
     string? Series,
     DateTime CreatedAt,
@@ -204,7 +213,10 @@ public record VehicleListItemDto(
     double? HvBatteryCapacityKwh,
     bool SupportsTargetSoc,
     // As the owner entered it under Settings, without dashes or spaces; null when none is set.
-    string? LicensePlate);
+    string? LicensePlate,
+    // The name MG reports for the car. `Model` is the owner's own name for it when they set one
+    // under Settings > Your car, and otherwise the same as this.
+    string? ReportedModel);
 
 /// <summary>
 /// A month of daily statistics (the same rows as /stats/daily, for the same chart) and, when there

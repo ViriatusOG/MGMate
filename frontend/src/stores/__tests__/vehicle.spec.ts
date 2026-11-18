@@ -78,6 +78,25 @@ describe('useVehicleStore - activeVehicle', () => {
     expect(store.activeVehicle?.id).toBe(1)
     expect(store.activeVin).toBe('FAKEVN00000000001')
   })
+
+  it("is called what the owner named it under Settings, and MG's name again once that is cleared", () => {
+    const store = useVehicleStore()
+    const settings = useUiSettingsStore()
+    // The server already answers with the owner's name; the reported one comes beside it.
+    store.vehicles = [{ ...vehicle('bev'), model: 'Old name', reportedModel: 'MG4 ELECTRIC 2025' }]
+
+    settings.carName = 'MG4 EV 2026'
+    expect(store.activeVehicle?.model).toBe('MG4 EV 2026')
+
+    settings.carName = null
+    expect(store.activeVehicle?.model).toBe('MG4 ELECTRIC 2025')
+  })
+
+  it('keeps the name of a server that sends no reported model', () => {
+    const store = useVehicleStore()
+    store.vehicles = [vehicle('bev')]
+    expect(store.activeVehicle?.model).toBe('MG')
+  })
 })
 
 describe('useVehicleStore - effectiveVehicleType', () => {
