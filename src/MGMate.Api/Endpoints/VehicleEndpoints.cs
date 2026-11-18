@@ -1,4 +1,5 @@
 using System.Text.Json;
+using MGMate.Api.Authentication;
 using MGMate.Core.Configuration;
 using MGMate.Core.Helpers;
 using MGMate.Core.Interfaces;
@@ -31,8 +32,19 @@ public static class VehicleEndpoints
         })
         .WithSummary("List all vehicles");
 
-        group.MapGet("/tyre-pressure-thresholds", (TyrePressureThresholds thresholds) => Results.Ok(thresholds))
-        .WithSummary("Get configured tyre pressure colour-coding thresholds");
+        group.MapGet("/tyre-pressure-thresholds", async (
+            HttpContext httpContext,
+            TyrePressureThresholds thresholds,
+            IUserSettingsRepository settings,
+            CancellationToken ct) =>
+        {
+            // The pressures the account set itself, for the season it switched to, win over the
+            // deployment's: the Android app shows them as the car's recommended pressure.
+            var account = SessionPrincipal.ResolveAccountKey(httpContext.User);
+            var own = account is null ? null : OwnTyrePressures.From(await settings.GetAsync(account, ct));
+            return Results.Ok(TyrePressureThresholdsDto.From(thresholds, own));
+        })
+        .WithSummary("Get the tyre pressure thresholds, and the recommended pressure in use for the signed-in account");
 
         var vehicleGroup = group.MapGroup("/{vin}").AddEndpointFilter<ResolveVehicleFilter>();
 
@@ -201,3 +213,35 @@ public record VehicleListItemDto(
 /// </summary>
 public sealed record TyreHistoryDto(IReadOnlyList<DailyStat> Days, TyreChanges? Trend, int TrendDays, IReadOnlyList<string> Losing);
 
+
+/// <param name="LowBar">See <see cref="TyrePressureThresholds.LowBar"/>.</param>
+/// <param name="GoodBar">See <see cref="TyrePressureThresholds.GoodBar"/>.</param>
+/// <param name="HighBar">See <see cref="TyrePressureThresholds.HighBar"/>.</param>
+/// <param name="DropBar">See <see cref="TyrePressureThresholds.DropBar"/>.</param>
+/// <param name="RecommendedBar">The front pressure in use: the account's own for its season, else the deployment's.</param>
+/// <param name="RecommendedFrontBar">The front pressure in use.</param>
+/// <param name="RecommendedRearBar">The rear pressure in use.</param>
+/// <param name="DefaultRecommendedBar">The deployment's recommended pressure, whatever the account set.</param>
+/// <param name="Season">"summer" or "winter" when the account set its own pressures; null when the deployment's are in use.</param>
+public record TyrePressureThresholdsDto(
+    double LowBar,
+    double GoodBar,
+    double HighBar,
+    double DropBar,
+    double RecommendedBar,
+    double RecommendedFrontBar,
+    double RecommendedRearBar,
+    double DefaultRecommendedBar,
+    string? Season)
+{
+    public static TyrePressureThresholdsDto From(TyrePressureThresholds thresholds, OwnTyrePressures? own) => new(
+        thresholds.LowBar,
+        thresholds.GoodBar,
+        thresholds.HighBar,
+        thresholds.DropBar,
+        own?.FrontBar ?? thresholds.RecommendedBar,
+        own?.FrontBar ?? thresholds.RecommendedBar,
+        own?.RearBar ?? thresholds.RecommendedBar,
+        thresholds.RecommendedBar,
+        own?.Season);
+}

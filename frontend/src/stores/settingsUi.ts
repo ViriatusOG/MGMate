@@ -70,6 +70,51 @@ interface UiSettings {
   showDebugPage: boolean
   /** Settings > Home location: charges inside the home place count as home unless set by hand. */
   autoHomeCharges: boolean
+  /**
+   * Settings > Your car: the cold pressures the tyres are set to, a summer and a winter pair, and
+   * which one is in use. Null until set, when the deployment's recommended pressure is used.
+   */
+  tyrePressures: OwnTyrePressures | null
+}
+
+export type TyreSeason = 'summer' | 'winter'
+export const TYRE_SEASONS: readonly TyreSeason[] = ['summer', 'winter']
+
+/** Bar, as the API stores every pressure. */
+export interface TyrePressurePair {
+  frontBar: number
+  rearBar: number
+}
+
+export interface OwnTyrePressures {
+  season: TyreSeason
+  summer: TyrePressurePair
+  winter: TyrePressurePair
+}
+
+// The server reads the same object for the Android app (OwnTyrePressures.cs), with the same limits.
+const MIN_TYRE_BAR = 1
+const MAX_TYRE_BAR = 5
+
+function tyreBar(value: unknown): number | null {
+  return typeof value === 'number' && value >= MIN_TYRE_BAR && value <= MAX_TYRE_BAR ? value : null
+}
+
+function parseTyrePair(raw: unknown): TyrePressurePair | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const pair = raw as Record<string, unknown>
+  const frontBar = tyreBar(pair.frontBar)
+  const rearBar = tyreBar(pair.rearBar)
+  return frontBar !== null && rearBar !== null ? { frontBar, rearBar } : null
+}
+
+function parseTyrePressures(raw: unknown): OwnTyrePressures | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const own = raw as Record<string, unknown>
+  const summer = parseTyrePair(own.summer)
+  const winter = parseTyrePair(own.winter)
+  if (!summer || !winter || !TYRE_SEASONS.includes(own.season as TyreSeason)) return null
+  return { season: own.season as TyreSeason, summer, winter }
 }
 
 function defaultsFor(): UiSettings {
@@ -93,6 +138,7 @@ function defaultsFor(): UiSettings {
     batteryPackKwh: null,
     showDebugPage: false,
     autoHomeCharges: true,
+    tyrePressures: null,
   }
 }
 
@@ -195,6 +241,7 @@ function parseUiFields(parsed: Record<string, unknown>, fallback: UiSettings): U
         : null,
     showDebugPage: parsed.showDebugPage === true,
     autoHomeCharges: parsed.autoHomeCharges !== false,
+    tyrePressures: parseTyrePressures(parsed.tyrePressures),
   }
 }
 

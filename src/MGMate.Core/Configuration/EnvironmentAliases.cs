@@ -34,6 +34,7 @@ public static class EnvironmentAliases
         ["TYRE_PRESSURE_GOOD_BAR"] = "TyrePressure:GoodBar",
         ["TYRE_PRESSURE_HIGH_BAR"] = "TyrePressure:HighBar",
         ["TYRE_PRESSURE_DROP_BAR"] = "TyrePressure:DropBar",
+        ["TYRE_PRESSURE_RECOMMENDED_BAR"] = "TyrePressure:RecommendedBar",
         ["HV_BATTERY_CAPACITY_KWH"] = "HvBattery:CapacityKwh",
 
         // When the Worker's level alerts fire.
