@@ -17,6 +17,7 @@ import io.github.viriatusog.mgmate.data.Session
 import io.github.viriatusog.mgmate.data.PublishedBuild
 import io.github.viriatusog.mgmate.data.ThemeMode
 import io.github.viriatusog.mgmate.data.TripLogEntry
+import io.github.viriatusog.mgmate.data.TyreLimits
 import io.github.viriatusog.mgmate.data.Updater
 import io.github.viriatusog.mgmate.data.Vehicle
 import kotlinx.coroutines.CompletableDeferred
@@ -82,6 +83,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var openTrip by mutableStateOf<OpenTrip?>(null)
         private set
+
+    /** The server's tyre limits; its defaults until they have been read. */
+    var tyreLimits by mutableStateOf(TyreLimits())
+        private set
+    private var tyreLimitsRead = false
 
     var themeMode by mutableStateOf(session.themeMode)
         private set
@@ -225,6 +231,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 } else {
                     status = api.status(car.vin)
                     loadError = null
+                    if (!tyreLimitsRead) {
+                        // Deployment settings: read once, and the built-in ones do until then.
+                        try {
+                            api.tyreLimits()?.let { tyreLimits = it }
+                            tyreLimitsRead = true
+                        } catch (_: ApiException) {
+                        }
+                    }
                     if (!hub.isOpen) hub.open(car.id)
                     loadTrips()
                 }

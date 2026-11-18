@@ -62,6 +62,19 @@ data class CarStatus(
     val chargingScheduleStartTime: String? = null,
     val chargingScheduleEndTime: String? = null,
     val lastVehicleStateAt: String? = null,
+    /** Tyre pressures in bar, as the car last reported them. */
+    val tyrePressureFrontLeft: Double? = null,
+    val tyrePressureFrontRight: Double? = null,
+    val tyrePressureRearLeft: Double? = null,
+    val tyrePressureRearRight: Double? = null,
+)
+
+/** The server's tyre pressure limits, in bar. The defaults are the server's own. */
+@Serializable
+data class TyreLimits(
+    val lowBar: Double = 2.2,
+    val highBar: Double = 3.2,
+    val recommendedBar: Double = 2.5,
 )
 
 @Serializable

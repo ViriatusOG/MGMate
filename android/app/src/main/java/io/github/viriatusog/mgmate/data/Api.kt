@@ -96,6 +96,9 @@ class Api(private val session: Session) {
     /** Null while the server has no reading for the car yet. */
     suspend fun status(vin: String): CarStatus? = get("/api/vehicles/$vin/status")
 
+    /** The pressures below and above which the server calls a tyre low or high. */
+    suspend fun tyreLimits(): TyreLimits? = get("/api/vehicles/tyre-pressure-thresholds")
+
     suspend fun tripLog(vin: String, from: Instant, to: Instant): List<TripLogEntry> =
         get("/api/vehicles/$vin/trips/log?from=$from&to=$to") ?: emptyList()
 

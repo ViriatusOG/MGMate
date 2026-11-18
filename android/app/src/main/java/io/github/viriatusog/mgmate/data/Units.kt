@@ -20,6 +20,9 @@ object Units {
 
     fun mph(kmh: Double): Int = miles(kmh).roundToInt()
 
+    /** Tyre pressure in whole psi, from bar. */
+    fun psi(bar: Double): Int = (bar * 14.5038).roundToInt()
+
     fun percent(value: Double?): String? = value?.let { "${it.roundToInt()}%" }
 
     /** "45 min" or "5 h 51 min". */

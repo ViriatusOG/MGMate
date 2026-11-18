@@ -48,12 +48,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.viriatusog.mgmate.AppViewModel
 import io.github.viriatusog.mgmate.data.CarStatus
+import io.github.viriatusog.mgmate.data.TyreLimits
 import io.github.viriatusog.mgmate.data.Units
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
@@ -70,7 +73,7 @@ fun CarScreen(vm: AppViewModel, ask: (Confirm) -> Unit) {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        StatusCard(status)
+        StatusCard(status, vm.tyreLimits)
 
         val locked = status?.isLocked == true
         val climateOn = status?.climateOn == true
@@ -228,17 +231,50 @@ private fun SeatButton(vm: AppViewModel, title: String, command: String, level: 
     }
 }
 
+/** One tyre as the top card shows it. */
+private class Tyre(val name: String, val bar: Double?, limits: TyreLimits) {
+    val low = bar != null && bar < limits.lowBar
+    val high = bar != null && bar > limits.highBar
+    val text = bar?.let { Units.psi(it).toString() } ?: "--"
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun StatusCard(status: CarStatus?) {
+private fun StatusCard(status: CarStatus?, limits: TyreLimits) {
+    val frontLeft = Tyre("front left", status?.tyrePressureFrontLeft, limits)
+    val frontRight = Tyre("front right", status?.tyrePressureFrontRight, limits)
+    val rearLeft = Tyre("rear left", status?.tyrePressureRearLeft, limits)
+    val rearRight = Tyre("rear right", status?.tyrePressureRearRight, limits)
+    val tyres = listOf(frontLeft, frontRight, rearLeft, rearRight)
+    val hasTyres = tyres.any { it.bar != null }
+
     Panel {
-        Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            CarDrawing(
-                Modifier.width(74.dp).height(112.dp),
-                pluggedIn = status?.chargerConnected == true || status?.isCharging == true,
-                charging = status?.isCharging == true,
-            )
-            Spacer(Modifier.width(14.dp))
+        Row(Modifier.padding(horizontal = 14.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Each pressure stands beside its wheel.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (hasTyres) TyreColumn(frontLeft, rearLeft, Alignment.End)
+                    CarDrawing(
+                        Modifier.padding(horizontal = 4.dp).width(88.dp).height(136.dp),
+                        pluggedIn = status?.chargerConnected == true || status?.isCharging == true,
+                        charging = status?.isCharging == true,
+                    )
+                    if (hasTyres) TyreColumn(frontRight, rearRight, Alignment.Start)
+                }
+                if (hasTyres) {
+                    val off = tyres.filter { it.low || it.high }
+                    val wrong = when (off.size) {
+                        0 -> ""
+                        1 -> "${off[0].name} ${if (off[0].low) "low" else "high"}"
+                        else -> "${off.size} tyres off"
+                    }
+                    Row(Modifier.padding(top = 4.dp)) {
+                        Text(if (wrong.isEmpty()) "Tyres in psi" else "Tyres in psi · ", color = Volt.Ink3, fontSize = 11.5.sp)
+                        if (wrong.isNotEmpty()) Text(wrong, color = Volt.Warn, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(Units.wholeMiles(status?.electricRangeKm) ?: "--", color = Volt.Ink, fontSize = 36.sp, fontWeight = FontWeight.Bold)
@@ -264,7 +300,26 @@ private fun StatusCard(status: CarStatus?) {
                     }
                     for (open in openThings(status)) Chip(open, Tone.Alert)
                 }
+                if (hasTyres) {
+                    Text("Recommended ${Units.psi(limits.recommendedBar)} psi", color = Volt.Ink3, fontSize = 12.sp, modifier = Modifier.padding(top = 9.dp))
+                }
             }
+        }
+    }
+}
+
+/** The front and rear pressure of one side, level with the wheels of the drawing beside them. */
+@Composable
+private fun TyreColumn(front: Tyre, rear: Tyre, align: Alignment.Horizontal) {
+    Column(Modifier.height(136.dp).widthIn(min = 26.dp).padding(vertical = 22.dp), verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = align) {
+        for (tyre in listOf(front, rear)) {
+            Text(
+                tyre.text,
+                color = if (tyre.low || tyre.high) Volt.Warn else Volt.Ink,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.semantics { contentDescription = "${tyre.name} tyre ${tyre.text} psi" },
+            )
         }
     }
 }
