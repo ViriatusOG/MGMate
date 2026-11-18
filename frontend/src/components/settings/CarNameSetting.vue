@@ -58,12 +58,7 @@ function save(value: string) {
       <button type="submit" class="btn btn-primary btn-sm" :disabled="!changed">
         {{ t('settings.carName.save') }}
       </button>
-      <button
-        v-if="saved"
-        type="button"
-        class="btn btn-outline-secondary btn-sm"
-        @click="save('')"
-      >
+      <button v-if="saved" type="button" class="btn btn-outline-secondary btn-sm" @click="save('')">
         {{ t('settings.carName.clear') }}
       </button>
     </form>
