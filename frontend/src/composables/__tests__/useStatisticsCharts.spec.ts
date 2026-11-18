@@ -289,6 +289,33 @@ describe('useStatisticsCharts', () => {
     expect((recommended.data as number[]).map((v) => Math.round(v))).toEqual([36, 36])
   })
 
+  it('draws the pressure set for the season in use, named after the season', () => {
+    useUiSettingsStore().tyrePressures = {
+      season: 'winter',
+      summer: { frontBar: 2.5, rearBar: 2.5 },
+      winter: { frontBar: 2.7, rearBar: 2.7 },
+    }
+
+    const line = chart('bev', 'tyreChart', TWO_DAYS).data.datasets.find(
+      (d) => d.label === 'Recommended (winter)',
+    )!
+
+    expect(line.data).toEqual([2.7, 2.7])
+  })
+
+  it('draws front and rear apart when they differ', () => {
+    useUiSettingsStore().tyrePressures = {
+      season: 'summer',
+      summer: { frontBar: 2.4, rearBar: 2.8 },
+      winter: { frontBar: 2.6, rearBar: 2.6 },
+    }
+
+    const labels = chart('bev', 'tyreChart', TWO_DAYS).data.datasets.map((d) => d.label)
+
+    expect(labels).toContain('Recommended front (summer)')
+    expect(labels).toContain('Recommended rear (summer)')
+  })
+
   it('shows tyre pressure in the chosen unit', () => {
     useUiSettingsStore().units = { ...useUiSettingsStore().units, pressure: 'psi' }
 

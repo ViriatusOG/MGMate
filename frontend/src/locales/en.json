@@ -175,7 +175,20 @@
       "trips": "Trips",
       "trend": "Trend",
       "lowPressure": "Warning",
-      "recommendedPressure": "Recommended"
+      "recommendedPressureDefault": {
+        "both": "Recommended",
+        "front": "Recommended front",
+        "rear": "Recommended rear"
+      },
+      "recommendedPressureSeason": {
+        "both": "Recommended ({season})",
+        "front": "Recommended front ({season})",
+        "rear": "Recommended rear ({season})"
+      },
+      "tyreSeason": {
+        "summer": "summer",
+        "winter": "winter"
+      }
     },
     "consumptionTempChart": "Consumption vs Outside Temperature",
     "phone": {
@@ -641,6 +654,23 @@
       "hev": "HEV (Hybrid, no plug)",
       "phev": "PHEV (Plug-in Hybrid)",
       "bev": "BEV (Full Electric)"
+    },
+    "tyrePressures": {
+      "title": "Tyre pressures",
+      "desc": "The cold pressures you set the tyres to. They are drawn as the Recommended line on the tyre charts and shown in the Android app. MG's handbook says {pressure} front and rear.",
+      "season": {
+        "label": "Season",
+        "desc": "Which pair is in use. Switch it when the tyres are changed or reset for the season.",
+        "summer": "Summer",
+        "winter": "Winter"
+      },
+      "front": "Front",
+      "rear": "Rear",
+      "inUse": "In use",
+      "fieldLabel": "{season} {axle}",
+      "save": "Save",
+      "useDefault": "Use MG's {pressure}",
+      "invalid": "Enter a pressure for each tyre, between 1 and 5 bar (15 to 72 psi)."
     },
     "licensePlate": {
       "title": "Licence plate",

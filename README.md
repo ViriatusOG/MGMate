@@ -492,7 +492,9 @@ MG app messages are the exception: they are passed on as SAIC wrote them, in the
 
 The tyre pressure thresholds (`TYRE_PRESSURE_LOW_BAR` / `TYRE_PRESSURE_GOOD_BAR` / `TYRE_PRESSURE_HIGH_BAR`) also drive the colour-coded dots on the dashboard's vehicle diagram. Set them once in your `.env` (or container environment) to match your vehicle's placarded pressure instead of the app's generic defaults.
 
-The tyre chart (on Statistics, and in the tyre history you open from the dashboard's diagram) draws two dashed lines across the readings: **Recommended** in green, at the MG4 EV handbook's cold pressure of 2.5 bar (about 36 psi) front and rear, and **Warning** in red, at `TYRE_PRESSURE_LOW_BAR`. Set `TYRE_PRESSURE_RECOMMENDED_BAR` if your car's placard says something else. Readings taken while driving sit a little above the line, since warm tyres read higher.
+The tyre chart (on Statistics, and in the tyre history you open from the dashboard's diagram) draws two dashed lines across the readings: **Recommended** in green, and **Warning** in red, at `TYRE_PRESSURE_LOW_BAR`. Readings taken while driving sit a little above the Recommended line, since warm tyres read higher.
+
+The Recommended line is the pressure you set your tyres to, under **Settings > Your car > Tyre pressures**: a summer and a winter pair, front and rear, in your pressure unit, and a **Season** switch you flip by hand when the tyres are changed or reset. The chart names the season ("Recommended (winter)") and draws front and rear apart when they differ. The Android app shows the pair in use too, from `/api/vehicles/tyre-pressure-thresholds`. Until you set your own, it is the MG4 EV handbook's cold pressure of 2.5 bar (about 36 psi) front and rear, or `TYRE_PRESSURE_RECOMMENDED_BAR`, and **Use MG's 36 psi** goes back to it.
 
 To generate a VAPID key pair (requires Node.js):
 

@@ -24,7 +24,7 @@ import type { StatsGrouping } from '@/utils/statsPeriod'
 import { burnsFuel, mayPlugIn, plugsIn } from '@/utils/vehicleType'
 import { useChartTheme } from './useChartTheme'
 import { useUnits } from './useUnits'
-import { useTyrePressureThresholds } from './useTyrePressureThresholds'
+import { useRecommendedTyrePressure, useTyrePressureThresholds } from './useTyrePressureThresholds'
 
 export interface ChartDef {
   id: StatsChartId
@@ -234,6 +234,7 @@ export function useStatisticsCharts(
   }))
 
   const tyreThresholds = useTyrePressureThresholds()
+  const recommendedTyres = useRecommendedTyrePressure()
 
   const tyreBars = computed(() =>
     TYRE_SERIES.map((series) => ({ ...series, bars: bucketAverages(buckets.value, series.read) })),
@@ -242,7 +243,12 @@ export function useStatisticsCharts(
   const tyreChartData = computed(() => {
     const u = units.value
     const low = u.convert('pressure', tyreThresholds.value.lowBar)
-    const recommended = u.convert('pressure', tyreThresholds.value.recommendedBar)
+    const { season, frontBar, rearBar } = recommendedTyres.value
+    const seasonName = season ? t(`statistics.series.tyreSeason.${season}`) : null
+    const recommendedLabel = (which: 'both' | 'front' | 'rear') =>
+      seasonName
+        ? t(`statistics.series.recommendedPressureSeason.${which}`, { season: seasonName })
+        : t(`statistics.series.recommendedPressureDefault.${which}`)
     const thresholdLine = (label: string, value: number | null, color: string) => ({
       ...lineDataset(
         label,
@@ -264,8 +270,21 @@ export function useStatisticsCharts(
             color,
           ),
         ),
-        // The maker's pressure, so a tyre that needs topping up shows as a line under it.
-        thresholdLine(t('statistics.series.recommendedPressure'), recommended, '#10b981'),
+        // The pressure the tyres should be at, so one that needs topping up shows as a line under
+        // it. One line when front and rear agree, as they do on the MG4; else one for each axle.
+        ...(Math.abs(frontBar - rearBar) < 0.005
+          ? [thresholdLine(recommendedLabel('both'), u.convert('pressure', frontBar), '#10b981')]
+          : [
+              thresholdLine(recommendedLabel('front'), u.convert('pressure', frontBar), '#10b981'),
+              {
+                ...thresholdLine(
+                  recommendedLabel('rear'),
+                  u.convert('pressure', rearBar),
+                  '#14b8a6',
+                ),
+                borderDash: [2, 3],
+              },
+            ]),
         // The warning threshold across the chart, so a slow leak shows as a line closing in on it.
         thresholdLine(t('statistics.series.lowPressure'), low, '#ef4444'),
       ],
@@ -453,9 +472,10 @@ export function useStatisticsCharts(
   const pressureOptions = computed(() => {
     const u = units.value
     const readings = tyreBars.value.flatMap((s) => s.bars).filter((b): b is number => b !== null)
-    const { lowBar, recommendedBar } = tyreThresholds.value
-    const lowest = Math.min(lowBar, recommendedBar, ...readings) - 0.1
-    const highest = Math.max(lowBar, recommendedBar, ...readings) + 0.1
+    const { lowBar } = tyreThresholds.value
+    const { frontBar, rearBar } = recommendedTyres.value
+    const lowest = Math.min(lowBar, frontBar, rearBar, ...readings) - 0.1
+    const highest = Math.max(lowBar, frontBar, rearBar, ...readings) + 0.1
     return chartOptions(
       2.3,
       true,
