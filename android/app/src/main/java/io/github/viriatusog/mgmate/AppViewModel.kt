@@ -84,10 +84,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var openTrip by mutableStateOf<OpenTrip?>(null)
         private set
 
-    /** The server's tyre limits; its defaults until they have been read. */
+    /** The server's tyre limits; the built-in ones until they have been read. */
     var tyreLimits by mutableStateOf(TyreLimits())
         private set
-    private var tyreLimitsRead = false
 
     var themeMode by mutableStateOf(session.themeMode)
         private set
@@ -231,13 +230,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 } else {
                     status = api.status(car.vin)
                     loadError = null
-                    if (!tyreLimitsRead) {
-                        // Deployment settings: read once, and the built-in ones do until then.
-                        try {
-                            api.tyreLimits()?.let { tyreLimits = it }
-                            tyreLimitsRead = true
-                        } catch (_: ApiException) {
-                        }
+                    // The owner can change the recommended pressures with the season, so they are
+                    // read with every refresh; the last ones do when this fails.
+                    try {
+                        api.tyreLimits()?.let { tyreLimits = it }
+                    } catch (_: ApiException) {
                     }
                     if (!hub.isOpen) hub.open(car.id)
                     loadTrips()

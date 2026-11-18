@@ -75,6 +75,9 @@ data class TyreLimits(
     val lowBar: Double = 2.2,
     val highBar: Double = 3.2,
     val recommendedBar: Double = 2.5,
+    /** The owner's own front and rear pressures for the season in use, when the server has them. */
+    val recommendedFrontBar: Double? = null,
+    val recommendedRearBar: Double? = null,
 )
 
 @Serializable

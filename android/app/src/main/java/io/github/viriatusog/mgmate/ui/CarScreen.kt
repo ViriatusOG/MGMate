@@ -301,7 +301,10 @@ private fun StatusCard(status: CarStatus?, limits: TyreLimits) {
                     for (open in openThings(status)) Chip(open, Tone.Alert)
                 }
                 if (hasTyres) {
-                    Text("Recommended ${Units.psi(limits.recommendedBar)} psi", color = Volt.Ink3, fontSize = 12.sp, modifier = Modifier.padding(top = 9.dp))
+                    val front = Units.psi(limits.recommendedFrontBar ?: limits.recommendedBar)
+                    val rear = Units.psi(limits.recommendedRearBar ?: limits.recommendedBar)
+                    val recommended = if (front == rear) "Recommended $front psi" else "Recommended $front front, $rear rear"
+                    Text(recommended, color = Volt.Ink3, fontSize = 12.sp, modifier = Modifier.padding(top = 9.dp))
                 }
             }
         }
