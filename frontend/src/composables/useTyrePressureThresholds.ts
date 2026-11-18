@@ -1,4 +1,5 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useUiSettingsStore, type TyreSeason } from '@/stores/settingsUi'
 import { vehicleApi, type TyrePressureThresholds } from '@/services/vehicleApi'
 
 export type { TyrePressureThresholds }
@@ -8,6 +9,12 @@ export const DEFAULT_TYRE_PRESSURE_THRESHOLDS: TyrePressureThresholds = {
   goodBar: 2.6,
   highBar: 3.2,
   dropBar: 0.15,
+  // The MG4 EV handbook's cold pressure, front and rear, for every wheel size.
+  recommendedBar: 2.5,
+  recommendedFrontBar: 2.5,
+  recommendedRearBar: 2.5,
+  defaultRecommendedBar: 2.5,
+  season: null,
 }
 
 // Module-scoped so every component/composable calling useTyrePressureThresholds() shares the
@@ -44,4 +51,26 @@ export function pressureVariant(bar: number | null, t: TyrePressureThresholds): 
   if (bar < t.goodBar) return 'warning'
   if (bar > t.highBar) return 'danger'
   return 'ok'
+}
+
+export interface RecommendedTyrePressure {
+  /** The season of the pressures the account set; null when the deployment's are in use. */
+  season: TyreSeason | null
+  frontBar: number
+  rearBar: number
+}
+
+/**
+ * The cold pressures the tyres should be at now: the pair the account set under Settings > Your car
+ * for the season it switched to, or else the deployment's (MG's 2.5 bar unless configured).
+ */
+export function useRecommendedTyrePressure() {
+  const thresholds = useTyrePressureThresholds()
+  const ui = useUiSettingsStore()
+  return computed((): RecommendedTyrePressure => {
+    const own = ui.tyrePressures
+    if (own) return { season: own.season, ...own[own.season] }
+    const bar = thresholds.value.defaultRecommendedBar
+    return { season: null, frontBar: bar, rearBar: bar }
+  })
 }

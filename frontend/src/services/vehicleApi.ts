@@ -240,6 +240,14 @@ export interface TyrePressureThresholds {
   highBar: number
   /** How far one tyre may fall behind the other three over the trend's days: a slow puncture. */
   dropBar: number
+  /** The front pressure in use: the account's own for its season, else the deployment's. */
+  recommendedBar: number
+  recommendedFrontBar: number
+  recommendedRearBar: number
+  /** The deployment's recommended pressure (MG's 2.5 bar unless configured), whatever the account set. */
+  defaultRecommendedBar: number
+  /** The season of the account's own pressures; null when the deployment's are in use. */
+  season: 'summer' | 'winter' | null
 }
 
 /** Each tyre's change against the other three, in bar: negative when it lost air the others kept. */

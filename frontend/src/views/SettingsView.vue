@@ -14,6 +14,7 @@ import SideIconSwitch from '@/components/settings/SideIconSwitch.vue'
 import CarColorPicker from '@/components/settings/CarColorPicker.vue'
 import VehicleTypeSetting from '@/components/settings/VehicleTypeSetting.vue'
 import LicensePlateSetting from '@/components/settings/LicensePlateSetting.vue'
+import TyrePressureSetting from '@/components/settings/TyrePressureSetting.vue'
 import NotificationTypeSettings from '@/components/settings/NotificationTypeSettings.vue'
 import ApiTokenSettings from '@/components/settings/ApiTokenSettings.vue'
 import HomeLocationSetting from '@/components/settings/HomeLocationSetting.vue'
@@ -155,6 +156,10 @@ onMounted(async () => {
           <div class="settings-card__group">
             <h3 class="settings-card__subtitle">{{ t('settings.licensePlate.title') }}</h3>
             <LicensePlateSetting />
+          </div>
+          <div class="settings-card__group">
+            <h3 class="settings-card__subtitle">{{ t('settings.tyrePressures.title') }}</h3>
+            <TyrePressureSetting />
           </div>
         </section>
 
