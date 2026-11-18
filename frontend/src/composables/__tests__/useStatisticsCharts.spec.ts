@@ -269,7 +269,24 @@ describe('useStatisticsCharts', () => {
   it('names the tyres in the interface language', () => {
     const labels = chart('bev', 'tyreChart', TWO_DAYS).data.datasets.map((d) => d.label)
 
-    expect(labels).toEqual(['FL (bar)', 'FR (bar)', 'RL (bar)', 'RR (bar)', 'Warning'])
+    expect(labels).toEqual([
+      'FL (bar)',
+      'FR (bar)',
+      'RL (bar)',
+      'RR (bar)',
+      'Recommended',
+      'Warning',
+    ])
+  })
+
+  it("draws MG's recommended pressure across the tyre chart, in the chosen unit", () => {
+    useUiSettingsStore().units = { ...useUiSettingsStore().units, pressure: 'psi' }
+
+    const recommended = chart('bev', 'tyreChart', TWO_DAYS).data.datasets.find(
+      (d) => d.label === 'Recommended',
+    )!
+
+    expect((recommended.data as number[]).map((v) => Math.round(v))).toEqual([36, 36])
   })
 
   it('shows tyre pressure in the chosen unit', () => {

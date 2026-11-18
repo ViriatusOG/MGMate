@@ -242,6 +242,18 @@ export function useStatisticsCharts(
   const tyreChartData = computed(() => {
     const u = units.value
     const low = u.convert('pressure', tyreThresholds.value.lowBar)
+    const recommended = u.convert('pressure', tyreThresholds.value.recommendedBar)
+    const thresholdLine = (label: string, value: number | null, color: string) => ({
+      ...lineDataset(
+        label,
+        labels.value.map(() => value),
+        color,
+      ),
+      borderDash: [5, 4],
+      borderWidth: 1.5,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+    })
     return {
       labels: labels.value,
       datasets: [
@@ -252,18 +264,10 @@ export function useStatisticsCharts(
             color,
           ),
         ),
+        // The maker's pressure, so a tyre that needs topping up shows as a line under it.
+        thresholdLine(t('statistics.series.recommendedPressure'), recommended, '#10b981'),
         // The warning threshold across the chart, so a slow leak shows as a line closing in on it.
-        {
-          ...lineDataset(
-            t('statistics.series.lowPressure'),
-            labels.value.map(() => low),
-            '#ef4444',
-          ),
-          borderDash: [5, 4],
-          borderWidth: 1.5,
-          pointRadius: 0,
-          pointHoverRadius: 0,
-        },
+        thresholdLine(t('statistics.series.lowPressure'), low, '#ef4444'),
       ],
     }
   })
@@ -445,12 +449,13 @@ export function useStatisticsCharts(
   })
 
   const percentOptions = computed(() => chartOptions(2.6, false, PERCENT_AXIS))
-  // Zoomed to the readings and the warning line: a fixed 1.5 to 3.5 bar drew every tyre flat.
+  // Zoomed to the readings and the two lines: a fixed 1.5 to 3.5 bar drew every tyre flat.
   const pressureOptions = computed(() => {
     const u = units.value
     const readings = tyreBars.value.flatMap((s) => s.bars).filter((b): b is number => b !== null)
-    const lowest = Math.min(tyreThresholds.value.lowBar, ...readings) - 0.1
-    const highest = Math.max(tyreThresholds.value.lowBar, ...readings) + 0.1
+    const { lowBar, recommendedBar } = tyreThresholds.value
+    const lowest = Math.min(lowBar, recommendedBar, ...readings) - 0.1
+    const highest = Math.max(lowBar, recommendedBar, ...readings) + 0.1
     return chartOptions(
       2.3,
       true,

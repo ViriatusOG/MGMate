@@ -174,7 +174,8 @@
       "inside": "Inside",
       "trips": "Trips",
       "trend": "Trend",
-      "lowPressure": "Warning"
+      "lowPressure": "Warning",
+      "recommendedPressure": "Recommended"
     },
     "consumptionTempChart": "Consumption vs Outside Temperature",
     "phone": {

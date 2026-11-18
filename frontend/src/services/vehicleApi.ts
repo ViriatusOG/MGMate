@@ -240,6 +240,8 @@ export interface TyrePressureThresholds {
   highBar: number
   /** How far one tyre may fall behind the other three over the trend's days: a slow puncture. */
   dropBar: number
+  /** The maker's cold pressure for normal load, drawn across the tyre chart. */
+  recommendedBar: number
 }
 
 /** Each tyre's change against the other three, in bar: negative when it lost air the others kept. */

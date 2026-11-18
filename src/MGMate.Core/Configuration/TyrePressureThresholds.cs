@@ -7,7 +7,13 @@ namespace MGMate.Core.Configuration;
 /// How far one tyre may fall behind the other three over <see cref="Helpers.TyreTrend.WindowDays"/>
 /// days before that is a slow puncture. Zero switches the alert off.
 /// </param>
-public record TyrePressureThresholds(double LowBar, double GoodBar, double HighBar, double DropBar = 0.15)
+/// <param name="RecommendedBar">
+/// The maker's cold pressure for normal load, drawn across the tyre chart. The default is the
+/// MG4 EV handbook's 2.5 bar (about 36 psi), front and rear, for every wheel size.
+/// </param>
+public record TyrePressureThresholds(
+    double LowBar, double GoodBar, double HighBar, double DropBar = 0.15, double RecommendedBar = 2.5)
 {
-    public static readonly TyrePressureThresholds Default = new(LowBar: 2.2, GoodBar: 2.6, HighBar: 3.2, DropBar: 0.15);
+    public static readonly TyrePressureThresholds Default =
+        new(LowBar: 2.2, GoodBar: 2.6, HighBar: 3.2, DropBar: 0.15, RecommendedBar: 2.5);
 }

@@ -78,7 +78,8 @@ public static class HostingExtensions
             DoubleOrDefault(section, "LowBar", defaults.LowBar),
             DoubleOrDefault(section, "GoodBar", defaults.GoodBar),
             DoubleOrDefault(section, "HighBar", defaults.HighBar),
-            DoubleOrDefault(section, "DropBar", defaults.DropBar)));
+            DoubleOrDefault(section, "DropBar", defaults.DropBar),
+            DoubleOrDefault(section, "RecommendedBar", defaults.RecommendedBar)));
     }
 
     /// <summary>

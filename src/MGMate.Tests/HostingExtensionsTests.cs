@@ -53,6 +53,13 @@ public class HostingExtensionsTests
     }
 
     [Fact]
+    public void TyrePressureThresholds_RecommendedPressure_DefaultsToTheMg4HandbookAndCanBeSet()
+    {
+        Assert.Equal(2.5, Resolve(Config()).RecommendedBar);
+        Assert.Equal(2.7, Resolve(Config(("TyrePressure:RecommendedBar", "2.7"))).RecommendedBar);
+    }
+
+    [Fact]
     public void TyrePressureThresholds_ReadsDecimalsTheSameWayInEveryLocale()
     {
         // Dutch writes a decimal comma, so a culture-sensitive parse would read "3.15" as 315.

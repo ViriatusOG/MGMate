@@ -8,6 +8,8 @@ export const DEFAULT_TYRE_PRESSURE_THRESHOLDS: TyrePressureThresholds = {
   goodBar: 2.6,
   highBar: 3.2,
   dropBar: 0.15,
+  // The MG4 EV handbook's cold pressure, front and rear, for every wheel size.
+  recommendedBar: 2.5,
 }
 
 // Module-scoped so every component/composable calling useTyrePressureThresholds() shares the
